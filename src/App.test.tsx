@@ -49,6 +49,16 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByRole('tab', { name: 'CT' })).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('offers medical imaging fundamentals in place of the DRR module', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.queryByRole('tab', { name: 'DRR' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /Fundamentals/ }))
+    expect(screen.getByRole('heading', { name: 'Medical imaging fundamentals' })).toBeInTheDocument()
+    expect(screen.getByText('Explore spacing, origin, and direction')).toBeInTheDocument()
+  })
+
   it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {
     const user = userEvent.setup()
     render(<App />)

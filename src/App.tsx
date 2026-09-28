@@ -12,7 +12,7 @@ const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon
   { id: 'ct', label: 'CT', icon: ScanLine },
   { id: 'mri', label: 'MRI', icon: Magnet },
   { id: 'interventional', label: 'Interventional', shortLabel: 'C-arm', icon: Radio },
-  { id: 'drr', label: 'DRR', icon: Layers3 },
+  { id: 'fundamentals', label: 'Fundamentals', shortLabel: 'Header', icon: Layers3 },
 ]
 
 function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: Modality) => void }) {
