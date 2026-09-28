@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { ComponentType, KeyboardEvent, SVGProps } from 'react'
-import { Aperture, Layers3, Magnet, Moon, Radio, ScanLine, Sun } from 'lucide-react'
+import { Aperture, Contrast, Database, Magnet, Moon, ScanLine, Sun } from 'lucide-react'
 import { PlaceholderModule } from './components/PlaceholderModule'
 import type { Modality } from './types'
 
@@ -11,8 +11,8 @@ const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon
   { id: 'xray', label: 'X-ray', icon: Aperture },
   { id: 'ct', label: 'CT', icon: ScanLine },
   { id: 'mri', label: 'MRI', icon: Magnet },
-  { id: 'interventional', label: 'Interventional', shortLabel: 'C-arm', icon: Radio },
-  { id: 'fundamentals', label: 'Fundamentals', shortLabel: 'Header', icon: Layers3 },
+  { id: 'image-data', label: 'Image Data', shortLabel: 'Data', icon: Database },
+  { id: 'windowing', label: 'Windowing', shortLabel: 'Window', icon: Contrast },
 ]
 
 function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: Modality) => void }) {

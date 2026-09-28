@@ -49,14 +49,20 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByRole('tab', { name: 'CT' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('offers medical imaging fundamentals in place of the DRR module', async () => {
+  it('offers image data and windowing modules in place of the old placeholders', async () => {
     const user = userEvent.setup()
     render(<App />)
 
     expect(screen.queryByRole('tab', { name: 'DRR' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('tab', { name: /Fundamentals/ }))
-    expect(screen.getByRole('heading', { name: 'Medical imaging fundamentals' })).toBeInTheDocument()
-    expect(screen.getByText('Explore spacing, origin, and direction')).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: /Interventional/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: /Image Data/ }))
+    expect(screen.getByRole('heading', { name: 'Medical image data and spatial metadata' })).toBeInTheDocument()
+    expect(screen.getByText('Compare array, DICOM, and NIfTI representations')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: /Windowing/ }))
+    expect(screen.getByRole('heading', { name: 'Intensity, windowing, and normalization' })).toBeInTheDocument()
+    expect(screen.getByText('Compare CT windowing with relative MR signal')).toBeInTheDocument()
   })
 
   it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {

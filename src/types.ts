@@ -1,4 +1,4 @@
-export type Modality = 'xray' | 'ct' | 'mri' | 'interventional' | 'fundamentals'
+export type Modality = 'xray' | 'ct' | 'mri' | 'image-data' | 'windowing'
 
 export type Projection = 'AP' | 'PA' | 'Lateral'
 
