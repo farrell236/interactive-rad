@@ -105,8 +105,8 @@ h1 { margin: 0; overflow: hidden; font-size: 0.94rem; font-weight: 650; letter-s
 
 .app-content { min-height: 660px; }
 [role="tabpanel"][hidden] { display: none; }
-.xray-module { display: grid; gap: 18px; }
-.module-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; padding: 12px 5px 2px; }
+.xray-module { display: grid; gap: 16px; }
+.module-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; padding: 8px 5px 14px; border-bottom: 1px solid var(--separator-soft); }
 .section-kicker { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--accent); font-size: 0.72rem; font-weight: 650; letter-spacing: 0.04em; }
 .section-kicker svg { width: 14px; height: 14px; }
 .module-intro h2 { margin-bottom: 5px; font-size: clamp(1.75rem, 3vw, 2.35rem); font-weight: 690; line-height: 1.04; letter-spacing: -0.04em; }
