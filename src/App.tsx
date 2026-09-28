@@ -34,7 +34,7 @@ function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: M
   }
 
   return (
-    <nav className="modality-nav glass-panel" aria-label="Imaging modality">
+    <nav className="modality-nav" aria-label="Imaging modality">
       <div className="modality-tabs" role="tablist" aria-label="Imaging modalities">
         {modalities.map((modality, index) => {
           const Icon = modality.icon
@@ -77,15 +77,13 @@ export default function App() {
   })
 
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
-  const activeLabel = modalities.find((item) => item.id === active)?.label ?? 'X-ray'
-
   return (
     <div className="app-frame">
       <a className="skip-link" href="#main-content">Skip to imaging lab</a>
       <div className="ambient ambient-one" aria-hidden="true" />
       <div className="ambient ambient-two" aria-hidden="true" />
 
-      <header className="app-header">
+      <header className="app-header glass-panel">
         <div className="brand-block">
           <div className="brand-mark" aria-hidden="true"><Aperture /></div>
           <div className="brand-copy">
@@ -93,18 +91,13 @@ export default function App() {
             <p className="subtitle">Interactive 3D acquisition and image formation</p>
           </div>
         </div>
+        <ModalityTabs active={active} onChange={setActive} />
         <div className="header-actions">
-          <div className="study-status" aria-live="polite">
-            <span className="status-pulse" aria-hidden="true" />
-            <span><small>Study mode</small>{activeLabel}</span>
-          </div>
-          <button className="icon-button" type="button" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} appearance`} onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}>
+          <button className="icon-button" type="button" title={`Use ${theme === 'dark' ? 'light' : 'dark'} appearance`} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} appearance`} onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}>
             {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
           </button>
         </div>
       </header>
-
-      <ModalityTabs active={active} onChange={setActive} />
 
       <main id="main-content" className="app-content">
         {modalities.map((modality) => (
