@@ -429,7 +429,7 @@ function PelvisSkeleton() {
 }
 
 function ImportedPatientSurface() {
-  const source = useLoader(OBJLoader, '/models/FinalBaseMesh.obj')
+  const source = useLoader(OBJLoader, `${import.meta.env.BASE_URL}models/FinalBaseMesh.obj`)
   const material = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: '#75aac2',
     roughness: 0.34,
@@ -601,9 +601,9 @@ function articulateBodyArms(root: THREE.Object3D, angle: number) {
 }
 
 function MatchedAnatomy({ armsRaised, detector = false, bodyOpacity, boneOpacity, organOpacity }: { armsRaised: boolean; detector?: boolean; bodyOpacity?: number; boneOpacity?: number; organOpacity?: number }) {
-  const bodySource = useGLTF('/models/anatomy-body.glb').scene
-  const skeletonSource = useGLTF('/models/anatomy-skeleton.glb').scene
-  const organsSource = useGLTF('/models/anatomy-organs.glb').scene
+  const bodySource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-body.glb`).scene
+  const skeletonSource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-skeleton.glb`).scene
+  const organsSource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-organs.glb`).scene
   const bodyMaterial = useMemo(() => detector
     ? new THREE.MeshBasicMaterial({
       color: '#83a9b4',

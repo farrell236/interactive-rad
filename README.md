@@ -1,6 +1,6 @@
 # Radiology Imaging Lab
 
-A cinematic browser-based teaching application for exploring how radiological images are acquired and formed. The first working module is an interactive chest X-ray laboratory; CT, MRI, interventional imaging, and DRR are structured as future modules.
+A cinematic browser-based teaching application for exploring how radiological images are acquired and formed. The first working module is an interactive chest X-ray laboratory; CT, MRI, interventional imaging, and medical imaging fundamentals are structured as future modules.
 
 ## Run locally
 
@@ -31,7 +31,7 @@ pnpm build
 - Source-to-image distance, patient rotation, and collimation geometry
 - Stylized live detector image responding to projection, kVp, mAs, SID, patient thickness, rotation, and collimation
 - Animated exposure sequence and capture state
-- Polished CT, MRI, interventional, and DRR roadmaps
+- Polished CT, MRI, interventional, and medical imaging fundamentals roadmaps
 - Unit tests for qualitative simulation behavior
 
 ## Architecture
@@ -62,7 +62,7 @@ It is not a diagnostic image, dose calculator, radiographic technique chart, or 
 
 - Replace procedural anatomy with a reviewed anatomical mesh.
 - Add CT/CBCT volume loading and HU-to-attenuation conversion.
-- Implement GPU ray integration for physically meaningful DRR generation.
 - Add sinogram and reconstruction views for CT.
 - Add sequence timing and k-space views for MRI.
 - Add C-arm angulation, pulsed fluoroscopy, and subtraction angiography.
+- Add interactive image-header lessons for spacing, origin, direction, orientation, and intensity scaling.
