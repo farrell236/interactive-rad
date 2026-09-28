@@ -1,0 +1,5 @@
+packages:
+  - .
+
+overrides:
+  three-gpu-pathtracer: 0.0.24
