@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
@@ -49,7 +49,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByRole('tab', { name: 'CT' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('pins cited parameter guidance and dismisses it with Escape', async () => {
+  it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -63,8 +63,15 @@ describe('Radiology Imaging Lab', () => {
     expect(helpButton).toHaveAttribute('aria-expanded', 'true')
 
     await user.keyboard('{Escape}')
+    expect(screen.getByRole('region', { name: 'Tube voltage detailed explanation' })).toBeInTheDocument()
+
+    const voltageSlider = screen.getByRole('slider', { name: /Tube voltage/ })
+    await user.click(voltageSlider)
+    fireEvent.change(voltageSlider, { target: { value: '109' } })
+    expect(within(detail).getByText('109 kVp')).toBeInTheDocument()
+
+    await user.click(within(detail).getByRole('button', { name: 'Close parameter explanation' }))
     expect(screen.queryByRole('region', { name: 'Tube voltage detailed explanation' })).not.toBeInTheDocument()
-    expect(helpButton).toHaveFocus()
   })
 
   it('updates the projection teaching panel with the selected view', async () => {

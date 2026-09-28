@@ -1,6 +1,6 @@
 import { Activity, ExternalLink, Info, X, Zap } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode, RefObject } from 'react'
+import { useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { getProjectionGeometry, rangeProgress } from '../simulation/xray'
 import type { ExposurePhase, Projection, XraySettings } from '../types'
 
@@ -206,10 +206,10 @@ function ParameterSlider({ id, label, setting, value, min, max, step, unit, pinn
   )
 }
 
-function ParameterDetail({ config, value, onClose, detailRef }: { config: ParameterConfig; value: number; onClose: () => void; detailRef: RefObject<HTMLDivElement | null> }) {
+function ParameterDetail({ config, value, onClose }: { config: ParameterConfig; value: number; onClose: () => void }) {
   const guidance = PARAMETER_GUIDANCE[config.setting]
   return (
-    <div ref={detailRef} id="parameter-detail" className="parameter-detail" role="region" aria-label={`${config.label} detailed explanation`}>
+    <div id="parameter-detail" className="parameter-detail" role="region" aria-label={`${config.label} detailed explanation`}>
       <div className="parameter-detail-header">
         <div><strong>{config.label}</strong><span>{formatValue(value, config.step, config.unit)}</span></div>
         <button type="button" aria-label="Close parameter explanation" onClick={onClose}><X aria-hidden="true" /></button>
@@ -226,34 +226,10 @@ function ParameterDetail({ config, value, onClose, detailRef }: { config: Parame
 
 export function AcquisitionControls({ settings, phase, onSettingChange, onProjectionChange, onExpose }: { settings: XraySettings; phase: ExposurePhase; onSettingChange: (setting: NumericSetting, value: number) => void; onProjectionChange: (projection: Projection) => void; onExpose: () => void }) {
   const [pinnedSetting, setPinnedSetting] = useState<NumericSetting | null>(null)
-  const detailRef = useRef<HTMLDivElement>(null)
   const busy = phase !== 'ready'
   const actionLabel = phase === 'charging' ? 'Charging…' : phase === 'emitting' ? 'Exposing…' : phase === 'captured' ? 'Captured' : 'Take X-ray'
   const projectionGeometry = getProjectionGeometry(settings.projection)
   const pinnedConfig = PARAMETER_CONFIGS.find((config) => config.setting === pinnedSetting)
-
-  useEffect(() => {
-    if (!pinnedSetting) return
-    const dismissOnPointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (!(target instanceof Node)) return
-      if (detailRef.current?.contains(target)) return
-      if (target instanceof Element && target.closest('[data-parameter-help]')) return
-      setPinnedSetting(null)
-    }
-    const dismissOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      const trigger = document.getElementById(`${pinnedSetting}-help`)
-      setPinnedSetting(null)
-      trigger?.focus()
-    }
-    document.addEventListener('pointerdown', dismissOnPointerDown)
-    document.addEventListener('keydown', dismissOnEscape)
-    return () => {
-      document.removeEventListener('pointerdown', dismissOnPointerDown)
-      document.removeEventListener('keydown', dismissOnEscape)
-    }
-  }, [pinnedSetting])
 
   return (
     <section className="control-deck glass-panel" aria-labelledby="acquisition-controls-title">
@@ -275,7 +251,7 @@ export function AcquisitionControls({ settings, phase, onSettingChange, onProjec
           ))}
         </div>
       </div>
-      {pinnedConfig && <ParameterDetail config={pinnedConfig} value={settings[pinnedConfig.setting]} onClose={() => setPinnedSetting(null)} detailRef={detailRef} />}
+      {pinnedConfig && <ParameterDetail config={pinnedConfig} value={settings[pinnedConfig.setting]} onClose={() => setPinnedSetting(null)} />}
       <div className="science-strip"><Info aria-hidden="true" /><span><strong>Qualitative projection model.</strong> Technique values are educational reference examples; clinical protocols are equipment-, patient-, and institution-specific.</span></div>
     </section>
   )
