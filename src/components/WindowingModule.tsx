@@ -57,13 +57,13 @@ const presets: WindowPreset[] = [
 ]
 
 const tissues = [
-  { label: 'Air', hu: -1000, x: 219, y: 173, lane: 0 },
-  { label: 'Aerated lung', hu: -750, x: 192, y: 144, lane: 1 },
-  { label: 'Fat', hu: -100, x: 63, y: 150, lane: 0 },
-  { label: 'Water', hu: 0, x: 126, y: 150, lane: 1 },
-  { label: 'Soft tissue', hu: 45, x: 311, y: 176, lane: 2 },
-  { label: 'Contrast blood', hu: 120, x: 283, y: 141, lane: 3 },
-  { label: 'Cortical bone', hu: 900, x: 182, y: 395, lane: 0 },
+  { label: 'Air', hu: -1000, x: 219, y: 173 },
+  { label: 'Aerated lung', hu: -750, x: 192, y: 144 },
+  { label: 'Fat', hu: -100, x: 63, y: 150 },
+  { label: 'Water', hu: 0, x: 126, y: 150 },
+  { label: 'Soft tissue', hu: 45, x: 311, y: 176 },
+  { label: 'Contrast blood', hu: 120, x: 283, y: 141 },
+  { label: 'Cortical bone', hu: 900, x: 182, y: 395 },
 ]
 
 const teachingRescale = { slope: 1, intercept: -1024 }
@@ -366,20 +366,25 @@ function HuScale({ activeHu, onSelect }: { activeHu: number; onSelect: (probe: P
     <div className="hu-scale" aria-label="Representative Hounsfield unit scale">
       <div className="hu-scale-axis">
         <div className="hu-scale-track" aria-hidden="true"><span className="hu-scale-gradient" /></div>
+        <svg className="hu-scale-connectors" viewBox="0 0 1000 72" preserveAspectRatio="none" aria-hidden="true">
+          {tissues.map((tissue, index) => {
+            const markerX = clamp((tissue.hu - huScaleDomain.min) / (huScaleDomain.max - huScaleDomain.min), 0, 1) * 1000
+            const labelX = ((index + 0.5) / tissues.length) * 1000
+            const elbowY = 60 - (index * 7)
+            return <polyline key={tissue.label} className={tissue.hu === activeHu ? 'is-selected' : ''} points={`${markerX},0 ${markerX},${elbowY} ${labelX},${elbowY} ${labelX},72`} />
+          })}
+        </svg>
         <div className="hu-scale-markers">
           {tissues.map((tissue) => {
             const selected = tissue.hu === activeHu
-            const position = ((tissue.hu - huScaleDomain.min) / (huScaleDomain.max - huScaleDomain.min)) * 100
             return (
               <button
                 key={tissue.label}
                 type="button"
                 aria-pressed={selected}
                 className={selected ? 'is-selected' : ''}
-                style={{ '--hu-position': `${position}%`, '--hu-lane': tissue.lane } as CSSProperties}
                 onClick={() => onSelect({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}
               >
-                <i aria-hidden="true" />
                 <strong>{tissue.label}</strong>
                 <span>{tissue.hu > 0 ? '+' : ''}{tissue.hu} HU</span>
               </button>

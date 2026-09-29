@@ -327,14 +327,15 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .hu-scale-axis { min-width: 620px; padding: 0 48px; }
 .hu-scale-track { height: 24px; }
 .hu-scale-gradient { display: block; width: 100%; height: 100%; border: 1px solid var(--separator); border-radius: 3px; background: linear-gradient(to right, #050505, #292929 18%, #686868 43%, #b7b7b7 68%, #fff); box-shadow: inset 0 1px rgba(255,255,255,0.18); }
-.hu-scale-markers { position: relative; height: 128px; }
-.hu-scale-markers button { position: absolute; top: calc(9px + (var(--hu-lane) * 27px)); left: var(--hu-position); display: flex; align-items: center; flex-direction: column; gap: 2px; width: 88px; padding: 6px 3px 5px; border: 0; border-radius: 7px; color: var(--text-soft); background: transparent; text-align: center; transform: translateX(-50%); }
-.hu-scale-markers button i { position: absolute; top: calc(-9px - (var(--hu-lane) * 27px)); left: 50%; width: 1px; height: calc(13px + (var(--hu-lane) * 27px)); background: var(--text-faint); transform: translateX(-50%); }
+.hu-scale-connectors { display: block; width: 100%; height: 64px; overflow: visible; }
+.hu-scale-connectors polyline { fill: none; stroke: var(--text-faint); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.hu-scale-connectors polyline.is-selected { stroke: var(--window-accent); stroke-width: 2; }
+.hu-scale-markers { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: start; }
+.hu-scale-markers button { display: flex; align-items: center; flex-direction: column; gap: 2px; min-width: 0; min-height: 57px; padding: 6px 3px 5px; border: 0; border-radius: 7px; color: var(--text-soft); background: transparent; text-align: center; }
 .hu-scale-markers button:hover, .hu-scale-markers button.is-selected { color: var(--text); background: var(--surface-secondary); }
 .hu-scale-markers button.is-selected { box-shadow: inset 0 -3px var(--window-accent); }
-.hu-scale-markers button.is-selected i { width: 2px; background: var(--window-accent); }
 .hu-scale-markers span { color: var(--text-faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.62rem; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.hu-scale-markers strong { display: flex; align-items: flex-start; justify-content: center; min-height: 1.2em; font-size: 0.64rem; font-weight: 620; line-height: 1.2; text-wrap: balance; }
+.hu-scale-markers strong { display: flex; align-items: flex-start; justify-content: center; min-height: 2.4em; font-size: 0.64rem; font-weight: 620; line-height: 1.2; text-wrap: balance; }
 .curve-editor { margin: 4px 0 13px; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); }
 .mapping-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 9px 9px 0; padding: 3px; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); }
 .mapping-modes button { min-height: 31px; padding: 5px 8px; border: 0; border-radius: 5px; color: var(--text-faint); background: transparent; font-size: 0.65rem; font-weight: 620; }
