@@ -2,8 +2,14 @@ import { Activity, Contrast, Crosshair, Info, ScanLine, SlidersHorizontal } from
 import { useMemo, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
-type ChapterId = 'hu' | 'mapping' | 'presets' | 'demo'
+type ChapterId = 'hu' | 'mapping' | 'presets'
 type PresetId = 'lung' | 'soft' | 'brain' | 'bone'
+type MappingMode = 'linear' | 'sigmoid' | 'custom'
+
+type CurvePoint = {
+  x: number
+  y: number
+}
 
 type Probe = {
   x: number
@@ -24,7 +30,14 @@ const chapters: Array<{ id: ChapterId; label: string; short: string }> = [
   { id: 'hu', label: 'CT and Hounsfield units', short: 'HU scale' },
   { id: 'mapping', label: 'How windowing works', short: 'Windowing' },
   { id: 'presets', label: 'Common windows', short: 'Presets' },
-  { id: 'demo', label: 'Interactive workstation', short: 'Free play' },
+]
+
+const defaultCurvePoints: CurvePoint[] = [
+  { x: 0, y: 0 },
+  { x: 0.24, y: 0.1 },
+  { x: 0.5, y: 0.5 },
+  { x: 0.76, y: 0.9 },
+  { x: 1, y: 1 },
 ]
 
 const presets: WindowPreset[] = [
@@ -44,9 +57,6 @@ const tissues = [
   { label: 'Cortical bone', hu: 900, x: 260, y: 350 },
 ]
 
-const huMin = -1200
-const huMax = 2200
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
@@ -55,15 +65,28 @@ function windowBounds(center: number, width: number) {
   return { low: center - width / 2, high: center + width / 2 }
 }
 
-function huToGray(hu: number, center: number, width: number) {
-  const { low, high } = windowBounds(center, width)
-  if (hu <= low) return 0
-  if (hu >= high) return 255
-  return Math.round(((hu - low) / (high - low)) * 255)
+function customCurveValue(input: number, points: CurvePoint[]) {
+  const value = clamp(input, 0, 1)
+  const index = points.findIndex((point) => point.x >= value)
+  if (index <= 0) return points[0]?.y ?? value
+  const right = points[index]
+  const left = points[index - 1]
+  if (!left || !right) return points.at(-1)?.y ?? value
+  const segment = (value - left.x) / Math.max(0.0001, right.x - left.x)
+  const eased = segment * segment * (3 - (2 * segment))
+  return left.y + ((right.y - left.y) * eased)
 }
 
-function grayColor(hu: number, center: number, width: number) {
-  const value = huToGray(hu, center, width)
+function huToGray(hu: number, center: number, width: number, mode: MappingMode = 'linear', points: CurvePoint[] = defaultCurvePoints) {
+  const { low, high } = windowBounds(center, width)
+  if (mode === 'sigmoid') return Math.round((1 / (1 + Math.exp((-4 * (hu - center)) / width))) * 255)
+  const normalized = clamp((hu - low) / (high - low), 0, 1)
+  const output = mode === 'custom' ? customCurveValue(normalized, points) : normalized
+  return Math.round(output * 255)
+}
+
+function grayColor(hu: number, center: number, width: number, mode: MappingMode = 'linear', points: CurvePoint[] = defaultCurvePoints) {
+  const value = huToGray(hu, center, width, mode, points)
   return `rgb(${value} ${value} ${value})`
 }
 
@@ -85,20 +108,22 @@ function sampleSlice(x: number, y: number): Probe {
   return { x, y, hu: bodyEdge ? -100 : 45, label: bodyEdge ? 'Subcutaneous fat' : 'Soft tissue' }
 }
 
-function CtSlice({ center, width, probe, onProbe, compact = false }: {
+function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoints, probe, onProbe, compact = false }: {
   center: number
   width: number
+  mode?: MappingMode
+  curvePoints?: CurvePoint[]
   probe?: Probe
   onProbe?: (probe: Probe) => void
   compact?: boolean
 }) {
   const style = {
-    '--air': grayColor(-1000, center, width),
-    '--lung': grayColor(-750, center, width),
-    '--fat': grayColor(-100, center, width),
-    '--soft': grayColor(45, center, width),
-    '--blood': grayColor(120, center, width),
-    '--bone': grayColor(900, center, width),
+    '--air': grayColor(-1000, center, width, mode, curvePoints),
+    '--lung': grayColor(-750, center, width, mode, curvePoints),
+    '--fat': grayColor(-100, center, width, mode, curvePoints),
+    '--soft': grayColor(45, center, width, mode, curvePoints),
+    '--blood': grayColor(120, center, width, mode, curvePoints),
+    '--bone': grayColor(900, center, width, mode, curvePoints),
   } as CSSProperties
 
   const handlePointer = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -161,26 +186,126 @@ function CtSlice({ center, width, probe, onProbe, compact = false }: {
   )
 }
 
-function WindowCurve({ center, width, probeHu }: { center: number; width: number; probeHu: number }) {
-  const xFor = (hu: number) => 42 + ((clamp(hu, huMin, huMax) - huMin) / (huMax - huMin)) * 436
-  const { low, high } = windowBounds(center, width)
-  const probeGray = huToGray(probeHu, center, width)
-  const probeY = 170 - (probeGray / 255) * 126
+function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPointsChange }: {
+  center: number
+  width: number
+  probeHu: number
+  mode: MappingMode
+  onModeChange: (mode: MappingMode) => void
+  points: CurvePoint[]
+  onPointsChange: (points: CurvePoint[]) => void
+}) {
+  const [dragging, setDragging] = useState<number | null>(null)
+  const [selectedPoint, setSelectedPoint] = useState(2)
+  const bounds = windowBounds(center, width)
+  const plot = { left: 52, top: 34, width: 420, height: 176 }
+  const xFor = (normalized: number) => plot.left + (normalized * plot.width)
+  const yFor = (normalized: number) => plot.top + ((1 - normalized) * plot.height)
+  const outputAt = (normalized: number) => huToGray(bounds.low + (normalized * width), center, width, mode, points) / 255
+  const path = Array.from({ length: 81 }, (_, index) => {
+    const input = index / 80
+    return `${index === 0 ? 'M' : 'L'}${xFor(input).toFixed(2)} ${yFor(outputAt(input)).toFixed(2)}`
+  }).join(' ')
+  const probeInput = clamp((probeHu - bounds.low) / width, 0, 1)
+  const probeOutput = huToGray(probeHu, center, width, mode, points) / 255
+  const selected = points[selectedPoint] ?? points[1]
+
+  const updatePoint = (index: number, x: number, y: number) => {
+    if (index <= 0 || index >= points.length - 1) return
+    const previous = points[index - 1]
+    const next = points[index + 1]
+    if (!previous || !next) return
+    const updated = points.map((point, pointIndex) => pointIndex === index ? {
+      x: clamp(x, previous.x + 0.025, next.x - 0.025),
+      y: clamp(y, previous.y, next.y),
+    } : point)
+    onPointsChange(updated)
+  }
+
+  const updateFromPointer = (event: ReactPointerEvent<SVGSVGElement>, index: number) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const svgX = ((event.clientX - rect.left) / rect.width) * 520
+    const svgY = ((event.clientY - rect.top) / rect.height) * 260
+    updatePoint(index, (svgX - plot.left) / plot.width, 1 - ((svgY - plot.top) / plot.height))
+  }
+
+  const addPoint = () => {
+    if (points.length >= 8) return
+    let insertion = 1
+    let largestGap = 0
+    for (let index = 1; index < points.length; index += 1) {
+      const left = points[index - 1]
+      const right = points[index]
+      if (left && right && right.x - left.x > largestGap) {
+        largestGap = right.x - left.x
+        insertion = index
+      }
+    }
+    const left = points[insertion - 1]
+    const right = points[insertion]
+    if (!left || !right) return
+    const x = (left.x + right.x) / 2
+    const y = customCurveValue(x, points)
+    onPointsChange([...points.slice(0, insertion), { x, y }, ...points.slice(insertion)])
+    setSelectedPoint(insertion)
+  }
+
+  const removePoint = () => {
+    if (points.length <= 3 || selectedPoint <= 0 || selectedPoint >= points.length - 1) return
+    onPointsChange(points.filter((_, index) => index !== selectedPoint))
+    setSelectedPoint(Math.max(1, selectedPoint - 1))
+  }
+
+  const resetPoints = () => {
+    onPointsChange(defaultCurvePoints.map((point) => ({ ...point })))
+    setSelectedPoint(2)
+  }
 
   return (
-    <svg className="window-curve" viewBox="0 0 520 205" role="img" aria-label="Transfer curve mapping Hounsfield units to 8-bit display values">
-      <defs><linearGradient id="window-ramp" x1="0" x2="1"><stop offset="0" stopColor="#11151a" /><stop offset="1" stopColor="#fff" /></linearGradient></defs>
-      <rect x="42" y="44" width="436" height="126" className="curve-plot" />
-      <rect x={xFor(low)} y="44" width={Math.max(0, xFor(high) - xFor(low))} height="126" fill="url(#window-ramp)" opacity="0.19" />
-      <path d={`M42 170 H${xFor(low)} L${xFor(high)} 44 H478`} className="curve-line" />
-      <line x1={xFor(center)} x2={xFor(center)} y1="38" y2="176" className="curve-center" />
-      <circle cx={xFor(probeHu)} cy={probeY} r="6" className="curve-probe" />
-      <text x="8" y="49">255</text><text x="22" y="174">0</text>
-      <text x={xFor(low)} y="195" textAnchor="middle">{Math.round(low)}</text>
-      <text x={xFor(center)} y="30" textAnchor="middle">C {center}</text>
-      <text x={xFor(high)} y="195" textAnchor="middle">{Math.round(high)}</text>
-      <text x="478" y="195" textAnchor="end">HU</text>
-    </svg>
+    <div className="curve-editor">
+      <div className="mapping-modes" role="group" aria-label="Display mapping function">
+        {(['linear', 'sigmoid', 'custom'] as MappingMode[]).map((mappingMode) => <button key={mappingMode} type="button" aria-pressed={mode === mappingMode} onClick={() => onModeChange(mappingMode)}>{mappingMode === 'custom' ? 'Custom curve' : mappingMode[0]?.toUpperCase() + mappingMode.slice(1)}</button>)}
+      </div>
+      <svg
+        className="window-curve"
+        viewBox="0 0 520 260"
+        role="img"
+        aria-label={`${mode} transfer curve mapping the selected Hounsfield unit interval to 8-bit display values`}
+        onPointerMove={(event) => { if (dragging !== null) updateFromPointer(event, dragging) }}
+        onPointerUp={() => setDragging(null)}
+        onPointerLeave={() => setDragging(null)}
+      >
+        <rect x={plot.left} y={plot.top} width={plot.width} height={plot.height} className="curve-plot" />
+        <path className="curve-histogram" d="M52 210 L52 190 L72 186 L92 196 L112 170 L132 181 L152 126 L172 154 L192 186 L212 178 L232 108 L252 82 L272 102 L292 164 L312 183 L332 176 L352 142 L372 159 L392 191 L412 181 L432 196 L452 188 L472 194 L472 210Z" />
+        <line x1={plot.left} x2={plot.left + plot.width} y1={yFor(0.5)} y2={yFor(0.5)} className="curve-gridline" />
+        <line x1={xFor(0.5)} x2={xFor(0.5)} y1={plot.top} y2={plot.top + plot.height} className="curve-center" />
+        <path d={path} className="curve-line" />
+        {mode === 'custom' && points.map((point, index) => <circle
+          key={index}
+          cx={xFor(point.x)}
+          cy={yFor(point.y)}
+          r={selectedPoint === index ? 7 : 5.5}
+          className={`curve-control-point${selectedPoint === index ? ' is-selected' : ''}${index === 0 || index === points.length - 1 ? ' is-fixed' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`Curve point ${index + 1}, input ${Math.round(point.x * 100)} percent, output ${Math.round(point.y * 255)}`}
+          onPointerDown={(event) => { event.preventDefault(); setSelectedPoint(index); setDragging(index) }}
+          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedPoint(index) }}
+        />)}
+        <circle cx={xFor(probeInput)} cy={yFor(probeOutput)} r="6" className="curve-probe" />
+        <text x="15" y={plot.top + 4}>255</text><text x="25" y={plot.top + plot.height + 4}>0</text>
+        <text x={plot.left} y="234" textAnchor="middle">{Math.round(bounds.low)}</text>
+        <text x={xFor(0.5)} y="25" textAnchor="middle">C {center}</text>
+        <text x={plot.left + plot.width} y="234" textAnchor="middle">{Math.round(bounds.high)}</text>
+        <text x={plot.left + plot.width} y="253" textAnchor="end">Input HU</text>
+      </svg>
+      {mode === 'custom' && selected && <div className="curve-point-controls">
+        <div className="curve-point-heading"><span>Point {selectedPoint + 1}</span><small>Input {Math.round(selected.x * 100)}% · Output {Math.round(selected.y * 255)}</small></div>
+        <label><span>Input position</span><input type="range" aria-label="Selected curve point input" min={0} max={100} step={1} value={Math.round(selected.x * 100)} disabled={selectedPoint === 0 || selectedPoint === points.length - 1} onChange={(event) => updatePoint(selectedPoint, Number(event.target.value) / 100, selected.y)} /></label>
+        <label><span>Output brightness</span><input type="range" aria-label="Selected curve point output" min={0} max={255} step={1} value={Math.round(selected.y * 255)} disabled={selectedPoint === 0 || selectedPoint === points.length - 1} onChange={(event) => updatePoint(selectedPoint, selected.x, Number(event.target.value) / 255)} /></label>
+        <div className="curve-actions"><button type="button" onClick={addPoint} disabled={points.length >= 8}>Add point</button><button type="button" onClick={removePoint} disabled={points.length <= 3 || selectedPoint === 0 || selectedPoint === points.length - 1}>Remove</button><button type="button" onClick={resetPoints}>Reset curve</button></div>
+      </div>}
+    </div>
   )
 }
 
@@ -228,17 +353,25 @@ export default function WindowingModule() {
   const [chapter, setChapter] = useState<ChapterId>('hu')
   const [center, setCenter] = useState(40)
   const [width, setWidth] = useState(400)
+  const [mappingMode, setMappingMode] = useState<MappingMode>('linear')
+  const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(() => defaultCurvePoints.map((point) => ({ ...point })))
   const [probe, setProbe] = useState<Probe>({ x: 285, y: 255, hu: 45, label: 'Heart / soft tissue' })
 
   const activeChapter = chapters.findIndex((item) => item.id === chapter)
-  const activePreset = presets.find((preset) => preset.center === center && preset.width === width)
+  const activePreset = mappingMode === 'linear' ? presets.find((preset) => preset.center === center && preset.width === width) : undefined
   const bounds = windowBounds(center, width)
-  const probeGray = huToGray(probe.hu, center, width)
-  const tissueRows = useMemo(() => tissues.map((tissue) => ({ ...tissue, gray: huToGray(tissue.hu, center, width) })), [center, width])
+  const probeGray = huToGray(probe.hu, center, width, mappingMode, curvePoints)
+  const tissueRows = useMemo(() => tissues.map((tissue) => ({ ...tissue, gray: huToGray(tissue.hu, center, width, mappingMode, curvePoints) })), [center, width, mappingMode, curvePoints])
+  const mappingGradient = useMemo(() => `linear-gradient(90deg, ${Array.from({ length: 9 }, (_, index) => {
+    const position = index / 8
+    const gray = huToGray(bounds.low + (position * width), center, width, mappingMode, curvePoints)
+    return `rgb(${gray} ${gray} ${gray}) ${position * 100}%`
+  }).join(', ')})`, [bounds.low, center, curvePoints, mappingMode, width])
 
   const applyPreset = (preset: WindowPreset) => {
     setCenter(preset.center)
     setWidth(preset.width)
+    setMappingMode('linear')
   }
 
   return (
@@ -247,27 +380,27 @@ export default function WindowingModule() {
         <div>
           <p className="section-kicker"><Contrast aria-hidden="true" /> Intensity and display</p>
           <h2>From Hounsfield units to visible contrast.</h2>
-          <p>Use one CT slice to see how thousands of attenuation values become a focused 8-bit display—without changing the underlying scan.</p>
+          <p>Use one CT slice to see how thousands of attenuation values become a focused 8-bit display.</p>
         </div>
         <div className="windowing-progress" aria-label={`Section ${activeChapter + 1} of ${chapters.length}`}><strong>{activeChapter + 1} / {chapters.length}</strong><span>Explore at your own pace</span></div>
       </header>
 
       <nav className="windowing-chapters" aria-label="Windowing learning sections">
-        {chapters.map((item, index) => <button key={item.id} type="button" className={chapter === item.id ? 'is-active' : ''} onClick={() => setChapter(item.id)}><span>{index + 1}</span><strong>{item.short}</strong><small>{item.label}</small></button>)}
+        {chapters.map((item, index) => <button key={item.id} type="button" className={chapter === item.id ? 'is-active' : ''} onClick={() => { setChapter(item.id); if (item.id === 'presets') setMappingMode('linear') }}><span>{index + 1}</span><strong>{item.short}</strong><small>{item.label}</small></button>)}
       </nav>
 
       <div className="windowing-workbench">
         <section className="ct-viewer-card" aria-label="Interactive CT window viewer">
-          <div className="viewer-toolbar"><span><ScanLine aria-hidden="true" /> AXIAL · CHEST</span><span>W {width} · C {center}</span></div>
+          <div className="viewer-toolbar"><span><ScanLine aria-hidden="true" /> AXIAL · CHEST</span><span>{mappingMode.toUpperCase()} · W {width} · C {center}</span></div>
           <div className="ct-viewer-stage">
-            <CtSlice center={center} width={width} probe={probe} onProbe={setProbe} />
+            <CtSlice center={center} width={width} mode={mappingMode} curvePoints={curvePoints} probe={probe} onProbe={setProbe} />
             <div className="viewer-help"><Crosshair aria-hidden="true" /> Move over the image to inspect tissue</div>
           </div>
           <div className="probe-readout" role="status" aria-live="polite">
             <span><small>Sample</small><strong>{probe.label}</strong></span>
             <span><small>Input</small><strong>{probe.hu > 0 ? '+' : ''}{probe.hu} HU</strong></span>
             <span><small>Display</small><strong>{probeGray} / 255</strong></span>
-            <span className="probe-swatch" style={{ background: grayColor(probe.hu, center, width) }} aria-label={`Displayed gray value ${probeGray}`} />
+            <span className="probe-swatch" style={{ background: grayColor(probe.hu, center, width, mappingMode, curvePoints) }} aria-label={`Displayed gray value ${probeGray}`} />
           </div>
         </section>
 
@@ -284,9 +417,10 @@ export default function WindowingModule() {
           {chapter === 'mapping' && <>
             <p className="lesson-number">02 · WINDOW TRANSFER FUNCTION</p>
             <h3 id="windowing-mapping-title">Choose a useful interval, then map it to the display.</h3>
-            <p>Values below the window become black, values above it become white, and values inside are linearly mapped across 0–255.</p>
-            <WindowCurve center={center} width={width} probeHu={probe.hu} />
-            <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → 0</strong></span><span><small>Center</small><strong>{center} HU → ~128</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → 255</strong></span></div>
+            <p>Center and width select the HU interval. The transfer function decides how values in that interval become display brightness from 0–255.</p>
+            <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
+            <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
+            <p className="mapping-mode-note"><strong>{mappingMode === 'linear' ? 'Linear window' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear' ? 'Below the interval is black, above it is white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
             <div className="window-control-stack">
               <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
               <p><strong>Width controls contrast.</strong> A narrow width spreads a small HU range across every gray; a wide width includes more tissue types with less separation.</p>
@@ -306,18 +440,7 @@ export default function WindowingModule() {
                 <p>{preset.description}</p>
               </button>)}
             </div>
-            <p className="lesson-note"><Info aria-hidden="true" /> These are representative teaching values. Names and exact settings vary by body region, scanner, protocol, institution, and diagnostic task.</p>
-          </>}
-
-          {chapter === 'demo' && <>
-            <p className="lesson-number">04 · INTERACTIVE WORKSTATION</p>
-            <h3 id="windowing-demo-title">See which values survive the display mapping.</h3>
-            <p>Use the presets or sliders, then inspect the table. Very different HU values can collapse to the same black or white output when they fall outside the window.</p>
-            <div className="quick-presets" role="group" aria-label="Window presets">{presets.map((preset) => <button key={preset.id} type="button" className={activePreset?.id === preset.id ? 'is-selected' : ''} onClick={() => applyPreset(preset)}>{preset.label}</button>)}</div>
-            <div className="window-control-stack is-compact">
-              <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
-              <SliderControl label="Window center" value={center} min={-1000} max={1000} step={10} unit="HU" onChange={setCenter} />
-            </div>
+            <div className="mapping-table-intro"><strong>Current tissue mapping</strong><span>Select a row to place the image probe.</span></div>
             <div className="mapping-table" role="table" aria-label="Current HU to display mapping">
               <div role="row" className="mapping-table-head"><span role="columnheader">Tissue</span><span role="columnheader">HU</span><span role="columnheader">8-bit</span><span role="columnheader">Output</span></div>
               {tissueRows.map((tissue) => <button type="button" role="row" key={tissue.label} onClick={() => setProbe({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}><span role="cell">{tissue.label}</span><span role="cell">{tissue.hu}</span><span role="cell">{tissue.gray}</span><span role="cell" className="table-swatch"><i style={{ background: `rgb(${tissue.gray} ${tissue.gray} ${tissue.gray})` }} /></span></button>)}
@@ -328,7 +451,7 @@ export default function WindowingModule() {
 
       <section className="windowing-summary" aria-label="Current window mapping">
         <div><SlidersHorizontal aria-hidden="true" /><span><small>Current interval</small><strong>{Math.round(bounds.low)} to {Math.round(bounds.high)} HU</strong></span></div>
-        <div className="windowing-ramp" aria-hidden="true"><span style={{ left: `${clamp(((probe.hu - bounds.low) / width) * 100, 0, 100)}%` }} /></div>
+        <div className="windowing-ramp" style={{ background: mappingGradient }} aria-hidden="true"><span style={{ left: `${clamp(((probe.hu - bounds.low) / width) * 100, 0, 100)}%` }} /></div>
         <div><Activity aria-hidden="true" /><span><small>Selected voxel</small><strong>{probe.hu} HU → {probeGray}</strong></span></div>
       </section>
 

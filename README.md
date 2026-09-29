@@ -31,7 +31,7 @@ pnpm build
 - Source-to-image distance, patient rotation, and collimation geometry
 - Stylized live detector image responding to projection, kVp, mAs, SID, patient thickness, rotation, and collimation
 - Animated exposure sequence and capture state
-- Four-part CT windowing lesson with a responsive slice viewer, HU scale, transfer curve, representative presets, live tissue probe, and HU-to-8-bit mapping table
+- Three-part CT windowing lesson with a responsive slice viewer, HU scale, linear/sigmoid/custom transfer curves, representative presets, live tissue probe, and HU-to-8-bit mapping table
 - Polished CT, MRI, and medical image data roadmaps
 - Unit tests for qualitative simulation behavior
 

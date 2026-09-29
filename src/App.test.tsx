@@ -63,6 +63,9 @@ describe('Radiology Imaging Lab', () => {
     await user.click(screen.getByRole('tab', { name: /Windowing/ }))
     expect(await screen.findByRole('heading', { name: 'From Hounsfield units to visible contrast.' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'CT stores attenuation as Hounsfield units.' })).toBeInTheDocument()
+    expect(screen.queryByText(/without changing the underlying scan/)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Windowing learning sections' })).getAllByRole('button')).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: /Free play/ })).not.toBeInTheDocument()
   })
 
   it('updates the CT display mapping from width, center, and window presets', async () => {
@@ -77,12 +80,20 @@ describe('Radiology Imaging Lab', () => {
     const center = screen.getByRole('slider', { name: 'Window center' })
     fireEvent.change(width, { target: { value: '1500' } })
     fireEvent.change(center, { target: { value: '-600' } })
-    expect(screen.getByText('W 1500 · C -600')).toBeInTheDocument()
+    expect(screen.getByText(/LINEAR · W 1500 · C -600/)).toBeInTheDocument()
     expect(screen.getByText('-1350 HU → 0')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Custom curve' }))
+    expect(screen.getByRole('slider', { name: 'Selected curve point output' })).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('slider', { name: 'Selected curve point output' }), { target: { value: '200' } })
+    expect(screen.getByText('-600 HU → 200')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Common windows/ }))
     await user.click(screen.getByRole('button', { name: 'Bone window, width 2000, center 400' }))
-    expect(screen.getAllByText('W 2000 · C 400')).toHaveLength(2)
+    expect(screen.getByText(/LINEAR · W 2000 · C 400/)).toBeInTheDocument()
+    expect(screen.getByText('W 2000 · C 400')).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Current HU to display mapping' })).toBeInTheDocument()
+    expect(screen.queryByText(/representative teaching values/)).not.toBeInTheDocument()
   })
 
   it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {
