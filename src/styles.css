@@ -334,10 +334,15 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .hu-scale-markers strong { display: flex; align-items: flex-start; justify-content: center; min-height: 2.4em; font-size: 0.64rem; font-weight: 620; line-height: 1.2; text-wrap: balance; }
 .windowing-lesson-card > p.hu-scale-caption { margin: -1px 0 5px; color: var(--text-faint); font-size: 0.69rem; line-height: 1.48; }
 .curve-editor { margin: 4px 0 13px; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); }
-.mapping-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 9px 9px 0; padding: 3px; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); }
+.curve-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; margin: 9px 9px 0; }
+.mapping-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); }
 .mapping-modes button { min-height: 31px; padding: 5px 8px; border: 0; border-radius: 5px; color: var(--text-faint); background: transparent; font-size: 0.65rem; font-weight: 620; }
 .mapping-modes button:hover { color: var(--text); }
 .mapping-modes button[aria-pressed="true"] { color: var(--text); background: var(--surface-raised); box-shadow: 0 1px 5px var(--shadow); }
+.histogram-actions { display: flex; gap: 3px; padding: 3px; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); }
+.histogram-actions button { min-height: 31px; padding: 5px 9px; border: 0; border-radius: 5px; color: var(--text-soft); background: transparent; font-size: 0.65rem; font-weight: 650; }
+.histogram-actions button:hover:not(:disabled) { color: var(--text); background: var(--surface-raised); }
+.histogram-actions button:disabled { color: var(--text-faint); opacity: 0.45; }
 .window-curve { display: block; width: 100%; height: auto; overflow: visible; color: var(--text-faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; touch-action: none; }
 .curve-plot { fill: var(--surface-secondary); stroke: var(--separator-soft); }
 .curve-histogram { fill: color-mix(in srgb, var(--text-faint) 17%, transparent); stroke: color-mix(in srgb, var(--text-faint) 28%, transparent); stroke-width: 1; }
@@ -536,6 +541,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .probe-readout { gap: 8px; padding: 10px; }
   .probe-readout-values { grid-template-columns: 1fr 0.8fr 0.8fr 26px; gap: 8px; }
   .windowing-lesson-card { padding: 24px 20px; }
+  .curve-toolbar { grid-template-columns: 1fr; }
+  .histogram-actions { justify-content: flex-end; }
   .window-control-grid { grid-template-columns: 1fr; gap: 18px; }
   .window-preset-grid { grid-template-columns: 1fr; }
   .windowing-summary { grid-template-columns: 1fr; gap: 10px; padding: 14px; }

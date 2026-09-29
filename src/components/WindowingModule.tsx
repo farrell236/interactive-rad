@@ -74,6 +74,7 @@ const tissues: HuLandmark[] = [
 ]
 
 const teachingRescale = { slope: 1, intercept: -1024 }
+const defaultWindow = { center: 40, width: 400 }
 const ctSliceSize = 512
 const huScaleDomain = { min: -1100, max: 1300 }
 const curveDomain = { min: -1200, max: 2000 }
@@ -127,6 +128,35 @@ function ctHistogram(pixels: Int16Array | null) {
   }
   const peak = Math.max(...bins, 1)
   return bins.map((count) => count / peak)
+}
+
+function autoWindowFromPixels(pixels: Int16Array | null) {
+  if (!pixels) return null
+  const domainMinimum = curveDomain.min
+  const counts = new Uint32Array(curveDomain.max - domainMinimum + 1)
+  let total = 0
+  for (const hu of pixels) {
+    if (hu < domainMinimum || hu > curveDomain.max) continue
+    counts[hu - domainMinimum] += 1
+    total += 1
+  }
+  if (total === 0) return null
+
+  const quantile = (fraction: number) => {
+    const target = Math.floor((total - 1) * fraction)
+    let cumulative = 0
+    for (let index = 0; index < counts.length; index += 1) {
+      cumulative += counts[index] ?? 0
+      if (cumulative > target) return domainMinimum + index
+    }
+    return curveDomain.max
+  }
+
+  const low = quantile(0.01)
+  const high = quantile(0.99)
+  const center = Math.round((low + high) / 2)
+  const width = Math.max(1, Math.min(3000, 2 * Math.ceil(Math.max(center - low, high - center))))
+  return { center, width }
 }
 
 function customCurveValue(input: number, points: CurvePoint[]) {
@@ -237,13 +267,16 @@ function CtSlice({ center, width, mode = 'linear-exact', curvePoints = defaultCu
   )
 }
 
-function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, points, onPointsChange }: {
+function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, onAuto, onReset, autoAvailable, points, onPointsChange }: {
   center: number
   width: number
   probeHu: number
   mode: MappingMode
   histogram: number[]
   onModeChange: (mode: MappingMode) => void
+  onAuto: () => void
+  onReset: () => void
+  autoAvailable: boolean
   points: CurvePoint[]
   onPointsChange: (points: CurvePoint[]) => void
 }) {
@@ -327,8 +360,14 @@ function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, po
 
   return (
     <div className="curve-editor">
-      <div className="mapping-modes" role="group" aria-label="Display mapping function">
-        {(['linear-exact', 'sigmoid', 'custom'] as MappingMode[]).map((mappingMode) => <button key={mappingMode} type="button" aria-pressed={mode === mappingMode} onClick={() => onModeChange(mappingMode)}>{mappingMode === 'linear-exact' ? 'LINEAR_EXACT' : mappingMode === 'custom' ? 'Custom curve' : 'Sigmoid'}</button>)}
+      <div className="curve-toolbar">
+        <div className="mapping-modes" role="group" aria-label="Display mapping function">
+          {(['linear-exact', 'sigmoid', 'custom'] as MappingMode[]).map((mappingMode) => <button key={mappingMode} type="button" aria-pressed={mode === mappingMode} onClick={() => onModeChange(mappingMode)}>{mappingMode === 'linear-exact' ? 'LINEAR_EXACT' : mappingMode === 'custom' ? 'Custom curve' : 'Sigmoid'}</button>)}
+        </div>
+        <div className="histogram-actions" role="group" aria-label="Automatic window controls">
+          <button type="button" onClick={onAuto} disabled={!autoAvailable} aria-label="Auto window from histogram" title="Set the window from the image's 1st–99th intensity percentiles">Auto</button>
+          <button type="button" onClick={onReset} aria-label="Reset window" title="Restore the default soft-tissue window">Reset</button>
+        </div>
       </div>
       <svg
         className="window-curve"
@@ -445,8 +484,8 @@ function MiniWindowPreview({ preset }: { preset: WindowPreset }) {
 
 export default function WindowingModule() {
   const [chapter, setChapter] = useState<ChapterId>('hu')
-  const [center, setCenter] = useState(40)
-  const [width, setWidth] = useState(400)
+  const [center, setCenter] = useState(defaultWindow.center)
+  const [width, setWidth] = useState(defaultWindow.width)
   const [mappingMode, setMappingMode] = useState<MappingMode>('linear-exact')
   const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(() => defaultCurvePoints.map((point) => ({ ...point })))
   const [probe, setProbe] = useState<Probe>({ x: 280, y: 200, hu: 187, label: 'High soft-tissue / contrast range' })
@@ -469,6 +508,7 @@ export default function WindowingModule() {
   const storedValue = Math.round((probe.hu - teachingRescale.intercept) / teachingRescale.slope)
   const huPerDisplayStep = width / 255
   const histogram = useMemo(() => ctHistogram(ctPixels), [ctPixels])
+  const automaticWindow = useMemo(() => autoWindowFromPixels(ctPixels), [ctPixels])
   const tissueRows = useMemo(() => tissues.map((tissue) => ({ ...tissue, gray: huToGray(tissue.hu, center, width, mappingMode, curvePoints) })), [center, width, mappingMode, curvePoints])
   const mappingGradient = useMemo(() => `linear-gradient(90deg, ${Array.from({ length: 9 }, (_, index) => {
     const position = index / 8
@@ -480,6 +520,20 @@ export default function WindowingModule() {
     setCenter(preset.center)
     setWidth(preset.width)
     setMappingMode('linear-exact')
+  }
+
+  const applyAutomaticWindow = () => {
+    if (!automaticWindow) return
+    setCenter(automaticWindow.center)
+    setWidth(automaticWindow.width)
+    setMappingMode('linear-exact')
+  }
+
+  const resetWindow = () => {
+    setCenter(defaultWindow.center)
+    setWidth(defaultWindow.width)
+    setMappingMode('linear-exact')
+    setCurvePoints(defaultCurvePoints.map((point) => ({ ...point })))
   }
 
   const selectProbe = (nextProbe: Probe) => {
@@ -555,7 +609,7 @@ export default function WindowingModule() {
             <p className="lesson-number">02 · WINDOW TRANSFER FUNCTION</p>
             <h3 id="windowing-mapping-title">Map a useful range to the display.</h3>
             <p>Center and width position and scale the mapping. The transfer function decides how HU values become display brightness from 0–255.</p>
-            <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} histogram={histogram} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
+            <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} histogram={histogram} onModeChange={setMappingMode} onAuto={applyAutomaticWindow} onReset={resetWindow} autoAvailable={Boolean(automaticWindow)} points={curvePoints} onPointsChange={setCurvePoints} />
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
             <p className="mapping-mode-note"><strong>{mappingMode === 'linear-exact' ? 'DICOM LINEAR_EXACT' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear-exact' ? 'The exact bounds are C − W/2 and C + W/2: values at or below the low bound are black, values above the high bound are white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
             <p className="quantization-note">{mappingMode === 'linear-exact' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. ${huPerDisplayStep > 1 ? 'Multiple HU values can therefore share one displayed gray.' : 'For this integer-valued image, some display levels may be skipped between adjacent HU values.'}` : 'With a nonlinear curve, HU-per-gray-step varies across the mapping. The output is still a reduced display representation.'}</p>
