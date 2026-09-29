@@ -2,9 +2,10 @@ import { Activity, Contrast, Crosshair, Info, Pin, PinOff, ScanLine, SlidersHori
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
-type ChapterId = 'hu' | 'mapping' | 'presets'
+type ChapterId = 'hu' | 'mapping' | 'presets' | 'ml'
 type PresetId = 'lung' | 'soft' | 'brain' | 'bone'
 type MappingMode = 'linear' | 'sigmoid' | 'custom'
+type MlPipeline = 'raw' | 'single' | 'multi'
 
 type CurvePoint = {
   x: number
@@ -27,9 +28,16 @@ type WindowPreset = {
 }
 
 const chapters: Array<{ id: ChapterId; label: string; short: string }> = [
-  { id: 'hu', label: 'CT and Hounsfield units', short: 'HU scale' },
-  { id: 'mapping', label: 'How windowing works', short: 'Windowing' },
+  { id: 'hu', label: 'Stored pixels and Hounsfield units', short: 'CT values' },
+  { id: 'mapping', label: 'Clipping and display mapping', short: 'Windowing' },
   { id: 'presets', label: 'Common windows', short: 'Presets' },
+  { id: 'ml', label: 'Model input and reproducibility', short: 'For ML' },
+]
+
+const mlPipelines: Array<{ id: MlPipeline; label: string; shape: string; description: string }> = [
+  { id: 'raw', label: 'Calibrated HU', shape: '1 × H × W', description: 'Retain the calibrated numeric range, then normalize it explicitly for the model.' },
+  { id: 'single', label: 'Single window', shape: '1 × H × W', description: 'Clip one task-specific interval and scale it consistently for training and inference.' },
+  { id: 'multi', label: 'Multi-window', shape: '3 × H × W', description: 'Stack complementary lung, soft-tissue, and bone views as separate input channels.' },
 ]
 
 const defaultCurvePoints: CurvePoint[] = [
@@ -56,6 +64,8 @@ const tissues = [
   { label: 'Contrast blood', hu: 120, x: 273, y: 210 },
   { label: 'Cortical bone', hu: 900, x: 260, y: 350 },
 ]
+
+const teachingRescale = { slope: 1, intercept: -1024 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -377,6 +387,7 @@ export default function WindowingModule() {
   const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(() => defaultCurvePoints.map((point) => ({ ...point })))
   const [probe, setProbe] = useState<Probe>({ x: 285, y: 255, hu: 45, label: 'Heart / soft tissue' })
   const [probePinned, setProbePinned] = useState(false)
+  const [mlPipeline, setMlPipeline] = useState<MlPipeline>('raw')
 
   useEffect(() => {
     const releaseProbe = (event: KeyboardEvent) => {
@@ -390,6 +401,8 @@ export default function WindowingModule() {
   const activePreset = mappingMode === 'linear' ? presets.find((preset) => preset.center === center && preset.width === width) : undefined
   const bounds = windowBounds(center, width)
   const probeGray = huToGray(probe.hu, center, width, mappingMode, curvePoints)
+  const storedValue = Math.round((probe.hu - teachingRescale.intercept) / teachingRescale.slope)
+  const huPerDisplayStep = width / 255
   const tissueRows = useMemo(() => tissues.map((tissue) => ({ ...tissue, gray: huToGray(tissue.hu, center, width, mappingMode, curvePoints) })), [center, width, mappingMode, curvePoints])
   const mappingGradient = useMemo(() => `linear-gradient(90deg, ${Array.from({ length: 9 }, (_, index) => {
     const position = index / 8
@@ -413,8 +426,8 @@ export default function WindowingModule() {
       <header className="windowing-hero">
         <div>
           <p className="section-kicker"><Contrast aria-hidden="true" /> Intensity and display</p>
-          <h2>From Hounsfield units to visible contrast.</h2>
-          <p>Use one CT slice to see how thousands of attenuation values become a focused 8-bit display.</p>
+          <h2>From stored pixels to visible contrast.</h2>
+          <p>Follow a CT value from its encoded integer through HU calibration, windowing, and model-ready input.</p>
         </div>
         <div className="windowing-progress" aria-label={`Section ${activeChapter + 1} of ${chapters.length}`}><strong>{activeChapter + 1} / {chapters.length}</strong><span>Explore at your own pace</span></div>
       </header>
@@ -448,12 +461,23 @@ export default function WindowingModule() {
 
         <section className="windowing-lesson-card" aria-labelledby={`windowing-${chapter}-title`}>
           {chapter === 'hu' && <>
-            <p className="lesson-number">01 · CT VALUE SCALE</p>
-            <h3 id="windowing-hu-title">CT stores attenuation as Hounsfield units.</h3>
-            <p>HU is a calibrated, relative scale: water anchors 0 HU and air is approximately −1000 HU. Denser, more attenuating materials usually have larger positive values.</p>
+            <p className="lesson-number">01 · STORED VALUE → HU</p>
+            <h3 id="windowing-hu-title">The stored integer is only the first value.</h3>
+            <p>DICOM Pixel Data can contain encoded integers. A modality transform converts those stored values into meaningful output units before windowing is applied.</p>
+            <div className="value-pipeline" aria-label={`Example value pipeline: stored value ${storedValue}, slope 1, intercept minus 1024, ${probe.hu} Hounsfield units, display value ${probeGray}`}>
+              <span><small>Pixel Data</small><strong>{storedValue}</strong><code>stored value</code></span>
+              <b aria-hidden="true">× 1 + (−1024)</b>
+              <span className="is-active"><small>Modality value</small><strong>{probe.hu > 0 ? '+' : ''}{probe.hu} HU</strong><code>slope + intercept</code></span>
+              <b aria-hidden="true">VOI</b>
+              <span><small>Display</small><strong>{probeGray} / 255</strong><code>current window</code></span>
+            </div>
+            <p className="pipeline-caption">This teaching example uses Rescale Slope 1 and Rescale Intercept −1024. Real files can specify different values or a Modality LUT; Bits Stored and Pixel Representation define the raw numeric range.</p>
+            <h4>What the calibrated value means</h4>
+            <p>For conventional CT, HU is a relative attenuation scale: water anchors 0 HU and air is approximately −1000 HU. Denser, more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
             <HuScale activeHu={probe.hu} onSelect={selectProbe} />
             <p className="lesson-note"><Info aria-hidden="true" /> Tissue values are representative ranges, not immutable constants. Acquisition energy, reconstruction, contrast, and artifacts can shift measured HU.</p>
+            <p className="lesson-note is-contrast"><Info aria-hidden="true" /><span><strong>CT is the calibrated case.</strong> Routine MR intensity is relative to the sequence, scanner, and acquisition; it has no universal HU-like tissue scale.</span></p>
           </>}
 
           {chapter === 'mapping' && <>
@@ -463,12 +487,19 @@ export default function WindowingModule() {
             <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
             <p className="mapping-mode-note"><strong>{mappingMode === 'linear' ? 'Linear window' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear' ? 'Below the interval is black, above it is white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
+            <div className="display-consequences" aria-label="Window clipping and quantization summary">
+              <span><small>Below {Math.round(bounds.low)} HU</small><strong>0 · clipped black</strong></span>
+              <span><small>Inside the window</small><strong>0–255 · quantized</strong></span>
+              <span><small>Above {Math.round(bounds.high)} HU</small><strong>255 · clipped white</strong></span>
+            </div>
+            <p className="quantization-note">{mappingMode === 'linear' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. Several input values can therefore share one displayed gray.` : 'With a nonlinear curve, HU-per-gray-step varies across the interval. The output is still a reduced display representation.'}</p>
             <div className="window-control-stack">
               <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
               <p><strong>Width controls contrast.</strong> A narrow width spreads a small HU range across every gray; a wide width includes more tissue types with less separation.</p>
               <SliderControl label="Window center" value={center} min={-1000} max={1000} step={10} unit="HU" onChange={setCenter} />
               <p><strong>Center chooses the neighborhood.</strong> Moving it shifts both bounds together toward lower- or higher-attenuation anatomy.</p>
             </div>
+            <p className="lesson-note"><Info aria-hidden="true" /><span><strong>DICOM nuance.</strong> A VOI stage may be linear, sigmoid, or an explicit lookup table. This demo assumes MONOCHROME2, where lower output values appear darker; MONOCHROME1 reverses that presentation. The 0–255 output here is an intuitive teaching target, not a limit on every clinical display pipeline.</span></p>
           </>}
 
           {chapter === 'presets' && <>
@@ -488,6 +519,37 @@ export default function WindowingModule() {
               {tissueRows.map((tissue) => <button type="button" role="row" key={tissue.label} onClick={() => selectProbe({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}><span role="cell">{tissue.label}</span><span role="cell">{tissue.hu}</span><span role="cell">{tissue.gray}</span><span role="cell" className="table-swatch"><i style={{ background: `rgb(${tissue.gray} ${tissue.gray} ${tissue.gray})` }} /></span></button>)}
             </div>
           </>}
+
+          {chapter === 'ml' && <>
+            <p className="lesson-number">04 · MODEL INPUT</p>
+            <h3 id="windowing-ml-title">Display choices become preprocessing choices.</h3>
+            <p>A model can consume calibrated HU, one windowed image, or several windows as channels. These representations are not interchangeable, even when they originate from the same CT voxels.</p>
+            <div className="ml-pipeline-options" role="group" aria-label="CT model input representation">
+              {mlPipelines.map((pipeline) => <button key={pipeline.id} type="button" aria-pressed={mlPipeline === pipeline.id} className={mlPipeline === pipeline.id ? 'is-selected' : ''} onClick={() => setMlPipeline(pipeline.id)}>
+                <span><strong>{pipeline.label}</strong><small>{pipeline.shape}</small></span>
+                <p>{pipeline.description}</p>
+              </button>)}
+            </div>
+            <div className="ml-input-preview" aria-live="polite">
+              {mlPipeline === 'raw' && <>
+                <div className="raw-value-grid" aria-hidden="true"><span>−750</span><span>−742</span><span>45</span><span>−715</span><span>120</span><span>51</span><span>−98</span><span>42</span><span>900</span></div>
+                <div><small>Selected voxel</small><strong>{probe.hu > 0 ? '+' : ''}{probe.hu} HU</strong><p>Retains distinctions outside any one viewing window. Normalization still has to be defined and reproduced.</p></div>
+              </>}
+              {mlPipeline === 'single' && <>
+                <div className="ml-window-thumbnail"><CtSlice center={center} width={width} mode={mappingMode} curvePoints={curvePoints} compact /></div>
+                <div><small>Current transform</small><strong>W {width} · C {center}</strong><p>Compact and familiar, but every value below or above the chosen interval has been collapsed.</p></div>
+              </>}
+              {mlPipeline === 'multi' && <>
+                <div className="ml-window-stack" aria-hidden="true">{[presets[0], presets[1], presets[3]].map((preset) => preset && <div key={preset.id}><CtSlice center={preset.center} width={preset.width} compact /><span>{preset.label}</span></div>)}</div>
+                <div><small>Channel stack</small><strong>Lung · Soft · Bone</strong><p>Preserves several task-specific views, but increases channels and makes the window definitions part of the model contract.</p></div>
+              </>}
+            </div>
+            <div className="ml-practice-list">
+              <p><strong>Record the transform.</strong><span>Keep slope/intercept handling, clipping bounds, scaling, channel order, and output dtype with the experiment.</span></p>
+              <p><strong>Match training and inference.</strong><span>A different window or a second accidental rescale changes the input distribution.</span></p>
+              <p><strong>Know what was exported.</strong><span>A windowed PNG is a display derivative—not a recoverable copy of the original CT values.</span></p>
+            </div>
+          </>}
         </section>
       </div>
 
@@ -499,6 +561,7 @@ export default function WindowingModule() {
 
       <footer className="windowing-sources">
         <span>Reference material</span>
+        <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.html#sect_C.11.1" target="_blank" rel="noreferrer">DICOM Modality LUT</a>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.2.html" target="_blank" rel="noreferrer">DICOM VOI LUT</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK547721/" target="_blank" rel="noreferrer">Hounsfield Unit</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK597347/" target="_blank" rel="noreferrer">CT physics</a>

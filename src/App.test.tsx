@@ -61,11 +61,19 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText('Compare array, DICOM, and NIfTI representations')).toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: /Windowing/ }))
-    expect(await screen.findByRole('heading', { name: 'From Hounsfield units to visible contrast.' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'CT stores attenuation as Hounsfield units.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'From stored pixels to visible contrast.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'The stored integer is only the first value.' })).toBeInTheDocument()
+    expect(screen.getByText(/Rescale Slope 1 and Rescale Intercept/)).toBeInTheDocument()
+    expect(screen.getByText(/MR intensity is relative/)).toBeInTheDocument()
     expect(screen.queryByText(/without changing the underlying scan/)).not.toBeInTheDocument()
-    expect(within(screen.getByRole('navigation', { name: 'Windowing learning sections' })).getAllByRole('button')).toHaveLength(3)
+    expect(within(screen.getByRole('navigation', { name: 'Windowing learning sections' })).getAllByRole('button')).toHaveLength(4)
     expect(screen.queryByRole('button', { name: /Free play/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Model input and reproducibility/ }))
+    expect(screen.getByRole('heading', { name: 'Display choices become preprocessing choices.' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Multi-window/ }))
+    expect(screen.getByText('Lung · Soft · Bone')).toBeInTheDocument()
+    expect(screen.getByText(/windowed PNG is a display derivative/)).toBeInTheDocument()
   })
 
   it('updates the CT display mapping from width, center, and window presets', async () => {
@@ -73,8 +81,8 @@ describe('Radiology Imaging Lab', () => {
     render(<App />)
 
     await user.click(screen.getByRole('tab', { name: /Windowing/ }))
-    await screen.findByRole('heading', { name: 'From Hounsfield units to visible contrast.' })
-    await user.click(screen.getByRole('button', { name: /How windowing works/ }))
+    await screen.findByRole('heading', { name: 'From stored pixels to visible contrast.' })
+    await user.click(screen.getByRole('button', { name: /Clipping and display mapping/ }))
 
     const initialCurve = screen.getByTestId('window-curve-path').getAttribute('d')
     expect(screen.getByText('CLIPPED BLACK')).toBeInTheDocument()

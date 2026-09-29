@@ -13,7 +13,7 @@ const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon
   { id: 'ct', label: 'CT', icon: ScanLine },
   { id: 'mri', label: 'MRI', icon: Magnet },
   { id: 'image-data', label: 'Image Data', shortLabel: 'Data', icon: Database },
-  { id: 'windowing', label: 'Windowing', shortLabel: 'Window', icon: Contrast },
+  { id: 'windowing', label: 'CT Windowing', shortLabel: 'Window', icon: Contrast },
 ]
 
 function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: Modality) => void }) {
@@ -48,6 +48,7 @@ function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: M
               className={`modality-tab${selected ? ' is-selected' : ''}`}
               type="button"
               role="tab"
+              aria-label={modality.label}
               aria-selected={selected}
               aria-controls={`panel-${modality.id}`}
               tabIndex={selected ? 0 : -1}
