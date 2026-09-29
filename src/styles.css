@@ -421,8 +421,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ml-input-preview > div:last-child p { margin: 0; color: var(--text-faint); font-size: 0.67rem; line-height: 1.5; }
 .raw-value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 12px; border-radius: 8px; background: #08090b; }
 .raw-value-grid span { display: grid; place-items: center; aspect-ratio: 1.2; border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; color: #a6ecff; background: rgba(100,210,255,0.06); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.61rem; }
-.ml-window-thumbnail { display: grid; place-items: center; max-height: 185px; overflow: hidden; border-radius: 8px; background: #050607; }
-.ml-window-thumbnail .ct-slice { max-height: 185px; }
+.ml-window-thumbnail { display: grid; place-items: center; justify-self: center; width: min(100%, 185px); aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: #050607; }
+.ml-window-thumbnail .ct-slice { width: 100%; max-height: none; aspect-ratio: 1; }
 .ml-window-stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .ml-window-stack > div { position: relative; display: grid; place-items: center; min-width: 0; overflow: hidden; border-radius: 6px; background: #050607; }
 .ml-window-stack .ct-slice { min-width: 125px; transform: scale(1.14); }
