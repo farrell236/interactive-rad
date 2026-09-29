@@ -6,6 +6,7 @@ import type { Modality } from './types'
 
 const XrayModule = lazy(() => import('./components/XrayModule'))
 const WindowingModule = lazy(() => import('./components/WindowingModule'))
+const ImageDataModule = lazy(() => import('./components/ImageDataModule'))
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
 
 const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon: IconComponent }> = [
@@ -106,8 +107,10 @@ export default function App() {
           <section key={modality.id} id={`panel-${modality.id}`} role="tabpanel" aria-labelledby={`tab-${modality.id}`} hidden={active !== modality.id}>
             {modality.id === 'xray'
               ? <Suspense fallback={<LoadingModule />}><XrayModule /></Suspense>
-              : modality.id === 'windowing'
-                ? <Suspense fallback={<LoadingModule />}><WindowingModule /></Suspense>
+              : modality.id === 'image-data'
+                ? <Suspense fallback={<LoadingModule />}><ImageDataModule /></Suspense>
+                : modality.id === 'windowing'
+                  ? <Suspense fallback={<LoadingModule />}><WindowingModule /></Suspense>
                 : <PlaceholderModule modality={modality.id} />}
           </section>
         ))}

@@ -1,6 +1,6 @@
 # Radiology Imaging Lab
 
-A cinematic browser-based teaching application for exploring how radiological images are acquired, represented, and displayed. The working modules are an interactive chest X-ray laboratory and an interactive CT windowing laboratory; CT acquisition, MRI, and medical image data remain structured future modules.
+A cinematic browser-based teaching application for exploring how radiological images are acquired, represented, and displayed. The working modules are an interactive chest X-ray laboratory, a seven-part medical image data learning backbone, and an interactive CT windowing laboratory; CT acquisition and MRI remain structured future modules.
 
 ## Run locally
 
@@ -32,7 +32,9 @@ pnpm build
 - Stylized live detector image responding to projection, kVp, mAs, SID, patient thickness, rotation, and collimation
 - Animated exposure sequence and capture state
 - Four-part CT windowing lesson covering stored-value calibration, HU, clipping and quantization, task-specific presets, ML preprocessing choices, linear/sigmoid/custom transfer curves, and a pinnable tissue probe
-- Polished CT, MRI, and medical image data roadmaps
+- Seven-part medical image data curriculum covering formats, headers and voxels, spacing, origin, direction, index-to-physical transforms, anatomical planes, and LPS/RAS conventions
+- Planned-demo cards document the intended interactive teaching experience before implementation
+- Polished CT and MRI roadmaps
 - Unit tests for qualitative simulation behavior
 
 ## Architecture
@@ -43,6 +45,7 @@ pnpm build
 - `src/components/DetectorImage.tsx` — reactive synthetic radiograph
 - `src/components/AcquisitionControls.tsx` — geometry and exposure controls
 - `src/components/WindowingModule.tsx` — CT HU and windowing teaching workstation
+- `src/components/ImageDataModule.tsx` — seven-part image-data learning backbone and demo plans
 - `src/components/PlaceholderModule.tsx` — reusable future-modality presentation
 - `src/simulation/xray.ts` — presentation-independent qualitative physics model
 
@@ -66,5 +69,5 @@ It is not a diagnostic image, dose calculator, radiographic technique chart, or 
 - Add CT/CBCT volume loading and HU-to-attenuation conversion.
 - Add sinogram and reconstruction views for CT.
 - Add sequence timing and k-space views for MRI.
-- Add interactive DICOM and NIfTI header lessons for spacing, origin, direction, orientation, coordinate systems, transforms, and resampling.
 - Extend intensity display concepts to relative MR signal, clipping, type conversion, and normalization.
+- Add privacy-safe sample-file import and header inspection.
