@@ -318,11 +318,6 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .value-pipeline strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9rem; font-weight: 650; font-variant-numeric: tabular-nums; }
 .value-pipeline code { overflow: hidden; color: var(--text-faint); font-family: inherit; font-size: 0.61rem; text-overflow: ellipsis; white-space: nowrap; }
 .value-pipeline > b { color: var(--window-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.62rem; font-weight: 650; text-align: center; }
-.windowing-lesson-card > p.pipeline-caption { margin-bottom: 14px; color: var(--text-faint); font-size: 0.66rem; line-height: 1.48; }
-.ct-frame-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: -7px 0 20px; }
-.ct-frame-metadata > div { display: grid; gap: 4px; min-width: 0; padding: 10px 11px; border: 1px solid var(--separator-soft); border-radius: 7px; background: var(--surface-secondary); }
-.ct-frame-metadata dt { color: var(--text-faint); font-size: 0.57rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.055em; }
-.ct-frame-metadata dd { overflow: hidden; color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.68rem; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 .hu-equation { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 72px; margin: 0 0 23px; padding: 12px; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); font-family: ui-serif, Georgia, serif; font-size: 1rem; }
 .equation-fraction { display: grid; text-align: center; }
 .equation-fraction b { padding: 0 7px 4px; border-bottom: 1px solid var(--text-faint); font-weight: 500; }
@@ -582,7 +577,6 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .probe-state-control { grid-column: 1 / -1; justify-self: end; }
   .window-definition-row { grid-template-columns: 1fr; }
   .hu-scale { margin-inline: -2px; padding-bottom: 11px; }
-  .ct-frame-metadata { grid-template-columns: 1fr; }
   .value-pipeline, .display-consequences, .ml-pipeline-options, .ml-input-preview { grid-template-columns: 1fr; }
   .value-pipeline > span { min-height: 72px; }
   .value-pipeline > b { padding: 1px 0; }

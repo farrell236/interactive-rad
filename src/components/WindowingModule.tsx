@@ -506,12 +506,6 @@ export default function WindowingModule() {
             <h3 id="windowing-hu-title">The stored integer is only the first value.</h3>
             <p>CT commonly stores voxel samples as fixed-width integers for compact, predictable storage. These are storage-domain values: their physical meaning cannot be determined from the pixel array alone. DICOM metadata defines the conversion into modality values, commonly <code>output = stored value × slope + intercept</code>. The conversion can change the number or be an identity transform, so software should apply or verify the metadata before treating an array as HU.</p>
             <p><strong>VOI (Value of Interest)</strong> is the next display stage: it maps calibrated values to visible brightness. The Windowing section explores that mapping in detail.</p>
-            <dl className="ct-frame-metadata" aria-label="Metadata for this CT frame">
-              <div><dt>Stored encoding</dt><dd>16-bit signed</dd></div>
-              <div><dt>Rescale</dt><dd>× 1 − 1024</dd></div>
-              <div><dt>Pixel spacing</dt><dd>0.703 × 0.703 mm</dd></div>
-              <div><dt>Slice thickness</dt><dd>2.5 mm</dd></div>
-            </dl>
             <div className="value-pipeline" aria-label={`Example value pipeline: stored value ${storedValue}, slope 1, intercept minus 1024, ${probe.hu} Hounsfield units, display value ${probeGray}`}>
               <span><small>Pixel Data</small><strong>{storedValue}</strong><code>stored value</code></span>
               <b aria-hidden="true">× 1 + (−1024)</b>
@@ -519,8 +513,6 @@ export default function WindowingModule() {
               <b aria-hidden="true">VOI</b>
               <span><small>Display</small><strong>{probeGray} / 255</strong><code>current window</code></span>
             </div>
-            <p className="pipeline-caption">This LIDC-IDRI frame uses Rescale Slope 1 and Rescale Intercept −1024: stored value 24 therefore becomes −1000 HU. Other files can specify different values, an identity transform, or a Modality LUT; Bits Stored and Pixel Representation define the raw numeric range.</p>
-            <p className="lesson-note"><Info aria-hidden="true" /><span><strong>Padding is not anatomy.</strong> The black area outside this frame's circular reconstruction is background, not air in the patient. For interaction, this viewer treats values at or below −1900 HU as background; image statistics, normalization, and histograms should exclude such pixels rather than treating them as tissue.</span></p>
             <h4>What the calibrated value means</h4>
             <p>For conventional CT, HU expresses a voxel's reconstructed linear attenuation coefficient (μ) relative to water. Here, μ describes the energy-dependent probability of X-ray attenuation per unit path length. Water anchors 0 HU, air is approximately −1000 HU, and more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
@@ -613,7 +605,6 @@ export default function WindowingModule() {
         <span>Reference material</span>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.html#sect_C.11.1" target="_blank" rel="noreferrer">DICOM Modality LUT</a>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.2.html" target="_blank" rel="noreferrer">DICOM VOI LUT</a>
-        <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.5.html" target="_blank" rel="noreferrer">DICOM Pixel Padding</a>
         <a href="https://www.cancerimagingarchive.net/collection/lidc-idri/" target="_blank" rel="noreferrer">CT image: LIDC-IDRI</a>
         <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>
         <a href="https://doi.org/10.7937/K9/TCIA.2015.LO9QL9SX" target="_blank" rel="noreferrer">Dataset DOI</a>
