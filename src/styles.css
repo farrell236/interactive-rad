@@ -443,7 +443,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .windowing-sources a { color: var(--text-faint); text-decoration: none; }
 .windowing-sources a:hover, .windowing-sources a:focus-visible { color: var(--window-accent); text-decoration: underline; text-underline-offset: 3px; }
 .image-data-module { --data-accent: var(--cyan); display: grid; gap: 16px; }
-.image-data-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: end; padding: 14px 8px 18px; border-bottom: 1px solid var(--separator-soft); }
+.image-data-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: end; padding: 8px 5px 14px; border-bottom: 1px solid var(--separator-soft); }
 .image-data-intro .section-kicker { color: var(--data-accent); }
 .image-data-intro h2 { margin-bottom: 6px; font-size: clamp(1.9rem, 3vw, 2.55rem); font-weight: 690; line-height: 1.02; letter-spacing: -0.045em; }
 .image-data-intro > div:first-child > p:last-child { max-width: 760px; margin: 0; color: var(--text-soft); font-size: 0.92rem; line-height: 1.5; }
