@@ -76,12 +76,16 @@ describe('Radiology Imaging Lab', () => {
     await screen.findByRole('heading', { name: 'From Hounsfield units to visible contrast.' })
     await user.click(screen.getByRole('button', { name: /How windowing works/ }))
 
+    const initialCurve = screen.getByTestId('window-curve-path').getAttribute('d')
+    expect(screen.getByText('CLIPPED BLACK')).toBeInTheDocument()
+    expect(screen.getByText('CLIPPED WHITE')).toBeInTheDocument()
     const width = screen.getByRole('slider', { name: 'Window width' })
     const center = screen.getByRole('slider', { name: 'Window center' })
     fireEvent.change(width, { target: { value: '1500' } })
     fireEvent.change(center, { target: { value: '-600' } })
     expect(screen.getByText(/LINEAR · W 1500 · C -600/)).toBeInTheDocument()
     expect(screen.getByText('-1350 HU → 0')).toBeInTheDocument()
+    expect(screen.getByTestId('window-curve-path').getAttribute('d')).not.toBe(initialCurve)
 
     await user.click(screen.getByRole('button', { name: 'Custom curve' }))
     expect(screen.getByRole('slider', { name: 'Selected curve point output' })).toBeInTheDocument()

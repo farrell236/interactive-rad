@@ -313,7 +313,12 @@ input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; border: 2px s
 .window-curve { display: block; width: 100%; height: auto; overflow: visible; color: var(--text-faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; touch-action: none; }
 .curve-plot { fill: var(--surface-secondary); stroke: var(--separator-soft); }
 .curve-histogram { fill: color-mix(in srgb, var(--text-faint) 17%, transparent); stroke: color-mix(in srgb, var(--text-faint) 28%, transparent); stroke-width: 1; }
+.curve-window-band { fill: color-mix(in srgb, var(--window-accent) 7%, transparent); }
+.curve-clipped-zone { fill: color-mix(in srgb, var(--surface) 52%, transparent); }
+.curve-clip-label { fill: var(--text-faint); font-size: 7px; font-weight: 700; letter-spacing: 0.08em; }
 .curve-gridline { stroke: var(--separator-soft); stroke-width: 1; stroke-dasharray: 3 4; }
+.curve-window-boundary { stroke: color-mix(in srgb, var(--window-accent) 72%, transparent); stroke-width: 1; stroke-dasharray: 3 3; }
+.curve-axis-tick { stroke: var(--text-faint); stroke-width: 1; }
 .curve-line { fill: none; stroke: var(--window-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .curve-center { stroke: var(--text-faint); stroke-width: 1; stroke-dasharray: 4 4; }
 .curve-probe { fill: #64d2ff; stroke: var(--surface); stroke-width: 3; }

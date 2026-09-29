@@ -199,16 +199,18 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
   const [selectedPoint, setSelectedPoint] = useState(2)
   const bounds = windowBounds(center, width)
   const plot = { left: 52, top: 34, width: 420, height: 176 }
-  const xFor = (normalized: number) => plot.left + (normalized * plot.width)
+  const domain = { min: -1200, max: 2000 }
+  const xForHu = (hu: number) => plot.left + ((clamp(hu, domain.min, domain.max) - domain.min) / (domain.max - domain.min) * plot.width)
   const yFor = (normalized: number) => plot.top + ((1 - normalized) * plot.height)
-  const outputAt = (normalized: number) => huToGray(bounds.low + (normalized * width), center, width, mode, points) / 255
-  const path = Array.from({ length: 81 }, (_, index) => {
-    const input = index / 80
-    return `${index === 0 ? 'M' : 'L'}${xFor(input).toFixed(2)} ${yFor(outputAt(input)).toFixed(2)}`
+  const path = Array.from({ length: 161 }, (_, index) => {
+    const hu = domain.min + ((index / 160) * (domain.max - domain.min))
+    const output = huToGray(hu, center, width, mode, points) / 255
+    return `${index === 0 ? 'M' : 'L'}${xForHu(hu).toFixed(2)} ${yFor(output).toFixed(2)}`
   }).join(' ')
-  const probeInput = clamp((probeHu - bounds.low) / width, 0, 1)
   const probeOutput = huToGray(probeHu, center, width, mode, points) / 255
   const selected = points[selectedPoint] ?? points[1]
+  const lowX = xForHu(bounds.low)
+  const highX = xForHu(bounds.high)
 
   const updatePoint = (index: number, x: number, y: number) => {
     if (index <= 0 || index >= points.length - 1) return
@@ -226,7 +228,8 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
     const rect = event.currentTarget.getBoundingClientRect()
     const svgX = ((event.clientX - rect.left) / rect.width) * 520
     const svgY = ((event.clientY - rect.top) / rect.height) * 260
-    updatePoint(index, (svgX - plot.left) / plot.width, 1 - ((svgY - plot.top) / plot.height))
+    const hu = domain.min + (clamp((svgX - plot.left) / plot.width, 0, 1) * (domain.max - domain.min))
+    updatePoint(index, (hu - bounds.low) / width, 1 - ((svgY - plot.top) / plot.height))
   }
 
   const addPoint = () => {
@@ -270,19 +273,28 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
         className="window-curve"
         viewBox="0 0 520 260"
         role="img"
-        aria-label={`${mode} transfer curve mapping the selected Hounsfield unit interval to 8-bit display values`}
+        aria-label={`${mode} transfer curve on a fixed Hounsfield unit axis, showing clipping outside the selected interval`}
         onPointerMove={(event) => { if (dragging !== null) updateFromPointer(event, dragging) }}
         onPointerUp={() => setDragging(null)}
         onPointerLeave={() => setDragging(null)}
       >
         <rect x={plot.left} y={plot.top} width={plot.width} height={plot.height} className="curve-plot" />
         <path className="curve-histogram" d="M52 210 L52 190 L72 186 L92 196 L112 170 L132 181 L152 126 L172 154 L192 186 L212 178 L232 108 L252 82 L272 102 L292 164 L312 183 L332 176 L352 142 L372 159 L392 191 L412 181 L432 196 L452 188 L472 194 L472 210Z" />
+        <rect x={lowX} y={plot.top} width={Math.max(0, highX - lowX)} height={plot.height} className="curve-window-band" />
+        {mode !== 'sigmoid' && <>
+          <rect x={plot.left} y={plot.top} width={Math.max(0, lowX - plot.left)} height={plot.height} className="curve-clipped-zone" />
+          <rect x={highX} y={plot.top} width={Math.max(0, (plot.left + plot.width) - highX)} height={plot.height} className="curve-clipped-zone" />
+          {lowX - plot.left > 50 && <text x={(plot.left + lowX) / 2} y="55" textAnchor="middle" className="curve-clip-label">CLIPPED BLACK</text>}
+          {(plot.left + plot.width) - highX > 50 && <text x={(highX + plot.left + plot.width) / 2} y="55" textAnchor="middle" className="curve-clip-label">CLIPPED WHITE</text>}
+        </>}
         <line x1={plot.left} x2={plot.left + plot.width} y1={yFor(0.5)} y2={yFor(0.5)} className="curve-gridline" />
-        <line x1={xFor(0.5)} x2={xFor(0.5)} y1={plot.top} y2={plot.top + plot.height} className="curve-center" />
-        <path d={path} className="curve-line" />
+        <line x1={lowX} x2={lowX} y1={plot.top} y2={plot.top + plot.height} className="curve-window-boundary" />
+        <line x1={highX} x2={highX} y1={plot.top} y2={plot.top + plot.height} className="curve-window-boundary" />
+        <line x1={xForHu(center)} x2={xForHu(center)} y1={plot.top} y2={plot.top + plot.height} className="curve-center" />
+        <path d={path} className="curve-line" data-testid="window-curve-path" />
         {mode === 'custom' && points.map((point, index) => <circle
           key={index}
-          cx={xFor(point.x)}
+          cx={xForHu(bounds.low + (point.x * width))}
           cy={yFor(point.y)}
           r={selectedPoint === index ? 7 : 5.5}
           className={`curve-control-point${selectedPoint === index ? ' is-selected' : ''}${index === 0 || index === points.length - 1 ? ' is-fixed' : ''}`}
@@ -292,11 +304,10 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
           onPointerDown={(event) => { event.preventDefault(); setSelectedPoint(index); setDragging(index) }}
           onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedPoint(index) }}
         />)}
-        <circle cx={xFor(probeInput)} cy={yFor(probeOutput)} r="6" className="curve-probe" />
+        <circle cx={xForHu(probeHu)} cy={yFor(probeOutput)} r="6" className="curve-probe" />
         <text x="15" y={plot.top + 4}>255</text><text x="25" y={plot.top + plot.height + 4}>0</text>
-        <text x={plot.left} y="234" textAnchor="middle">{Math.round(bounds.low)}</text>
-        <text x={xFor(0.5)} y="25" textAnchor="middle">C {center}</text>
-        <text x={plot.left + plot.width} y="234" textAnchor="middle">{Math.round(bounds.high)}</text>
+        {[-1000, 0, 1000, 2000].map((tick) => <g key={tick}><line x1={xForHu(tick)} x2={xForHu(tick)} y1={plot.top + plot.height} y2={plot.top + plot.height + 5} className="curve-axis-tick" /><text x={xForHu(tick)} y="231" textAnchor="middle">{tick}</text></g>)}
+        <text x={xForHu(center)} y="25" textAnchor="middle">C {center}</text>
         <text x={plot.left + plot.width} y="253" textAnchor="end">Input HU</text>
       </svg>
       {mode === 'custom' && selected && <div className="curve-point-controls">
