@@ -119,7 +119,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText('CLIPPED ≤ -160 HU')).toBeInTheDocument()
     expect(screen.getByText('CLIPPED > 240 HU')).toBeInTheDocument()
     expect(await screen.findByTestId('ct-histogram')).toHaveAttribute('data-source', 'calibrated-ct-voxels')
-    expect(screen.getByRole('heading', { name: 'Display functions' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Display functions' })).not.toBeInTheDocument()
     expect(screen.getByText('MONOCHROME2')).toBeInTheDocument()
     expect(screen.getByText(/displays lower output values darker/)).toBeInTheDocument()
     const width = screen.getByRole('slider', { name: 'Window width' })

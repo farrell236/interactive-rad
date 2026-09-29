@@ -568,13 +568,6 @@ export default function WindowingModule() {
                 <p><strong>Center chooses the neighborhood.</strong> Moving it shifts both bounds together toward lower- or higher-attenuation anatomy.</p>
               </div>
             </div>
-            <section className="mapping-function-guide" aria-labelledby="display-functions-title">
-              <h4 id="display-functions-title">Display functions</h4>
-              <p><strong>LINEAR</strong> uses a straight brightness ramp with half-step handling for integer pixel values.</p>
-              <p><strong>LINEAR_EXACT</strong> uses a straight ramp between the symmetric bounds C − W/2 and C + W/2. This is the linear function used in the demo.</p>
-              <p><strong>SIGMOID</strong> uses a smooth S-curve centered on C. Width controls its steepness, and there are no finite clipping boundaries.</p>
-              <p><strong>VOI LUT</strong> supplies an explicit lookup table when the desired mapping is not described by one of the functions above.</p>
-            </section>
             <p className="monochrome-explainer"><strong>MONOCHROME2</strong> displays lower output values darker and higher values brighter. <strong>MONOCHROME1</strong> reverses that relationship.</p>
           </>}
 
