@@ -552,7 +552,7 @@ export default function WindowingModule() {
 
           {chapter === 'mapping' && <>
             <p className="lesson-number">02 · WINDOW TRANSFER FUNCTION</p>
-            <h3 id="windowing-mapping-title">Choose a useful interval, then map it to the display.</h3>
+            <h3 id="windowing-mapping-title">Map a useful range to the display.</h3>
             <p>Center and width position and scale the mapping. The transfer function decides how HU values become display brightness from 0–255.</p>
             <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} histogram={histogram} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
