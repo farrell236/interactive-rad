@@ -1,6 +1,6 @@
 # Radiology Imaging Lab
 
-A cinematic browser-based teaching application for exploring how radiological images are acquired, represented, and displayed. The first working module is an interactive chest X-ray laboratory; CT, MRI, medical image data, and intensity/windowing are structured as future modules.
+A cinematic browser-based teaching application for exploring how radiological images are acquired, represented, and displayed. The working modules are an interactive chest X-ray laboratory and an interactive CT windowing laboratory; CT acquisition, MRI, and medical image data remain structured future modules.
 
 ## Run locally
 
@@ -31,7 +31,8 @@ pnpm build
 - Source-to-image distance, patient rotation, and collimation geometry
 - Stylized live detector image responding to projection, kVp, mAs, SID, patient thickness, rotation, and collimation
 - Animated exposure sequence and capture state
-- Polished CT, MRI, medical image data, and intensity/windowing roadmaps
+- Four-part CT windowing lesson with a responsive slice viewer, HU scale, transfer curve, representative presets, live tissue probe, and HU-to-8-bit mapping table
+- Polished CT, MRI, and medical image data roadmaps
 - Unit tests for qualitative simulation behavior
 
 ## Architecture
@@ -41,6 +42,7 @@ pnpm build
 - `src/components/XrayScene.tsx` — procedural 3D acquisition room
 - `src/components/DetectorImage.tsx` — reactive synthetic radiograph
 - `src/components/AcquisitionControls.tsx` — geometry and exposure controls
+- `src/components/WindowingModule.tsx` — CT HU and windowing teaching workstation
 - `src/components/PlaceholderModule.tsx` — reusable future-modality presentation
 - `src/simulation/xray.ts` — presentation-independent qualitative physics model
 
@@ -65,4 +67,4 @@ It is not a diagnostic image, dose calculator, radiographic technique chart, or 
 - Add sinogram and reconstruction views for CT.
 - Add sequence timing and k-space views for MRI.
 - Add interactive DICOM and NIfTI header lessons for spacing, origin, direction, orientation, coordinate systems, transforms, and resampling.
-- Add CT Hounsfield-unit windowing, relative MR signal, clipping, type conversion, and normalization demonstrations.
+- Extend intensity display concepts to relative MR signal, clipping, type conversion, and normalization.

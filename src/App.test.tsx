@@ -49,7 +49,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByRole('tab', { name: 'CT' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('offers image data and windowing modules in place of the old placeholders', async () => {
+  it('offers image data and windowing modules in place of the old tabs', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -61,8 +61,28 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText('Compare array, DICOM, and NIfTI representations')).toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: /Windowing/ }))
-    expect(screen.getByRole('heading', { name: 'Intensity, windowing, and normalization' })).toBeInTheDocument()
-    expect(screen.getByText('Compare CT windowing with relative MR signal')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'From Hounsfield units to visible contrast.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'CT stores attenuation as Hounsfield units.' })).toBeInTheDocument()
+  })
+
+  it('updates the CT display mapping from width, center, and window presets', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('tab', { name: /Windowing/ }))
+    await screen.findByRole('heading', { name: 'From Hounsfield units to visible contrast.' })
+    await user.click(screen.getByRole('button', { name: /How windowing works/ }))
+
+    const width = screen.getByRole('slider', { name: 'Window width' })
+    const center = screen.getByRole('slider', { name: 'Window center' })
+    fireEvent.change(width, { target: { value: '1500' } })
+    fireEvent.change(center, { target: { value: '-600' } })
+    expect(screen.getByText('W 1500 · C -600')).toBeInTheDocument()
+    expect(screen.getByText('-1350 HU → 0')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Common windows/ }))
+    await user.click(screen.getByRole('button', { name: 'Bone window, width 2000, center 400' }))
+    expect(screen.getAllByText('W 2000 · C 400')).toHaveLength(2)
   })
 
   it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {
