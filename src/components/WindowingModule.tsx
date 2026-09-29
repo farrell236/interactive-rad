@@ -632,7 +632,7 @@ export default function WindowingModule() {
           {chapter === 'presets' && <>
             <p className="lesson-number">03 · REPRESENTATIVE PRESETS</p>
             <h3 id="windowing-presets-title">The same voxels can answer different questions.</h3>
-            <p>A preset is only a saved center and width. It changes the presentation—not the reconstructed CT values underneath.</p>
+            <p>A preset stores a center and width. It changes presentation, not the reconstructed CT values.</p>
             <div className="window-preset-grid">
               {presets.map((preset) => <button key={preset.id} type="button" aria-label={`${preset.label} window, width ${preset.width}, center ${preset.center}`} className={activePreset?.id === preset.id ? 'is-selected' : ''} onClick={() => applyPreset(preset)}>
                 <MiniWindowPreview preset={preset} />
