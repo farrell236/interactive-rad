@@ -516,7 +516,6 @@ export default function WindowingModule() {
             <h4>What the calibrated value means</h4>
             <p>For conventional CT, HU expresses a voxel's reconstructed linear attenuation coefficient (μ) relative to water. Here, μ describes the energy-dependent probability of X-ray attenuation per unit path length. Water anchors 0 HU, air is approximately −1000 HU, and more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
-            <p>HU is a measurement, not a tissue identity. Values overlap across tissues and can shift with beam spectrum, contrast timing, reconstruction, artifacts, and partial volume.</p>
             <h4>Example landmarks in this frame</h4>
             <p className="hu-scale-caption">The endpoints show numerical position; the labels are spaced evenly for readability. Select one to sample that actual voxel rather than substituting the printed reference value.</p>
             <HuScale activeProbe={probe} onSelect={selectLandmark} />

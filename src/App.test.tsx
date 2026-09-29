@@ -84,7 +84,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText(/storage-domain values/)).toBeInTheDocument()
     expect(screen.getByText('VOI (Value of Interest)')).toBeInTheDocument()
     expect(screen.getByText(/next display stage/)).toBeInTheDocument()
-    expect(screen.getByText(/HU is a measurement, not a tissue identity/)).toBeInTheDocument()
+    expect(screen.queryByText(/HU is a measurement, not a tissue identity/)).not.toBeInTheDocument()
     expect(screen.queryByText('Stored encoding')).not.toBeInTheDocument()
     expect(screen.queryByText(/This LIDC-IDRI frame uses/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Padding is not anatomy/)).not.toBeInTheDocument()
