@@ -104,7 +104,8 @@ function sampleSlice(x: number, y: number): Probe {
   const insideEllipse = (cx: number, cy: number, rx: number, ry: number) => (((x - cx) / rx) ** 2) + (((y - cy) / ry) ** 2) <= 1
   const insideCircle = (cx: number, cy: number, radius: number) => Math.hypot(x - cx, y - cy) <= radius
 
-  if (!insideEllipse(260, 230, 210, 182)) return { x, y, hu: -1000, label: 'Air' }
+  if (!insideEllipse(260, 230, 216, 188)) return { x, y, hu: -1000, label: 'Air' }
+  if (!insideEllipse(260, 230, 208, 180)) return { x, y, hu: 45, label: 'Skin / soft tissue' }
   if (insideCircle(260, 348, 34) && !insideCircle(260, 348, 13)) return { x, y, hu: 900, label: 'Cortical bone' }
   if (insideCircle(260, 348, 13)) return { x, y, hu: 35, label: 'Spinal canal' }
   if (insideEllipse(260, 85, 14, 30)) return { x, y, hu: 900, label: 'Sternum' }
@@ -114,7 +115,7 @@ function sampleSlice(x: number, y: number): Probe {
     const vessel = insideCircle(176, 192, 12) || insideCircle(143, 238, 8) || insideCircle(343, 183, 11) || insideCircle(378, 235, 9)
     return { x, y, hu: vessel ? 55 : -750, label: vessel ? 'Pulmonary vessel' : 'Aerated lung' }
   }
-  const bodyEdge = !insideEllipse(260, 230, 188, 160)
+  const bodyEdge = !insideEllipse(260, 230, 190, 162)
   return { x, y, hu: bodyEdge ? -100 : 45, label: bodyEdge ? 'Subcutaneous fat' : 'Soft tissue' }
 }
 
@@ -142,6 +143,10 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
     const rect = event.currentTarget.getBoundingClientRect()
     const x = ((event.clientX - rect.left) / rect.width) * 520
     const y = ((event.clientY - rect.top) / rect.height) * 420
+    const tissue = event.target instanceof Element ? event.target.closest<SVGElement>('[data-hu]') : null
+    const targetHu = tissue?.dataset.hu
+    const targetLabel = tissue?.dataset.label
+    if (targetHu !== undefined && targetLabel) return { x, y, hu: Number(targetHu), label: targetLabel }
     return sampleSlice(x, y)
   }
 
@@ -170,26 +175,27 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
           <feBlend in="SourceGraphic" in2="mono" mode="soft-light" />
         </filter>
       </defs>
-      <rect width="520" height="420" fill="var(--air)" />
-      <ellipse cx="260" cy="230" rx="212" ry="184" fill="var(--fat)" stroke="var(--soft)" strokeWidth="8" />
-      <ellipse cx="260" cy="230" rx="190" ry="162" fill="var(--soft)" opacity="0.96" />
-      <path d="M93 118 C118 69 183 74 217 116 C235 139 229 290 185 333 C143 352 91 305 78 240 C70 196 74 154 93 118Z" fill="var(--lung)" stroke="var(--fat)" strokeWidth="4" />
-      <path d="M427 118 C402 69 337 74 303 116 C285 139 291 290 335 333 C377 352 429 305 442 240 C450 196 446 154 427 118Z" fill="var(--lung)" stroke="var(--fat)" strokeWidth="4" />
-      <path d="M270 163 C223 163 205 211 215 267 C223 315 263 338 304 318 C342 299 358 254 343 213 C330 178 307 163 270 163Z" fill="var(--soft)" />
-      <ellipse cx="281" cy="255" rx="70" ry="89" fill="var(--soft)" opacity="0.98" />
-      <circle cx="273" cy="210" r="20" fill="var(--blood)" stroke="var(--soft)" strokeWidth="5" />
-      <g fill="var(--soft)" opacity="0.92">
+      <rect width="520" height="420" fill="var(--air)" data-hu="-1000" data-label="Air" />
+      <ellipse cx="260" cy="230" rx="216" ry="188" fill="var(--soft)" data-hu="45" data-label="Skin / soft tissue" />
+      <ellipse cx="260" cy="230" rx="208" ry="180" fill="var(--fat)" data-hu="-100" data-label="Subcutaneous fat" />
+      <ellipse cx="260" cy="230" rx="190" ry="162" fill="var(--soft)" opacity="0.96" data-hu="45" data-label="Soft tissue" />
+      <path d="M93 118 C118 69 183 74 217 116 C235 139 229 290 185 333 C143 352 91 305 78 240 C70 196 74 154 93 118Z" fill="var(--lung)" stroke="var(--fat)" strokeWidth="4" data-hu="-750" data-label="Aerated lung" />
+      <path d="M427 118 C402 69 337 74 303 116 C285 139 291 290 335 333 C377 352 429 305 442 240 C450 196 446 154 427 118Z" fill="var(--lung)" stroke="var(--fat)" strokeWidth="4" data-hu="-750" data-label="Aerated lung" />
+      <path d="M270 163 C223 163 205 211 215 267 C223 315 263 338 304 318 C342 299 358 254 343 213 C330 178 307 163 270 163Z" fill="var(--soft)" data-hu="45" data-label="Mediastinal soft tissue" />
+      <ellipse cx="281" cy="255" rx="70" ry="89" fill="var(--soft)" opacity="0.98" data-hu="45" data-label="Heart / soft tissue" />
+      <circle cx="273" cy="210" r="20" fill="var(--blood)" stroke="var(--soft)" strokeWidth="5" data-hu="120" data-label="Contrast blood" />
+      <g fill="var(--soft)" opacity="0.92" data-hu="55" data-label="Pulmonary vessel">
         <circle cx="176" cy="192" r="12" /><circle cx="143" cy="238" r="8" /><circle cx="343" cy="183" r="11" /><circle cx="378" cy="235" r="9" />
         <path d="M176 192 L127 160 M176 192 L143 238 M343 183 L397 150 M343 183 L378 235" stroke="var(--soft)" strokeWidth="8" strokeLinecap="round" />
       </g>
-      <g fill="none" stroke="var(--bone)" strokeWidth="7" opacity="0.93">
+      <g fill="none" stroke="var(--bone)" strokeWidth="7" opacity="0.93" data-hu="900" data-label="Cortical bone">
         <path d="M109 121 C66 166 59 252 91 309" /><path d="M411 121 C454 166 461 252 429 309" />
         <path d="M129 101 C91 153 87 278 117 327" /><path d="M391 101 C429 153 433 278 403 327" />
       </g>
-      <ellipse cx="260" cy="85" rx="14" ry="30" fill="var(--bone)" />
-      <circle cx="260" cy="348" r="36" fill="var(--bone)" />
-      <circle cx="260" cy="348" r="14" fill="var(--soft)" />
-      <g opacity="0.12" filter={`url(#${compact ? 'ct-grain-compact' : 'ct-grain'})`}>
+      <ellipse cx="260" cy="85" rx="14" ry="30" fill="var(--bone)" data-hu="900" data-label="Sternum" />
+      <circle cx="260" cy="348" r="36" fill="var(--bone)" data-hu="900" data-label="Cortical bone" />
+      <circle cx="260" cy="348" r="14" fill="var(--soft)" data-hu="35" data-label="Spinal canal" />
+      <g opacity="0.12" filter={`url(#${compact ? 'ct-grain-compact' : 'ct-grain'})`} pointerEvents="none">
         <ellipse cx="260" cy="230" rx="207" ry="179" fill="white" />
       </g>
       {!compact && <>

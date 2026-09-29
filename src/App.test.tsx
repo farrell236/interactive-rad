@@ -128,6 +128,21 @@ describe('Radiology Imaging Lab', () => {
     })
     const readout = screen.getByRole('status')
 
+    fireEvent.pointerMove(image, { clientX: 47, clientY: 230 })
+    expect(within(readout).getByText('Skin / soft tissue')).toBeInTheDocument()
+
+    fireEvent.pointerMove(image, { clientX: 40, clientY: 230 })
+    expect(within(readout).getByText('Air')).toBeInTheDocument()
+
+    const skinLayer = image.querySelector('[data-label="Skin / soft tissue"]')
+    const ribLayer = image.querySelector('[data-label="Cortical bone"]')
+    expect(skinLayer).not.toBeNull()
+    expect(ribLayer).not.toBeNull()
+    fireEvent.pointerMove(skinLayer!, { clientX: 47, clientY: 230 })
+    expect(within(readout).getByText('Skin / soft tissue')).toBeInTheDocument()
+    fireEvent.pointerMove(ribLayer!, { clientX: 109, clientY: 200 })
+    expect(within(readout).getByText('Cortical bone')).toBeInTheDocument()
+
     fireEvent.pointerMove(image, { clientX: 164, clientY: 205 })
     expect(within(readout).getByText('Aerated lung')).toBeInTheDocument()
 
