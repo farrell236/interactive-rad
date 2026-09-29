@@ -250,7 +250,8 @@ function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, po
   const [dragging, setDragging] = useState<number | null>(null)
   const [selectedPoint, setSelectedPoint] = useState(2)
   const bounds = windowBounds(center, width)
-  const plot = { left: 52, top: 34, width: 420, height: 176 }
+  const canvas = { width: 520, height: 210 }
+  const plot = { left: 52, top: 34, width: 420, height: 126 }
   const xForHu = (hu: number) => plot.left + ((clamp(hu, curveDomain.min, curveDomain.max) - curveDomain.min) / (curveDomain.max - curveDomain.min) * plot.width)
   const yFor = (normalized: number) => plot.top + ((1 - normalized) * plot.height)
   const path = Array.from({ length: 161 }, (_, index) => {
@@ -286,8 +287,8 @@ function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, po
 
   const updateFromPointer = (event: ReactPointerEvent<SVGSVGElement>, index: number) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const svgX = ((event.clientX - rect.left) / rect.width) * 520
-    const svgY = ((event.clientY - rect.top) / rect.height) * 260
+    const svgX = ((event.clientX - rect.left) / rect.width) * canvas.width
+    const svgY = ((event.clientY - rect.top) / rect.height) * canvas.height
     const hu = curveDomain.min + (clamp((svgX - plot.left) / plot.width, 0, 1) * (curveDomain.max - curveDomain.min))
     updatePoint(index, (hu - bounds.low) / width, 1 - ((svgY - plot.top) / plot.height))
   }
@@ -331,7 +332,7 @@ function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, po
       </div>
       <svg
         className="window-curve"
-        viewBox="0 0 520 260"
+        viewBox={`0 0 ${canvas.width} ${canvas.height}`}
         role="img"
         aria-label={`${mode} transfer curve over the measured Hounsfield unit histogram, ${mode === 'sigmoid' ? 'showing low and high reference values' : 'showing clipping outside the selected interval'}`}
         onPointerMove={(event) => { if (dragging !== null) updateFromPointer(event, dragging) }}
@@ -370,9 +371,9 @@ function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, po
         />)}
         <circle cx={xForHu(probeHu)} cy={yFor(probeOutput)} r="6" className="curve-probe" />
         <text x="15" y={plot.top + 4}>255</text><text x="25" y={plot.top + plot.height + 4}>0</text>
-        {[-1000, 0, 1000, 2000].map((tick) => <g key={tick}><line x1={xForHu(tick)} x2={xForHu(tick)} y1={plot.top + plot.height} y2={plot.top + plot.height + 5} className="curve-axis-tick" /><text x={xForHu(tick)} y="231" textAnchor="middle">{tick}</text></g>)}
+        {[-1000, 0, 1000, 2000].map((tick) => <g key={tick}><line x1={xForHu(tick)} x2={xForHu(tick)} y1={plot.top + plot.height} y2={plot.top + plot.height + 5} className="curve-axis-tick" /><text x={xForHu(tick)} y={plot.top + plot.height + 21} textAnchor="middle">{tick}</text></g>)}
         <text x={xForHu(center)} y="25" textAnchor="middle">C {center}</text>
-        <text x={plot.left + plot.width} y="253" textAnchor="end">Input HU</text>
+        <text x={plot.left + plot.width} y={canvas.height - 7} textAnchor="end">Input HU</text>
       </svg>
       {mode === 'custom' && selected && <div className="curve-point-controls">
         <div className="curve-point-heading"><span>Point {selectedPoint + 1}</span><small>Input {Math.round(selected.x * 100)}% · Output {Math.round(selected.y * 255)}</small></div>
