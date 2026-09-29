@@ -712,9 +712,10 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .direction-presets button { min-height: 29px; padding: 5px 8px; border: 0; border-radius: 6px; color: var(--text-faint); background: transparent; font-size: 0.62rem; font-weight: 650; }
 .direction-presets button:hover { color: var(--text); }
 .direction-presets button[aria-pressed="true"] { color: var(--text); background: var(--surface-raised); box-shadow: 0 1px 4px var(--shadow); }
-.direction-reverse-toggle { min-height: 29px; padding: 5px 9px; border: 1px solid var(--separator-soft); border-radius: 7px; color: var(--text-faint); background: var(--surface); font-size: 0.62rem; font-weight: 650; }
-.direction-reverse-toggle:hover { color: var(--text); border-color: color-mix(in srgb, var(--data-accent) 35%, var(--separator-soft)); }
+.direction-reverse-toggle, .direction-animation-toggle { min-height: 35px; padding: 5px 9px; border: 1px solid var(--separator-soft); border-radius: 7px; color: var(--text-faint); background: var(--surface); font-size: 0.62rem; font-weight: 650; }
+.direction-reverse-toggle:hover, .direction-animation-toggle:hover { color: var(--text); border-color: color-mix(in srgb, var(--data-accent) 35%, var(--separator-soft)); }
 .direction-reverse-toggle[aria-pressed="true"] { color: var(--data-accent); border-color: color-mix(in srgb, var(--data-accent) 48%, var(--separator-soft)); background: color-mix(in srgb, var(--data-accent) 10%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--data-accent) 12%, transparent); }
+.direction-animation-toggle[aria-pressed="true"] { color: var(--data-accent); }
 .direction-stage { position: relative; display: grid; place-items: center; min-width: 0; min-height: 330px; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 8px; background-color: var(--surface); background-image: linear-gradient(var(--separator-soft) 1px, transparent 1px), linear-gradient(90deg, var(--separator-soft) 1px, transparent 1px); background-size: 28px 28px; }
 .direction-physical-axis { position: absolute; z-index: 0; color: var(--text-faint); }
 .direction-physical-axis::before { position: absolute; background: currentColor; content: ''; }
@@ -752,10 +753,16 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .direction-basis-axis.is-i b { right: 5px; top: 7px; }
 .direction-basis-axis.is-j { left: 50%; top: 50%; width: 104px; height: 2px; transform: rotate(-90deg); }
 .direction-basis-axis.is-j b { right: 5px; bottom: 7px; transform: rotate(90deg) scaleX(var(--direction-flip-i)) rotate(var(--direction-counter-angle)); }
-.direction-angle-control { display: grid; gap: 6px; padding: 2px 4px 0; }
+.direction-angle-control { display: grid; gap: 7px; padding: 10px 11px; border: 1px solid var(--separator-soft); border-radius: 8px; background: var(--surface); }
 .direction-angle-control > span { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--text-soft); font-size: 0.66rem; }
 .direction-angle-control output { color: var(--data-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; font-variant-numeric: tabular-nums; }
-.direction-angle-control input { width: 100%; margin: 0; accent-color: var(--data-accent); }
+.direction-angle-control > .direction-slider-track { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+.direction-slider-track small { color: var(--text-faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.56rem; font-weight: 600; }
+.direction-angle-control input[type="range"] { width: 100%; height: 30px; margin: 0; border: 0; appearance: none; -webkit-appearance: none; background: linear-gradient(90deg, color-mix(in srgb, var(--data-accent) 28%, var(--separator)), var(--data-accent) 50%, color-mix(in srgb, var(--data-accent) 28%, var(--separator))) center / 100% 5px no-repeat; cursor: ew-resize; }
+.direction-angle-control input[type="range"]::-webkit-slider-thumb { width: 20px; height: 20px; border: 2px solid var(--surface-raised); border-radius: 50%; appearance: none; -webkit-appearance: none; background: var(--data-accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--data-accent) 50%, var(--separator)), 0 2px 7px rgba(0, 0, 0, 0.2); }
+.direction-angle-control input[type="range"]::-moz-range-track { height: 5px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--data-accent) 42%, var(--separator)); }
+.direction-angle-control input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 2px solid var(--surface-raised); border-radius: 50%; background: var(--data-accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--data-accent) 50%, var(--separator)), 0 2px 7px rgba(0, 0, 0, 0.2); }
+.direction-angle-control input[type="range"]:focus-visible { outline: 2px solid color-mix(in srgb, var(--data-accent) 75%, transparent); outline-offset: 3px; }
 .image-data-direction-comparison figcaption { padding: 0 5px; color: var(--text-faint); font-size: 0.68rem; line-height: 1.45; text-align: center; }
 .image-data-direction-readout { display: grid; align-content: start; gap: 11px; min-width: 0; padding: 15px; border: 1px solid var(--separator-soft); border-radius: 10px; background: var(--surface-secondary); }
 .image-data-direction-readout > header { display: grid; gap: 3px; padding-bottom: 11px; border-bottom: 1px solid var(--separator-soft); }

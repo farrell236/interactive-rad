@@ -579,6 +579,37 @@ function OriginAsset() {
 function DirectionAsset() {
   const [angle, setAngle] = useState(30)
   const [flipI, setFlipI] = useState(false)
+  const [animationPlaying, setAnimationPlaying] = useState(true)
+  const animationPhase = useRef(Math.asin(30 / 35))
+
+  useEffect(() => {
+    if (!animationPlaying) return
+    let frame = 0
+    let previousTime: number | undefined
+    const tick = (time: number) => {
+      if (previousTime === undefined) previousTime = time
+      const elapsedSeconds = Math.min((time - previousTime) / 1000, 0.05)
+      previousTime = time
+      animationPhase.current = (animationPhase.current + (elapsedSeconds * Math.PI * 2 / 6)) % (Math.PI * 2)
+      setAngle(Math.round(35 * Math.sin(animationPhase.current)))
+      frame = window.requestAnimationFrame(tick)
+    }
+    frame = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(frame)
+  }, [animationPlaying])
+
+  const selectAngle = (nextAngle: number) => {
+    setAnimationPlaying(false)
+    const normalizedAngle = Math.max(-35, Math.min(35, nextAngle)) / 35
+    const matchingPhase = Math.asin(normalizedAngle)
+    animationPhase.current = Math.cos(animationPhase.current) >= 0 ? matchingPhase : Math.PI - matchingPhase
+    setAngle(nextAngle)
+  }
+
+  const toggleAnimation = () => {
+    setAnimationPlaying((playing) => !playing)
+  }
+
   const radians = (angle * Math.PI) / 180
   const clean = (value: number) => Math.abs(value) < 0.0005 ? 0 : value
   const cos = clean(Math.cos(radians))
@@ -639,9 +670,10 @@ function DirectionAsset() {
             <div><small>Physical XY frame</small><strong>{orientationLabel}</strong></div>
             <div className="direction-toolbar-controls">
               <div className="direction-presets" role="group" aria-label="Angle presets">
-                <button type="button" aria-pressed={angle === 0} onClick={() => setAngle(0)}>0°</button>
-                <button type="button" aria-pressed={angle === 30} onClick={() => setAngle(30)}>30°</button>
+                <button type="button" aria-pressed={angle === 0} onClick={() => selectAngle(0)}>0°</button>
+                <button type="button" aria-pressed={angle === 30} onClick={() => selectAngle(30)}>30°</button>
               </div>
+              <button className="direction-animation-toggle" type="button" aria-pressed={animationPlaying} aria-label={animationPlaying ? 'Pause direction animation' : 'Resume direction animation'} onClick={toggleAnimation}>{animationPlaying ? 'Pause motion' : 'Resume motion'}</button>
               <button className="direction-reverse-toggle" type="button" aria-pressed={flipI} onClick={() => setFlipI((current) => !current)}>Reverse i</button>
             </div>
           </header>
@@ -658,7 +690,10 @@ function DirectionAsset() {
               </div>
             </div>
           </div>
-          <label className="direction-angle-control" htmlFor="direction-angle"><span><strong>Angle about +Z</strong><output>{formattedAngle}</output></span><input id="direction-angle" type="range" min="-90" max="90" step="5" value={angle} aria-label="Direction angle" onChange={(event) => setAngle(Number(event.target.value))} /></label>
+          <label className="direction-angle-control" htmlFor="direction-angle">
+            <span><strong>Angle about +Z</strong><output>{formattedAngle}</output></span>
+            <span className="direction-slider-track"><small>−90°</small><input id="direction-angle" type="range" min="-90" max="90" step="1" value={angle} aria-label="Direction angle" onPointerDown={() => setAnimationPlaying(false)} onChange={(event) => selectAngle(Number(event.target.value))} /><small>+90°</small></span>
+          </label>
           <figcaption>The numbered cells keep the same array order. Direction changes where that unchanged grid lies in physical space.</figcaption>
         </figure>
         <div className="image-data-direction-readout">
