@@ -463,7 +463,8 @@ export default function WindowingModule() {
           {chapter === 'hu' && <>
             <p className="lesson-number">01 · STORED VALUE → HU</p>
             <h3 id="windowing-hu-title">The stored integer is only the first value.</h3>
-            <p>DICOM Pixel Data can contain encoded integers. A modality transform converts those stored values into meaningful output units before windowing is applied.</p>
+            <p>CT commonly stores voxel samples as fixed-width integers for compact, predictable storage. These are storage-domain values: their physical meaning cannot be determined from the pixel array alone. DICOM metadata defines the conversion into modality values, commonly <code>output = stored value × slope + intercept</code>. The conversion can change the number or be an identity transform, so software should apply or verify the metadata before treating an array as HU.</p>
+            <p><strong>VOI (Value of Interest)</strong> is the DICOM display transform applied after modality values have been recovered. It selects which part of the value range receives visible contrast. In CT, this is commonly defined using window center and width, although a VOI lookup table or sigmoid function can also be used. With linear windowing, values below the selected range become black, values above it become white, and values inside it are distributed across the available grays.</p>
             <div className="value-pipeline" aria-label={`Example value pipeline: stored value ${storedValue}, slope 1, intercept minus 1024, ${probe.hu} Hounsfield units, display value ${probeGray}`}>
               <span><small>Pixel Data</small><strong>{storedValue}</strong><code>stored value</code></span>
               <b aria-hidden="true">× 1 + (−1024)</b>
@@ -471,7 +472,7 @@ export default function WindowingModule() {
               <b aria-hidden="true">VOI</b>
               <span><small>Display</small><strong>{probeGray} / 255</strong><code>current window</code></span>
             </div>
-            <p className="pipeline-caption">This teaching example uses Rescale Slope 1 and Rescale Intercept −1024. Real files can specify different values or a Modality LUT; Bits Stored and Pixel Representation define the raw numeric range.</p>
+            <p className="pipeline-caption">This teaching example uses Rescale Slope 1 and Rescale Intercept −1024: stored value 24 therefore becomes −1000 HU. Real files can specify different values, an identity transform, or a Modality LUT; Bits Stored and Pixel Representation define the raw numeric range.</p>
             <h4>What the calibrated value means</h4>
             <p>For conventional CT, HU is a relative attenuation scale: water anchors 0 HU and air is approximately −1000 HU. Denser, more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
