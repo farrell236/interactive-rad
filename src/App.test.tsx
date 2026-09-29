@@ -67,10 +67,16 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText('VOI (Value of Interest)')).toBeInTheDocument()
     expect(screen.getByText(/DICOM display transform applied/)).toBeInTheDocument()
     expect(screen.getByText(/Rescale Slope 1 and Rescale Intercept/)).toBeInTheDocument()
-    expect(screen.getByText(/MR intensity is relative/)).toBeInTheDocument()
+    expect(screen.queryByText(/Tissue values are representative ranges/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/CT is the calibrated case/)).not.toBeInTheDocument()
     expect(screen.queryByText(/without changing the underlying scan/)).not.toBeInTheDocument()
     expect(within(screen.getByRole('navigation', { name: 'Windowing learning sections' })).getAllByRole('button')).toHaveLength(4)
     expect(screen.queryByRole('button', { name: /Free play/ })).not.toBeInTheDocument()
+
+    const huScale = screen.getByLabelText('Representative Hounsfield unit scale')
+    expect(within(huScale).getAllByRole('button')).toHaveLength(7)
+    await user.click(within(huScale).getByRole('button', { name: /Cortical bone/ }))
+    expect(within(screen.getByRole('status')).getByText('Cortical bone')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Model input and reproducibility/ }))
     expect(screen.getByRole('heading', { name: 'Display choices become preprocessing choices.' })).toBeInTheDocument()

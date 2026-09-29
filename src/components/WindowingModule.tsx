@@ -360,16 +360,20 @@ function SliderControl({ label, value, min, max, step, unit, onChange }: {
 function HuScale({ activeHu, onSelect }: { activeHu: number; onSelect: (probe: Probe) => void }) {
   return (
     <div className="hu-scale" aria-label="Representative Hounsfield unit scale">
-      <div className="hu-scale-track"><span className="hu-scale-gradient" /></div>
-      <div className="hu-scale-markers">
-        {[...tissues].reverse().map((tissue) => {
-          const selected = tissue.hu === activeHu
-          return (
-            <button key={tissue.label} type="button" className={selected ? 'is-selected' : ''} onClick={() => onSelect({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}>
-              <span>{tissue.hu > 0 ? '+' : ''}{tissue.hu} HU</span><strong>{tissue.label}</strong>
-            </button>
-          )
-        })}
+      <div className="hu-scale-axis">
+        <div className="hu-scale-track" aria-hidden="true"><span className="hu-scale-gradient" /></div>
+        <div className="hu-scale-markers">
+          {tissues.map((tissue) => {
+            const selected = tissue.hu === activeHu
+            return (
+              <button key={tissue.label} type="button" aria-pressed={selected} className={selected ? 'is-selected' : ''} onClick={() => onSelect({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}>
+                <i aria-hidden="true" />
+                <strong>{tissue.label}</strong>
+                <span>{tissue.hu > 0 ? '+' : ''}{tissue.hu} HU</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -477,8 +481,6 @@ export default function WindowingModule() {
             <p>For conventional CT, HU is a relative attenuation scale: water anchors 0 HU and air is approximately −1000 HU. Denser, more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
             <HuScale activeHu={probe.hu} onSelect={selectProbe} />
-            <p className="lesson-note"><Info aria-hidden="true" /> Tissue values are representative ranges, not immutable constants. Acquisition energy, reconstruction, contrast, and artifacts can shift measured HU.</p>
-            <p className="lesson-note is-contrast"><Info aria-hidden="true" /><span><strong>CT is the calibrated case.</strong> Routine MR intensity is relative to the sequence, scanner, and acquisition; it has no universal HU-like tissue scale.</span></p>
           </>}
 
           {chapter === 'mapping' && <>
