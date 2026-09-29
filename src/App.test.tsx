@@ -1,7 +1,25 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
+
+const mockCtPixels = new Int16Array(512 * 512).fill(-2048)
+mockCtPixels[(150 * 512) + 63] = -100
+mockCtPixels[(173 * 512) + 219] = -1000
+mockCtPixels[(144 * 512) + 192] = -750
+mockCtPixels[(200 * 512) + 280] = 187
+mockCtPixels[(395 * 512) + 182] = 905
+
+vi.stubGlobal('fetch', vi.fn(async () => ({
+  ok: true,
+  status: 200,
+  arrayBuffer: async () => mockCtPixels.buffer.slice(0),
+})))
+
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+  createImageData: (width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4), width, height }),
+  putImageData: vi.fn(),
+} as unknown as CanvasRenderingContext2D)
 
 vi.mock('@react-three/fiber', () => ({
   Canvas: () => <div data-testid="canvas" />,
@@ -65,7 +83,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByRole('heading', { name: 'The stored integer is only the first value.' })).toBeInTheDocument()
     expect(screen.getByText(/storage-domain values/)).toBeInTheDocument()
     expect(screen.getByText('VOI (Value of Interest)')).toBeInTheDocument()
-    expect(screen.getByText(/DICOM display transform applied/)).toBeInTheDocument()
+    expect(screen.getByText(/not one recommended viewing window/)).toBeInTheDocument()
     expect(screen.getByText(/Rescale Slope 1 and Rescale Intercept/)).toBeInTheDocument()
     expect(screen.queryByText(/Tissue values are representative ranges/)).not.toBeInTheDocument()
     expect(screen.queryByText(/CT is the calibrated case/)).not.toBeInTheDocument()
@@ -100,7 +118,7 @@ describe('Radiology Imaging Lab', () => {
     const center = screen.getByRole('slider', { name: 'Window center' })
     fireEvent.change(width, { target: { value: '1500' } })
     fireEvent.change(center, { target: { value: '-600' } })
-    expect(screen.getByText(/LINEAR · W 1500 · C -600/)).toBeInTheDocument()
+    expect(screen.getByText(/LINEAR_EXACT · W 1500 · C -600/)).toBeInTheDocument()
     expect(screen.getByText('-1350 HU → 0')).toBeInTheDocument()
     expect(screen.getByTestId('window-curve-path').getAttribute('d')).not.toBe(initialCurve)
 
@@ -111,7 +129,7 @@ describe('Radiology Imaging Lab', () => {
 
     await user.click(screen.getByRole('button', { name: /Common windows/ }))
     await user.click(screen.getByRole('button', { name: 'Bone window, width 2000, center 400' }))
-    expect(screen.getByText(/LINEAR · W 2000 · C 400/)).toBeInTheDocument()
+    expect(screen.getByText(/LINEAR_EXACT · W 2000 · C 400/)).toBeInTheDocument()
     expect(screen.getByText('W 2000 · C 400')).toBeInTheDocument()
     expect(screen.getByRole('table', { name: 'Current HU to display mapping' })).toBeInTheDocument()
     expect(screen.queryByText(/representative teaching values/)).not.toBeInTheDocument()
@@ -122,51 +140,47 @@ describe('Radiology Imaging Lab', () => {
     render(<App />)
 
     await user.click(screen.getByRole('tab', { name: /Windowing/ }))
-    const image = await screen.findByRole('img', { name: /Stylized axial chest CT/ })
+    const image = await screen.findByRole('img', { name: /Anonymized axial chest CT/ })
     vi.spyOn(image, 'getBoundingClientRect').mockReturnValue({
-      x: 0, y: 0, top: 0, left: 0, right: 520, bottom: 420, width: 520, height: 420, toJSON: () => ({}),
+      x: 0, y: 0, top: 0, left: 0, right: 512, bottom: 512, width: 512, height: 512, toJSON: () => ({}),
     })
+    await waitFor(() => expect(screen.queryByText('Loading calibrated CT data…')).not.toBeInTheDocument())
     const readout = screen.getByRole('status')
 
-    fireEvent.pointerMove(image, { clientX: 47, clientY: 230 })
-    expect(within(readout).getByText('Skin / soft tissue')).toBeInTheDocument()
+    fireEvent.pointerMove(image, { clientX: 63, clientY: 150 })
+    expect(within(readout).getByText('Fat-range voxel')).toBeInTheDocument()
+    expect(within(readout).getByText('-100 HU')).toBeInTheDocument()
 
-    fireEvent.pointerMove(image, { clientX: 40, clientY: 230 })
-    expect(within(readout).getByText('Air')).toBeInTheDocument()
+    fireEvent.pointerMove(image, { clientX: 219, clientY: 173 })
+    expect(within(readout).getByText('Air-range voxel')).toBeInTheDocument()
 
-    const skinLayer = image.querySelector('[data-label="Skin / soft tissue"]')
-    const ribLayer = image.querySelector('[data-label="Cortical bone"]')
-    expect(skinLayer).not.toBeNull()
-    expect(ribLayer).not.toBeNull()
-    fireEvent.pointerMove(skinLayer!, { clientX: 47, clientY: 230 })
-    expect(within(readout).getByText('Skin / soft tissue')).toBeInTheDocument()
-    fireEvent.pointerMove(ribLayer!, { clientX: 109, clientY: 200 })
-    expect(within(readout).getByText('Cortical bone')).toBeInTheDocument()
+    fireEvent.pointerMove(image, { clientX: 192, clientY: 144 })
+    expect(within(readout).getByText('Aerated-lung range')).toBeInTheDocument()
 
-    fireEvent.pointerMove(image, { clientX: 164, clientY: 205 })
-    expect(within(readout).getByText('Aerated lung')).toBeInTheDocument()
+    fireEvent.pointerMove(image, { clientX: 182, clientY: 395 })
+    expect(within(readout).getByText('Cortical-bone range')).toBeInTheDocument()
 
-    fireEvent.pointerDown(image, { clientX: 285, clientY: 255 })
-    expect(within(readout).getByText('Heart / soft tissue')).toBeInTheDocument()
+    fireEvent.pointerDown(image, { clientX: 280, clientY: 200 })
+    expect(within(readout).getByText('High soft-tissue / contrast range')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Unpin selected voxel' })).toBeInTheDocument()
     expect(screen.getByText('Pinned · Click elsewhere to move · Esc to release')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Unpin selected voxel' }))
     expect(screen.queryByRole('button', { name: 'Unpin selected voxel' })).not.toBeInTheDocument()
 
-    fireEvent.pointerDown(image, { clientX: 285, clientY: 255 })
-    fireEvent.pointerMove(image, { clientX: 62, clientY: 55 })
-    expect(within(readout).getByText('Heart / soft tissue')).toBeInTheDocument()
+    fireEvent.pointerDown(image, { clientX: 280, clientY: 200 })
+    fireEvent.pointerMove(image, { clientX: 219, clientY: 173 })
+    expect(within(readout).getByText('High soft-tissue / contrast range')).toBeInTheDocument()
 
-    fireEvent.pointerDown(image, { clientX: 62, clientY: 55 })
-    expect(within(readout).getByText('Air')).toBeInTheDocument()
+    fireEvent.pointerDown(image, { clientX: 219, clientY: 173 })
+    expect(within(readout).getByText('Air-range voxel')).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('button', { name: 'Unpin selected voxel' })).not.toBeInTheDocument()
     expect(screen.getByText('Live')).toBeInTheDocument()
 
-    fireEvent.pointerMove(image, { clientX: 164, clientY: 205 })
-    expect(within(readout).getByText('Aerated lung')).toBeInTheDocument()
+    fireEvent.pointerMove(image, { clientX: 192, clientY: 144 })
+    expect(within(readout).getByText('Aerated-lung range')).toBeInTheDocument()
   })
 
   it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {

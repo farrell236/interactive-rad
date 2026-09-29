@@ -1,10 +1,11 @@
 import { Activity, Contrast, Crosshair, Info, Pin, PinOff, ScanLine, SlidersHorizontal } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
+import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
 
 type ChapterId = 'hu' | 'mapping' | 'presets' | 'ml'
 type PresetId = 'lung' | 'soft' | 'brain' | 'bone'
-type MappingMode = 'linear' | 'sigmoid' | 'custom'
+type MappingMode = 'linear-exact' | 'sigmoid' | 'custom'
 type MlPipeline = 'raw' | 'single' | 'multi'
 
 type CurvePoint = {
@@ -56,16 +57,32 @@ const presets: WindowPreset[] = [
 ]
 
 const tissues = [
-  { label: 'Air', hu: -1000, x: 62, y: 55 },
-  { label: 'Aerated lung', hu: -750, x: 164, y: 205 },
-  { label: 'Fat', hu: -100, x: 90, y: 270 },
-  { label: 'Water', hu: 0, x: 435, y: 82 },
-  { label: 'Soft tissue', hu: 45, x: 285, y: 255 },
-  { label: 'Contrast blood', hu: 120, x: 273, y: 210 },
-  { label: 'Cortical bone', hu: 900, x: 260, y: 350 },
+  { label: 'Air', hu: -1000, x: 219, y: 173, lane: 0 },
+  { label: 'Aerated lung', hu: -750, x: 192, y: 144, lane: 1 },
+  { label: 'Fat', hu: -100, x: 63, y: 150, lane: 0 },
+  { label: 'Water', hu: 0, x: 126, y: 150, lane: 1 },
+  { label: 'Soft tissue', hu: 45, x: 311, y: 176, lane: 2 },
+  { label: 'Contrast blood', hu: 120, x: 283, y: 141, lane: 3 },
+  { label: 'Cortical bone', hu: 900, x: 182, y: 395, lane: 0 },
 ]
 
 const teachingRescale = { slope: 1, intercept: -1024 }
+const ctSliceSize = 512
+const huScaleDomain = { min: -1100, max: 1300 }
+
+let ctPixelPromise: Promise<Int16Array> | undefined
+
+function loadCtPixels() {
+  if (!ctPixelPromise) {
+    ctPixelPromise = fetch(ctSliceUrl).then(async (response) => {
+      if (!response.ok) throw new Error(`Unable to load the CT image (${response.status})`)
+      const buffer = await response.arrayBuffer()
+      if (buffer.byteLength !== ctSliceSize * ctSliceSize * 2) throw new Error('The CT image has an unexpected size')
+      return new Int16Array(buffer)
+    })
+  }
+  return ctPixelPromise
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -87,39 +104,36 @@ function customCurveValue(input: number, points: CurvePoint[]) {
   return left.y + ((right.y - left.y) * eased)
 }
 
-function huToGray(hu: number, center: number, width: number, mode: MappingMode = 'linear', points: CurvePoint[] = defaultCurvePoints) {
+function huToGray(hu: number, center: number, width: number, mode: MappingMode = 'linear-exact', points: CurvePoint[] = defaultCurvePoints) {
   const { low, high } = windowBounds(center, width)
   if (mode === 'sigmoid') return Math.round((1 / (1 + Math.exp((-4 * (hu - center)) / width))) * 255)
+  if (mode === 'linear-exact') {
+    if (hu <= low) return 0
+    if (hu > high) return 255
+    return Math.round((((hu - center) / width) + 0.5) * 255)
+  }
   const normalized = clamp((hu - low) / (high - low), 0, 1)
-  const output = mode === 'custom' ? customCurveValue(normalized, points) : normalized
-  return Math.round(output * 255)
+  return Math.round(customCurveValue(normalized, points) * 255)
 }
 
-function grayColor(hu: number, center: number, width: number, mode: MappingMode = 'linear', points: CurvePoint[] = defaultCurvePoints) {
+function grayColor(hu: number, center: number, width: number, mode: MappingMode = 'linear-exact', points: CurvePoint[] = defaultCurvePoints) {
   const value = huToGray(hu, center, width, mode, points)
   return `rgb(${value} ${value} ${value})`
 }
 
-function sampleSlice(x: number, y: number): Probe {
-  const insideEllipse = (cx: number, cy: number, rx: number, ry: number) => (((x - cx) / rx) ** 2) + (((y - cy) / ry) ** 2) <= 1
-  const insideCircle = (cx: number, cy: number, radius: number) => Math.hypot(x - cx, y - cy) <= radius
-
-  if (!insideEllipse(260, 230, 216, 188)) return { x, y, hu: -1000, label: 'Air' }
-  if (!insideEllipse(260, 230, 208, 180)) return { x, y, hu: 45, label: 'Skin / soft tissue' }
-  if (insideCircle(260, 348, 34) && !insideCircle(260, 348, 13)) return { x, y, hu: 900, label: 'Cortical bone' }
-  if (insideCircle(260, 348, 13)) return { x, y, hu: 35, label: 'Spinal canal' }
-  if (insideEllipse(260, 85, 14, 30)) return { x, y, hu: 900, label: 'Sternum' }
-  if (insideCircle(273, 210, 19)) return { x, y, hu: 120, label: 'Contrast blood' }
-  if (insideEllipse(281, 255, 73, 92)) return { x, y, hu: 45, label: 'Heart / soft tissue' }
-  if (insideEllipse(165, 217, 82, 124) || insideEllipse(355, 217, 82, 124)) {
-    const vessel = insideCircle(176, 192, 12) || insideCircle(143, 238, 8) || insideCircle(343, 183, 11) || insideCircle(378, 235, 9)
-    return { x, y, hu: vessel ? 55 : -750, label: vessel ? 'Pulmonary vessel' : 'Aerated lung' }
-  }
-  const bodyEdge = !insideEllipse(260, 230, 190, 162)
-  return { x, y, hu: bodyEdge ? -100 : 45, label: bodyEdge ? 'Subcutaneous fat' : 'Soft tissue' }
+function describeHu(hu: number) {
+  if (hu <= -1900) return 'Outside reconstructed field'
+  if (hu <= -950) return 'Air-range voxel'
+  if (hu <= -500) return 'Aerated-lung range'
+  if (hu <= -30) return 'Fat-range voxel'
+  if (hu < 30) return 'Water-range voxel'
+  if (hu < 90) return 'Soft-tissue range'
+  if (hu < 300) return 'High soft-tissue / contrast range'
+  if (hu < 700) return 'Dense material / trabecular-bone range'
+  return 'Cortical-bone range'
 }
 
-function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoints, probe, probePinned = false, onProbePreview, onProbePin, compact = false }: {
+function CtSlice({ center, width, mode = 'linear-exact', curvePoints = defaultCurvePoints, probe, probePinned = false, onProbePreview, onProbePin, compact = false }: {
   center: number
   width: number
   mode?: MappingMode
@@ -130,34 +144,49 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
   onProbePin?: (probe: Probe) => void
   compact?: boolean
 }) {
-  const style = {
-    '--air': grayColor(-1000, center, width, mode, curvePoints),
-    '--lung': grayColor(-750, center, width, mode, curvePoints),
-    '--fat': grayColor(-100, center, width, mode, curvePoints),
-    '--soft': grayColor(45, center, width, mode, curvePoints),
-    '--blood': grayColor(120, center, width, mode, curvePoints),
-    '--bone': grayColor(900, center, width, mode, curvePoints),
-  } as CSSProperties
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [pixels, setPixels] = useState<Int16Array | null>(null)
+  const [loadError, setLoadError] = useState(false)
 
-  const probeFromPointer = (event: ReactPointerEvent<SVGSVGElement>) => {
+  useEffect(() => {
+    let cancelled = false
+    loadCtPixels()
+      .then((loadedPixels) => { if (!cancelled) setPixels(loadedPixels) })
+      .catch(() => { if (!cancelled) setLoadError(true) })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !pixels) return
+    const context = canvas.getContext('2d')
+    if (!context) return
+    const image = context.createImageData(ctSliceSize, ctSliceSize)
+    for (let index = 0; index < pixels.length; index += 1) {
+      const gray = huToGray(pixels[index] ?? -2048, center, width, mode, curvePoints)
+      const outputIndex = index * 4
+      image.data[outputIndex] = gray
+      image.data[outputIndex + 1] = gray
+      image.data[outputIndex + 2] = gray
+      image.data[outputIndex + 3] = 255
+    }
+    context.putImageData(image, 0, 0)
+  }, [center, curvePoints, mode, pixels, width])
+
+  const probeFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const x = ((event.clientX - rect.left) / rect.width) * 520
-    const y = ((event.clientY - rect.top) / rect.height) * 420
-    const tissue = event.target instanceof Element ? event.target.closest<SVGElement>('[data-hu]') : null
-    const targetHu = tissue?.dataset.hu
-    const targetLabel = tissue?.dataset.label
-    if (targetHu !== undefined && targetLabel) return { x, y, hu: Number(targetHu), label: targetLabel }
-    return sampleSlice(x, y)
+    const x = clamp(Math.floor(((event.clientX - rect.left) / rect.width) * ctSliceSize), 0, ctSliceSize - 1)
+    const y = clamp(Math.floor(((event.clientY - rect.top) / rect.height) * ctSliceSize), 0, ctSliceSize - 1)
+    const hu = pixels?.[(y * ctSliceSize) + x] ?? -2048
+    return { x, y, hu, label: pixels ? describeHu(hu) : 'Loading calibrated pixels' }
   }
 
   return (
-    <svg
+    <div
       className={`ct-slice${compact ? ' is-compact' : ''}`}
-      viewBox="0 0 520 420"
       role={compact ? undefined : 'img'}
-      aria-label={compact ? undefined : `Stylized axial chest CT responding to the selected window. ${probePinned ? 'Selected voxel pinned; click elsewhere in the image to move it.' : 'Move over the image to inspect tissue; click to pin the selected voxel.'}`}
+      aria-label={compact ? undefined : `Anonymized axial chest CT responding to the selected window. ${probePinned ? 'Selected voxel pinned; click elsewhere in the image to move it.' : 'Move over the image to inspect a calibrated voxel; click to pin it.'}`}
       aria-hidden={compact || undefined}
-      style={style}
       onPointerMove={(event) => {
         if (!probePinned && onProbePreview) onProbePreview(probeFromPointer(event))
       }}
@@ -165,49 +194,18 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
         if (onProbePin) onProbePin(probeFromPointer(event))
       }}
     >
-      <defs>
-        <filter id={compact ? 'ct-soft-compact' : 'ct-soft'}>
-          <feGaussianBlur stdDeviation={compact ? 1.1 : 1.8} />
-        </filter>
-        <filter id={compact ? 'ct-grain-compact' : 'ct-grain'} x="-10%" y="-10%" width="120%" height="120%">
-          <feTurbulence baseFrequency="0.72" numOctaves="2" seed="17" type="fractalNoise" result="noise" />
-          <feColorMatrix in="noise" type="saturate" values="0" result="mono" />
-          <feBlend in="SourceGraphic" in2="mono" mode="soft-light" />
-        </filter>
-      </defs>
-      <rect width="520" height="420" fill="var(--air)" data-hu="-1000" data-label="Air" />
-      <ellipse cx="260" cy="230" rx="216" ry="188" fill="var(--soft)" data-hu="45" data-label="Skin / soft tissue" />
-      <ellipse cx="260" cy="230" rx="208" ry="180" fill="var(--fat)" data-hu="-100" data-label="Subcutaneous fat" />
-      <ellipse cx="260" cy="230" rx="190" ry="162" fill="var(--soft)" opacity="0.96" data-hu="45" data-label="Soft tissue" />
-      <path d="M93 118 C118 69 183 74 217 116 C235 139 229 290 185 333 C143 352 91 305 78 240 C70 196 74 154 93 118Z" fill="var(--lung)" stroke="var(--fat)" strokeWidth="4" data-hu="-750" data-label="Aerated lung" />
-      <path d="M427 118 C402 69 337 74 303 116 C285 139 291 290 335 333 C377 352 429 305 442 240 C450 196 446 154 427 118Z" fill="var(--lung)" stroke="var(--fat)" strokeWidth="4" data-hu="-750" data-label="Aerated lung" />
-      <path d="M270 163 C223 163 205 211 215 267 C223 315 263 338 304 318 C342 299 358 254 343 213 C330 178 307 163 270 163Z" fill="var(--soft)" data-hu="45" data-label="Mediastinal soft tissue" />
-      <ellipse cx="281" cy="255" rx="70" ry="89" fill="var(--soft)" opacity="0.98" data-hu="45" data-label="Heart / soft tissue" />
-      <circle cx="273" cy="210" r="20" fill="var(--blood)" stroke="var(--soft)" strokeWidth="5" data-hu="120" data-label="Contrast blood" />
-      <g fill="var(--soft)" opacity="0.92" data-hu="55" data-label="Pulmonary vessel">
-        <circle cx="176" cy="192" r="12" /><circle cx="143" cy="238" r="8" /><circle cx="343" cy="183" r="11" /><circle cx="378" cy="235" r="9" />
-        <path d="M176 192 L127 160 M176 192 L143 238 M343 183 L397 150 M343 183 L378 235" stroke="var(--soft)" strokeWidth="8" strokeLinecap="round" />
-      </g>
-      <g fill="none" stroke="var(--bone)" strokeWidth="7" opacity="0.93" data-hu="900" data-label="Cortical bone">
-        <path d="M109 121 C66 166 59 252 91 309" /><path d="M411 121 C454 166 461 252 429 309" />
-        <path d="M129 101 C91 153 87 278 117 327" /><path d="M391 101 C429 153 433 278 403 327" />
-      </g>
-      <ellipse cx="260" cy="85" rx="14" ry="30" fill="var(--bone)" data-hu="900" data-label="Sternum" />
-      <circle cx="260" cy="348" r="36" fill="var(--bone)" data-hu="900" data-label="Cortical bone" />
-      <circle cx="260" cy="348" r="14" fill="var(--soft)" data-hu="35" data-label="Spinal canal" />
-      <g opacity="0.12" filter={`url(#${compact ? 'ct-grain-compact' : 'ct-grain'})`} pointerEvents="none">
-        <ellipse cx="260" cy="230" rx="207" ry="179" fill="white" />
-      </g>
-      {!compact && <>
-        <text x="22" y="32" className="ct-orientation-label">R</text>
+      <canvas ref={canvasRef} width={ctSliceSize} height={ctSliceSize} aria-hidden="true" />
+      {!pixels && <span className="ct-loading-state">{loadError ? 'CT data unavailable' : 'Loading calibrated CT data…'}</span>}
+      {!compact && <svg className="ct-overlay" viewBox={`0 0 ${ctSliceSize} ${ctSliceSize}`} aria-hidden="true">
+        <text x="20" y="32" className="ct-orientation-label">R</text>
         <text x="480" y="32" className="ct-orientation-label">L</text>
-        {probe && <g className={`ct-probe ${probePinned ? 'is-pinned' : 'is-live'}`} transform={`translate(${probe.x} ${probe.y})`} aria-hidden="true">
+        {probe && <g className={`ct-probe ${probePinned ? 'is-pinned' : 'is-live'}`} transform={`translate(${probe.x} ${probe.y})`}>
           <circle className="ct-probe-ring" r="11" />
           <path className="ct-probe-lines" d="M-17 0H17M0-17V17" />
           {probePinned && <g className="ct-probe-lock" transform="translate(15 -15)"><circle r="8" /><path d="M-2.6-1.2v-2a2.6 2.6 0 0 1 5.2 0v2M-3.4-1.2h6.8v5.5h-6.8z" /></g>}
         </g>}
-      </>}
-    </svg>
+      </svg>}
+    </div>
   )
 }
 
@@ -292,7 +290,7 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
   return (
     <div className="curve-editor">
       <div className="mapping-modes" role="group" aria-label="Display mapping function">
-        {(['linear', 'sigmoid', 'custom'] as MappingMode[]).map((mappingMode) => <button key={mappingMode} type="button" aria-pressed={mode === mappingMode} onClick={() => onModeChange(mappingMode)}>{mappingMode === 'custom' ? 'Custom curve' : mappingMode[0]?.toUpperCase() + mappingMode.slice(1)}</button>)}
+        {(['linear-exact', 'sigmoid', 'custom'] as MappingMode[]).map((mappingMode) => <button key={mappingMode} type="button" aria-pressed={mode === mappingMode} onClick={() => onModeChange(mappingMode)}>{mappingMode === 'linear-exact' ? 'LINEAR_EXACT' : mappingMode === 'custom' ? 'Custom curve' : 'Sigmoid'}</button>)}
       </div>
       <svg
         className="window-curve"
@@ -371,8 +369,16 @@ function HuScale({ activeHu, onSelect }: { activeHu: number; onSelect: (probe: P
         <div className="hu-scale-markers">
           {tissues.map((tissue) => {
             const selected = tissue.hu === activeHu
+            const position = ((tissue.hu - huScaleDomain.min) / (huScaleDomain.max - huScaleDomain.min)) * 100
             return (
-              <button key={tissue.label} type="button" aria-pressed={selected} className={selected ? 'is-selected' : ''} onClick={() => onSelect({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}>
+              <button
+                key={tissue.label}
+                type="button"
+                aria-pressed={selected}
+                className={selected ? 'is-selected' : ''}
+                style={{ '--hu-position': `${position}%`, '--hu-lane': tissue.lane } as CSSProperties}
+                onClick={() => onSelect({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}
+              >
                 <i aria-hidden="true" />
                 <strong>{tissue.label}</strong>
                 <span>{tissue.hu > 0 ? '+' : ''}{tissue.hu} HU</span>
@@ -393,9 +399,9 @@ export default function WindowingModule() {
   const [chapter, setChapter] = useState<ChapterId>('hu')
   const [center, setCenter] = useState(40)
   const [width, setWidth] = useState(400)
-  const [mappingMode, setMappingMode] = useState<MappingMode>('linear')
+  const [mappingMode, setMappingMode] = useState<MappingMode>('linear-exact')
   const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(() => defaultCurvePoints.map((point) => ({ ...point })))
-  const [probe, setProbe] = useState<Probe>({ x: 285, y: 255, hu: 45, label: 'Heart / soft tissue' })
+  const [probe, setProbe] = useState<Probe>({ x: 280, y: 200, hu: 187, label: 'High soft-tissue / contrast range' })
   const [probePinned, setProbePinned] = useState(false)
   const [mlPipeline, setMlPipeline] = useState<MlPipeline>('raw')
 
@@ -408,7 +414,7 @@ export default function WindowingModule() {
   }, [])
 
   const activeChapter = chapters.findIndex((item) => item.id === chapter)
-  const activePreset = mappingMode === 'linear' ? presets.find((preset) => preset.center === center && preset.width === width) : undefined
+  const activePreset = mappingMode === 'linear-exact' ? presets.find((preset) => preset.center === center && preset.width === width) : undefined
   const bounds = windowBounds(center, width)
   const probeGray = huToGray(probe.hu, center, width, mappingMode, curvePoints)
   const storedValue = Math.round((probe.hu - teachingRescale.intercept) / teachingRescale.slope)
@@ -423,7 +429,7 @@ export default function WindowingModule() {
   const applyPreset = (preset: WindowPreset) => {
     setCenter(preset.center)
     setWidth(preset.width)
-    setMappingMode('linear')
+    setMappingMode('linear-exact')
   }
 
   const selectProbe = (nextProbe: Probe) => {
@@ -443,12 +449,12 @@ export default function WindowingModule() {
       </header>
 
       <nav className="windowing-chapters" aria-label="Windowing learning sections">
-        {chapters.map((item, index) => <button key={item.id} type="button" className={chapter === item.id ? 'is-active' : ''} onClick={() => { setChapter(item.id); if (item.id === 'presets') setMappingMode('linear') }}><span>{index + 1}</span><strong>{item.short}</strong><small>{item.label}</small></button>)}
+        {chapters.map((item, index) => <button key={item.id} type="button" className={chapter === item.id ? 'is-active' : ''} onClick={() => { setChapter(item.id); if (item.id === 'presets') setMappingMode('linear-exact') }}><span>{index + 1}</span><strong>{item.short}</strong><small>{item.label}</small></button>)}
       </nav>
 
       <div className="windowing-workbench">
         <section className="ct-viewer-card" aria-label="Interactive CT window viewer">
-          <div className="viewer-toolbar"><span><ScanLine aria-hidden="true" /> AXIAL · CHEST</span><span>{mappingMode.toUpperCase()} · W {width} · C {center}</span></div>
+          <div className="viewer-toolbar"><span><ScanLine aria-hidden="true" /> AXIAL · CHEST · LIDC-IDRI</span><span>{mappingMode.toUpperCase().replace('-', '_')} · W {width} · C {center}</span></div>
           <div className="ct-viewer-stage">
             <CtSlice center={center} width={width} mode={mappingMode} curvePoints={curvePoints} probe={probe} probePinned={probePinned} onProbePreview={setProbe} onProbePin={selectProbe} />
             <div className={`viewer-help${probePinned ? ' is-pinned' : ''}`}>
@@ -474,7 +480,7 @@ export default function WindowingModule() {
             <p className="lesson-number">01 · STORED VALUE → HU</p>
             <h3 id="windowing-hu-title">The stored integer is only the first value.</h3>
             <p>CT commonly stores voxel samples as fixed-width integers for compact, predictable storage. These are storage-domain values: their physical meaning cannot be determined from the pixel array alone. DICOM metadata defines the conversion into modality values, commonly <code>output = stored value × slope + intercept</code>. The conversion can change the number or be an identity transform, so software should apply or verify the metadata before treating an array as HU.</p>
-            <p><strong>VOI (Value of Interest)</strong> is the DICOM display transform applied after modality values have been recovered. It selects which part of the value range receives visible contrast. In CT, this is commonly defined using window center and width, although a VOI lookup table or sigmoid function can also be used. With linear windowing, values below the selected range become black, values above it become white, and values inside it are distributed across the available grays.</p>
+            <p><strong>VOI (Value of Interest)</strong> is not one recommended viewing window. It is the DICOM display stage applied after modality values have been recovered. A file can provide one or more Window Center/Width pairs or VOI LUTs as suggested presentations, and a viewer can let the user choose or adjust them. This stage selects which part of the value range receives visible contrast.</p>
             <div className="value-pipeline" aria-label={`Example value pipeline: stored value ${storedValue}, slope 1, intercept minus 1024, ${probe.hu} Hounsfield units, display value ${probeGray}`}>
               <span><small>Pixel Data</small><strong>{storedValue}</strong><code>stored value</code></span>
               <b aria-hidden="true">× 1 + (−1024)</b>
@@ -495,20 +501,20 @@ export default function WindowingModule() {
             <p>Center and width select the HU interval. The transfer function decides how values in that interval become display brightness from 0–255.</p>
             <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
-            <p className="mapping-mode-note"><strong>{mappingMode === 'linear' ? 'Linear window' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear' ? 'Below the interval is black, above it is white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
+            <p className="mapping-mode-note"><strong>{mappingMode === 'linear-exact' ? 'DICOM LINEAR_EXACT' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear-exact' ? 'The exact bounds are C − W/2 and C + W/2: values at or below the low bound are black, values above the high bound are white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
             <div className="display-consequences" aria-label="Window clipping and quantization summary">
               <span><small>Below {Math.round(bounds.low)} HU</small><strong>0 · clipped black</strong></span>
               <span><small>Inside the window</small><strong>0–255 · quantized</strong></span>
               <span><small>Above {Math.round(bounds.high)} HU</small><strong>255 · clipped white</strong></span>
             </div>
-            <p className="quantization-note">{mappingMode === 'linear' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. Several input values can therefore share one displayed gray.` : 'With a nonlinear curve, HU-per-gray-step varies across the interval. The output is still a reduced display representation.'}</p>
+            <p className="quantization-note">{mappingMode === 'linear-exact' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. Several input values can therefore share one displayed gray.` : 'With a nonlinear curve, HU-per-gray-step varies across the interval. The output is still a reduced display representation.'}</p>
             <div className="window-control-stack">
               <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
               <p><strong>Width controls contrast.</strong> A narrow width spreads a small HU range across every gray; a wide width includes more tissue types with less separation.</p>
               <SliderControl label="Window center" value={center} min={-1000} max={1000} step={10} unit="HU" onChange={setCenter} />
               <p><strong>Center chooses the neighborhood.</strong> Moving it shifts both bounds together toward lower- or higher-attenuation anatomy.</p>
             </div>
-            <p className="lesson-note"><Info aria-hidden="true" /><span><strong>DICOM nuance.</strong> A VOI stage may be linear, sigmoid, or an explicit lookup table. This demo assumes MONOCHROME2, where lower output values appear darker; MONOCHROME1 reverses that presentation. The 0–255 output here is an intuitive teaching target, not a limit on every clinical display pipeline.</span></p>
+            <p className="lesson-note"><Info aria-hidden="true" /><span><strong>DICOM nuance.</strong> This demo uses the standard's LINEAR_EXACT definition. DICOM also defines LINEAR and SIGMOID functions, while an explicit VOI LUT can supply another mapping. The demo assumes MONOCHROME2, where lower output values appear darker; MONOCHROME1 reverses that presentation.</span></p>
           </>}
 
           {chapter === 'presets' && <>
@@ -572,6 +578,7 @@ export default function WindowingModule() {
         <span>Reference material</span>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.html#sect_C.11.1" target="_blank" rel="noreferrer">DICOM Modality LUT</a>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.2.html" target="_blank" rel="noreferrer">DICOM VOI LUT</a>
+        <a href="https://www.cancerimagingarchive.net/collection/lidc-idri/" target="_blank" rel="noreferrer">CT image: LIDC-IDRI · CC BY 3.0</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK547721/" target="_blank" rel="noreferrer">Hounsfield Unit</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK597347/" target="_blank" rel="noreferrer">CT physics</a>
         <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10361226/" target="_blank" rel="noreferrer">Representative lung windows</a>
