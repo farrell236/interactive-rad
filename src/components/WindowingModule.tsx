@@ -4,7 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
 
 type ChapterId = 'hu' | 'mapping' | 'presets' | 'ml'
-type PresetId = 'lung' | 'soft' | 'brain' | 'bone'
+type PresetId = 'lung' | 'soft' | 'vascular' | 'bone'
 type MappingMode = 'linear-exact' | 'sigmoid' | 'custom'
 type MlPipeline = 'raw' | 'single' | 'multi'
 
@@ -44,7 +44,7 @@ const chapters: Array<{ id: ChapterId; label: string; short: string }> = [
 
 const mlPipelines: Array<{ id: MlPipeline; label: string; shape: string; description: string }> = [
   { id: 'raw', label: 'Calibrated HU', shape: '1 × H × W', description: 'Retain the calibrated numeric range, then normalize it explicitly for the model.' },
-  { id: 'single', label: 'Single window', shape: '1 × H × W', description: 'Clip one task-specific interval and scale it consistently for training and inference.' },
+  { id: 'single', label: 'Single window', shape: '1 × H × W', description: 'Apply one task-specific display transform consistently during training and inference.' },
   { id: 'multi', label: 'Multi-window', shape: '3 × H × W', description: 'Stack complementary lung, soft-tissue, and bone views as separate input channels.' },
 ]
 
@@ -59,7 +59,7 @@ const defaultCurvePoints: CurvePoint[] = [
 const presets: WindowPreset[] = [
   { id: 'lung', label: 'Lung', width: 1500, center: -600, description: 'Keeps aerated lung and its soft-tissue structures distinguishable.' },
   { id: 'soft', label: 'Soft tissue', width: 400, center: 40, description: 'Expands contrast around muscle, vessels, and mediastinal structures.' },
-  { id: 'brain', label: 'Brain', width: 80, center: 40, description: 'Uses a narrow range to separate subtly different intracranial tissues.' },
+  { id: 'vascular', label: 'Vascular', width: 700, center: 100, description: 'Widens the bright, contrast-enhanced blood range for pulmonary vessels.' },
   { id: 'bone', label: 'Bone', width: 2000, center: 400, description: 'Uses a broad, high-centered range for cortical and trabecular bone.' },
 ]
 
@@ -509,7 +509,10 @@ export default function WindowingModule() {
   const huPerDisplayStep = width / 255
   const histogram = useMemo(() => ctHistogram(ctPixels), [ctPixels])
   const automaticWindow = useMemo(() => autoWindowFromPixels(ctPixels), [ctPixels])
-  const tissueRows = useMemo(() => tissues.map((tissue) => ({ ...tissue, gray: huToGray(tissue.hu, center, width, mappingMode, curvePoints) })), [center, width, mappingMode, curvePoints])
+  const tissueRows = useMemo(() => tissues.map((tissue) => {
+    const hu = ctPixels?.[(tissue.y * ctSliceSize) + tissue.x] ?? tissue.hu
+    return { ...tissue, hu, gray: huToGray(hu, center, width, mappingMode, curvePoints) }
+  }), [center, ctPixels, width, mappingMode, curvePoints])
   const mappingGradient = useMemo(() => `linear-gradient(90deg, ${Array.from({ length: 9 }, (_, index) => {
     const position = index / 8
     const gray = huToGray(bounds.low + (position * width), center, width, mappingMode, curvePoints)
@@ -608,7 +611,7 @@ export default function WindowingModule() {
           {chapter === 'mapping' && <>
             <p className="lesson-number">02 · WINDOW TRANSFER FUNCTION</p>
             <h3 id="windowing-mapping-title">Map a useful range to the display.</h3>
-            <p>Center and width position and scale the mapping. The transfer function decides how HU values become display brightness from 0–255.</p>
+            <p>Center and width position and scale the mapping. In this demo, the transfer function maps HU values to display brightness from 0–255.</p>
             <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} histogram={histogram} onModeChange={setMappingMode} onAuto={applyAutomaticWindow} onReset={resetWindow} autoAvailable={Boolean(automaticWindow)} points={curvePoints} onPointsChange={setCurvePoints} />
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
             <p className="mapping-mode-note"><strong>{mappingMode === 'linear-exact' ? 'DICOM LINEAR_EXACT' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear-exact' ? 'The exact bounds are C − W/2 and C + W/2: values at or below the low bound are black, values above the high bound are white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
@@ -640,7 +643,7 @@ export default function WindowingModule() {
             <div className="mapping-table-intro"><strong>Current tissue mapping</strong><span>Select a row to place the image probe.</span></div>
             <div className="mapping-table" role="table" aria-label="Current HU to display mapping">
               <div role="row" className="mapping-table-head"><span role="columnheader">Tissue</span><span role="columnheader">HU</span><span role="columnheader">8-bit</span><span role="columnheader">Output</span></div>
-              {tissueRows.map((tissue) => <button type="button" role="row" key={tissue.label} onClick={() => selectProbe({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}><span role="cell">{tissue.label}</span><span role="cell">{tissue.hu}</span><span role="cell">{tissue.gray}</span><span role="cell" className="table-swatch"><i style={{ background: `rgb(${tissue.gray} ${tissue.gray} ${tissue.gray})` }} /></span></button>)}
+              {tissueRows.map((tissue) => <button type="button" role="row" key={tissue.label} onClick={() => selectLandmark(tissue)}><span role="cell">{tissue.label}</span><span role="cell">{tissue.hu}</span><span role="cell">{tissue.gray}</span><span role="cell" className="table-swatch"><i style={{ background: `rgb(${tissue.gray} ${tissue.gray} ${tissue.gray})` }} /></span></button>)}
             </div>
           </>}
 
@@ -661,7 +664,7 @@ export default function WindowingModule() {
               </>}
               {mlPipeline === 'single' && <>
                 <div className="ml-window-thumbnail"><CtSlice center={center} width={width} mode={mappingMode} curvePoints={curvePoints} compact /></div>
-                <div><small>Current transform</small><strong>W {width} · C {center}</strong><p>Compact and familiar, but every value below or above the chosen interval has been collapsed.</p></div>
+                <div><small>Current transform</small><strong>W {width} · C {center}</strong><p>{mappingMode === 'sigmoid' ? 'The sigmoid compresses values progressively into dark and bright tails rather than clipping them at finite boundaries.' : 'Compact and familiar, but every value below or above the chosen interval has been collapsed.'}</p></div>
               </>}
               {mlPipeline === 'multi' && <>
                 <div className="ml-window-stack" aria-hidden="true">{[presets[0], presets[1], presets[3]].map((preset) => preset && <div key={preset.id}><CtSlice center={preset.center} width={preset.width} compact /><span>{preset.label}</span></div>)}</div>
@@ -693,6 +696,7 @@ export default function WindowingModule() {
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK547721/" target="_blank" rel="noreferrer">Hounsfield Unit</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK597347/" target="_blank" rel="noreferrer">CT physics</a>
         <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10361226/" target="_blank" rel="noreferrer">Representative lung windows</a>
+        <a href="https://pubmed.ncbi.nlm.nih.gov/31415352/" target="_blank" rel="noreferrer">Vascular window reference</a>
       </footer>
     </article>
   )

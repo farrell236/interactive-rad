@@ -139,16 +139,25 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText('LOW -1350 HU → 30')).toBeInTheDocument()
     expect(screen.getByText('HIGH 150 HU → 225')).toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: /Model input and reproducibility/ }))
+    await user.click(screen.getByRole('button', { name: /Single window/ }))
+    expect(screen.getByText(/sigmoid compresses values progressively/)).toBeInTheDocument()
+    expect(screen.queryByText(/every value below or above the chosen interval has been collapsed/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Clipping and display mapping/ }))
+
     await user.click(screen.getByRole('button', { name: 'Custom curve' }))
     expect(screen.getByRole('slider', { name: 'Selected curve point output' })).toBeInTheDocument()
     fireEvent.change(screen.getByRole('slider', { name: 'Selected curve point output' }), { target: { value: '200' } })
     expect(screen.getByText('-600 HU → 200')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Common windows/ }))
+    expect(screen.getByRole('button', { name: 'Vascular window, width 700, center 100' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Bone window, width 2000, center 400' }))
     expect(screen.getByText(/LINEAR_EXACT · W 2000 · C 400/)).toBeInTheDocument()
     expect(screen.getByText('W 2000 · C 400')).toBeInTheDocument()
-    expect(screen.getByRole('table', { name: 'Current HU to display mapping' })).toBeInTheDocument()
+    const mappingTable = screen.getByRole('table', { name: 'Current HU to display mapping' })
+    expect(mappingTable).toBeInTheDocument()
+    expect(within(mappingTable).getByText('905')).toBeInTheDocument()
     expect(screen.queryByText(/representative teaching values/)).not.toBeInTheDocument()
   })
 
