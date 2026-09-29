@@ -377,10 +377,10 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .window-definition-row > span { display: grid; gap: 4px; padding: 9px 10px; border: 1px solid var(--separator-soft); border-radius: 7px; background: var(--surface-secondary); }
 .window-definition-row small { color: var(--text-faint); font-size: 0.61rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .window-definition-row strong { font-size: 0.7rem; font-weight: 620; font-variant-numeric: tabular-nums; }
-.window-control-stack { display: grid; gap: 9px; }
-.window-control-stack.is-compact { margin: 18px 0; padding: 15px; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); }
-.window-control-stack > p { margin: -1px 0 11px; color: var(--text-faint); font-size: 0.69rem; line-height: 1.48; }
-.window-control-stack > p strong { color: var(--text-soft); font-weight: 630; }
+.window-control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.window-control-grid > div { display: grid; align-content: start; gap: 7px; min-width: 0; }
+.window-control-grid p { margin: 0; color: var(--text-faint); font-size: 0.66rem; line-height: 1.45; }
+.window-control-grid p strong { color: var(--text-soft); font-weight: 630; }
 .window-slider { display: grid; gap: 3px; }
 .window-slider > span { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
 .window-slider strong { font-size: 0.74rem; font-weight: 620; }
@@ -540,6 +540,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .probe-readout { gap: 8px; padding: 10px; }
   .probe-readout-values { grid-template-columns: 1fr 0.8fr 0.8fr 26px; gap: 8px; }
   .windowing-lesson-card { padding: 24px 20px; }
+  .window-control-grid { grid-template-columns: 1fr; gap: 18px; }
   .window-preset-grid { grid-template-columns: 1fr; }
   .windowing-summary { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
   .windowing-ramp { grid-row: 2; }

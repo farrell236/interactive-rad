@@ -558,11 +558,15 @@ export default function WindowingModule() {
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
             <p className="mapping-mode-note"><strong>{mappingMode === 'linear-exact' ? 'DICOM LINEAR_EXACT' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear-exact' ? 'The exact bounds are C − W/2 and C + W/2: values at or below the low bound are black, values above the high bound are white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
             <p className="quantization-note">{mappingMode === 'linear-exact' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. ${huPerDisplayStep > 1 ? 'Multiple HU values can therefore share one displayed gray.' : 'For this integer-valued image, some display levels may be skipped between adjacent HU values.'}` : 'With a nonlinear curve, HU-per-gray-step varies across the mapping. The output is still a reduced display representation.'}</p>
-            <div className="window-control-stack">
-              <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
-              <p><strong>Width controls contrast.</strong> A narrow width spreads a small HU range across every gray; a wide width includes more tissue types with less separation.</p>
-              <SliderControl label="Window center" value={center} min={-1000} max={1000} step={10} unit="HU" onChange={setCenter} />
-              <p><strong>Center chooses the neighborhood.</strong> Moving it shifts both bounds together toward lower- or higher-attenuation anatomy.</p>
+            <div className="window-control-grid">
+              <div>
+                <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
+                <p><strong>Width controls contrast.</strong> A narrow width spreads a small HU range across every gray; a wide width includes more tissue types with less separation.</p>
+              </div>
+              <div>
+                <SliderControl label="Window center" value={center} min={-1000} max={1000} step={10} unit="HU" onChange={setCenter} />
+                <p><strong>Center chooses the neighborhood.</strong> Moving it shifts both bounds together toward lower- or higher-attenuation anatomy.</p>
+              </div>
             </div>
             <section className="mapping-function-guide" aria-labelledby="display-functions-title">
               <h4 id="display-functions-title">Display functions</h4>
