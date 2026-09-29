@@ -1,4 +1,4 @@
-import { Activity, Contrast, Crosshair, Info, Pin, PinOff, ScanLine, SlidersHorizontal } from 'lucide-react'
+import { Activity, Contrast, Crosshair, Pin, PinOff, ScanLine, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
@@ -76,6 +76,8 @@ const tissues: HuLandmark[] = [
 const teachingRescale = { slope: 1, intercept: -1024 }
 const ctSliceSize = 512
 const huScaleDomain = { min: -1100, max: 1300 }
+const curveDomain = { min: -1200, max: 2000 }
+const curveHistogramBins = 84
 
 let ctPixelPromise: Promise<Int16Array> | undefined
 
@@ -112,6 +114,19 @@ function clamp(value: number, min: number, max: number) {
 
 function windowBounds(center: number, width: number) {
   return { low: center - width / 2, high: center + width / 2 }
+}
+
+function ctHistogram(pixels: Int16Array | null) {
+  if (!pixels) return []
+  const bins = Array.from({ length: curveHistogramBins }, () => 0)
+  const domainWidth = curveDomain.max - curveDomain.min
+  for (const hu of pixels) {
+    if (hu < curveDomain.min || hu > curveDomain.max) continue
+    const index = Math.min(curveHistogramBins - 1, Math.floor(((hu - curveDomain.min) / domainWidth) * curveHistogramBins))
+    bins[index] += 1
+  }
+  const peak = Math.max(...bins, 1)
+  return bins.map((count) => count / peak)
 }
 
 function customCurveValue(input: number, points: CurvePoint[]) {
@@ -222,11 +237,12 @@ function CtSlice({ center, width, mode = 'linear-exact', curvePoints = defaultCu
   )
 }
 
-function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPointsChange }: {
+function CurveEditor({ center, width, probeHu, mode, histogram, onModeChange, points, onPointsChange }: {
   center: number
   width: number
   probeHu: number
   mode: MappingMode
+  histogram: number[]
   onModeChange: (mode: MappingMode) => void
   points: CurvePoint[]
   onPointsChange: (points: CurvePoint[]) => void
@@ -235,14 +251,22 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
   const [selectedPoint, setSelectedPoint] = useState(2)
   const bounds = windowBounds(center, width)
   const plot = { left: 52, top: 34, width: 420, height: 176 }
-  const domain = { min: -1200, max: 2000 }
-  const xForHu = (hu: number) => plot.left + ((clamp(hu, domain.min, domain.max) - domain.min) / (domain.max - domain.min) * plot.width)
+  const xForHu = (hu: number) => plot.left + ((clamp(hu, curveDomain.min, curveDomain.max) - curveDomain.min) / (curveDomain.max - curveDomain.min) * plot.width)
   const yFor = (normalized: number) => plot.top + ((1 - normalized) * plot.height)
   const path = Array.from({ length: 161 }, (_, index) => {
-    const hu = domain.min + ((index / 160) * (domain.max - domain.min))
+    const hu = curveDomain.min + ((index / 160) * (curveDomain.max - curveDomain.min))
     const output = huToGray(hu, center, width, mode, points) / 255
     return `${index === 0 ? 'M' : 'L'}${xForHu(hu).toFixed(2)} ${yFor(output).toFixed(2)}`
   }).join(' ')
+  const histogramPath = histogram.length > 1 ? [
+    `M${plot.left} ${plot.top + plot.height}`,
+    ...histogram.map((value, index) => {
+      const x = plot.left + ((index / (histogram.length - 1)) * plot.width)
+      const y = plot.top + plot.height - (value * plot.height * 0.72)
+      return `L${x.toFixed(2)} ${y.toFixed(2)}`
+    }),
+    `L${plot.left + plot.width} ${plot.top + plot.height}Z`,
+  ].join(' ') : ''
   const probeOutput = huToGray(probeHu, center, width, mode, points) / 255
   const selected = points[selectedPoint] ?? points[1]
   const lowX = xForHu(bounds.low)
@@ -264,7 +288,7 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
     const rect = event.currentTarget.getBoundingClientRect()
     const svgX = ((event.clientX - rect.left) / rect.width) * 520
     const svgY = ((event.clientY - rect.top) / rect.height) * 260
-    const hu = domain.min + (clamp((svgX - plot.left) / plot.width, 0, 1) * (domain.max - domain.min))
+    const hu = curveDomain.min + (clamp((svgX - plot.left) / plot.width, 0, 1) * (curveDomain.max - curveDomain.min))
     updatePoint(index, (hu - bounds.low) / width, 1 - ((svgY - plot.top) / plot.height))
   }
 
@@ -309,19 +333,23 @@ function CurveEditor({ center, width, probeHu, mode, onModeChange, points, onPoi
         className="window-curve"
         viewBox="0 0 520 260"
         role="img"
-        aria-label={`${mode} transfer curve on a fixed Hounsfield unit axis, showing clipping outside the selected interval`}
+        aria-label={`${mode} transfer curve over the measured Hounsfield unit histogram, ${mode === 'sigmoid' ? 'showing low and high reference values' : 'showing clipping outside the selected interval'}`}
         onPointerMove={(event) => { if (dragging !== null) updateFromPointer(event, dragging) }}
         onPointerUp={() => setDragging(null)}
         onPointerLeave={() => setDragging(null)}
       >
         <rect x={plot.left} y={plot.top} width={plot.width} height={plot.height} className="curve-plot" />
-        <path className="curve-histogram" d="M52 210 L52 190 L72 186 L92 196 L112 170 L132 181 L152 126 L172 154 L192 186 L212 178 L232 108 L252 82 L272 102 L292 164 L312 183 L332 176 L352 142 L372 159 L392 191 L412 181 L432 196 L452 188 L472 194 L472 210Z" />
+        {histogramPath && <path className="curve-histogram" d={histogramPath} data-testid="ct-histogram" data-source="calibrated-ct-voxels" />}
         <rect x={lowX} y={plot.top} width={Math.max(0, highX - lowX)} height={plot.height} className="curve-window-band" />
         {mode !== 'sigmoid' && <>
           <rect x={plot.left} y={plot.top} width={Math.max(0, lowX - plot.left)} height={plot.height} className="curve-clipped-zone" />
           <rect x={highX} y={plot.top} width={Math.max(0, (plot.left + plot.width) - highX)} height={plot.height} className="curve-clipped-zone" />
-          {lowX - plot.left > 50 && <text x={(plot.left + lowX) / 2} y="55" textAnchor="middle" className="curve-clip-label">CLIPPED BLACK</text>}
-          {(plot.left + plot.width) - highX > 50 && <text x={(highX + plot.left + plot.width) / 2} y="55" textAnchor="middle" className="curve-clip-label">CLIPPED WHITE</text>}
+          <text x={plot.left + 8} y="55" textAnchor="start" className="curve-clip-label">CLIPPED ≤ {Math.round(bounds.low)} HU</text>
+          <text x={plot.left + plot.width - 8} y="55" textAnchor="end" className="curve-clip-label">CLIPPED &gt; {Math.round(bounds.high)} HU</text>
+        </>}
+        {mode === 'sigmoid' && <>
+          <text x={plot.left + 8} y="55" textAnchor="start" className="curve-clip-label">LOW {Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mode, points)}</text>
+          <text x={plot.left + plot.width - 8} y="55" textAnchor="end" className="curve-clip-label">HIGH {Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mode, points)}</text>
         </>}
         <line x1={plot.left} x2={plot.left + plot.width} y1={yFor(0.5)} y2={yFor(0.5)} className="curve-gridline" />
         <line x1={lowX} x2={lowX} y1={plot.top} y2={plot.top + plot.height} className="curve-window-boundary" />
@@ -439,6 +467,7 @@ export default function WindowingModule() {
   const probeGray = huToGray(probe.hu, center, width, mappingMode, curvePoints)
   const storedValue = Math.round((probe.hu - teachingRescale.intercept) / teachingRescale.slope)
   const huPerDisplayStep = width / 255
+  const histogram = useMemo(() => ctHistogram(ctPixels), [ctPixels])
   const tissueRows = useMemo(() => tissues.map((tissue) => ({ ...tissue, gray: huToGray(tissue.hu, center, width, mappingMode, curvePoints) })), [center, width, mappingMode, curvePoints])
   const mappingGradient = useMemo(() => `linear-gradient(90deg, ${Array.from({ length: 9 }, (_, index) => {
     const position = index / 8
@@ -524,23 +553,25 @@ export default function WindowingModule() {
           {chapter === 'mapping' && <>
             <p className="lesson-number">02 · WINDOW TRANSFER FUNCTION</p>
             <h3 id="windowing-mapping-title">Choose a useful interval, then map it to the display.</h3>
-            <p>Center and width select the HU interval. The transfer function decides how values in that interval become display brightness from 0–255.</p>
-            <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
+            <p>Center and width position and scale the mapping. The transfer function decides how HU values become display brightness from 0–255.</p>
+            <CurveEditor center={center} width={width} probeHu={probe.hu} mode={mappingMode} histogram={histogram} onModeChange={setMappingMode} points={curvePoints} onPointsChange={setCurvePoints} />
             <div className="window-definition-row"><span><small>Low</small><strong>{Math.round(bounds.low)} HU → {huToGray(bounds.low, center, width, mappingMode, curvePoints)}</strong></span><span><small>Center</small><strong>{center} HU → {huToGray(center, center, width, mappingMode, curvePoints)}</strong></span><span><small>High</small><strong>{Math.round(bounds.high)} HU → {huToGray(bounds.high, center, width, mappingMode, curvePoints)}</strong></span></div>
             <p className="mapping-mode-note"><strong>{mappingMode === 'linear-exact' ? 'DICOM LINEAR_EXACT' : mappingMode === 'sigmoid' ? 'Sigmoid window' : 'Custom VOI curve'}.</strong> {mappingMode === 'linear-exact' ? 'The exact bounds are C − W/2 and C + W/2: values at or below the low bound are black, values above the high bound are white, and the values between follow a straight ramp.' : mappingMode === 'sigmoid' ? 'The same center and width produce a smooth toe and shoulder instead of abrupt clipping.' : 'Drag the points to redistribute contrast inside the selected interval while preserving intensity order.'}</p>
-            <div className="display-consequences" aria-label="Window clipping and quantization summary">
-              <span><small>Below {Math.round(bounds.low)} HU</small><strong>0 · clipped black</strong></span>
-              <span><small>Inside the window</small><strong>0–255 · quantized</strong></span>
-              <span><small>Above {Math.round(bounds.high)} HU</small><strong>255 · clipped white</strong></span>
-            </div>
-            <p className="quantization-note">{mappingMode === 'linear-exact' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. Several input values can therefore share one displayed gray.` : 'With a nonlinear curve, HU-per-gray-step varies across the interval. The output is still a reduced display representation.'}</p>
+            <p className="quantization-note">{mappingMode === 'linear-exact' ? `At this width, one 8-bit display step covers about ${huPerDisplayStep < 10 ? huPerDisplayStep.toFixed(1) : huPerDisplayStep.toFixed(0)} HU. ${huPerDisplayStep > 1 ? 'Multiple HU values can therefore share one displayed gray.' : 'For this integer-valued image, some display levels may be skipped between adjacent HU values.'}` : 'With a nonlinear curve, HU-per-gray-step varies across the mapping. The output is still a reduced display representation.'}</p>
             <div className="window-control-stack">
               <SliderControl label="Window width" value={width} min={1} max={3000} step={1} unit="HU" onChange={setWidth} />
               <p><strong>Width controls contrast.</strong> A narrow width spreads a small HU range across every gray; a wide width includes more tissue types with less separation.</p>
               <SliderControl label="Window center" value={center} min={-1000} max={1000} step={10} unit="HU" onChange={setCenter} />
               <p><strong>Center chooses the neighborhood.</strong> Moving it shifts both bounds together toward lower- or higher-attenuation anatomy.</p>
             </div>
-            <p className="lesson-note"><Info aria-hidden="true" /><span><strong>DICOM nuance.</strong> This demo uses the standard's LINEAR_EXACT definition. DICOM also defines LINEAR and SIGMOID functions, while an explicit VOI LUT can supply another mapping. The demo assumes MONOCHROME2, where lower output values appear darker; MONOCHROME1 reverses that presentation.</span></p>
+            <section className="mapping-function-guide" aria-labelledby="display-functions-title">
+              <h4 id="display-functions-title">Display functions</h4>
+              <p><strong>LINEAR</strong> uses a straight brightness ramp with half-step handling for integer pixel values.</p>
+              <p><strong>LINEAR_EXACT</strong> uses a straight ramp between the symmetric bounds C − W/2 and C + W/2. This is the linear function used in the demo.</p>
+              <p><strong>SIGMOID</strong> uses a smooth S-curve centered on C. Width controls its steepness, and there are no finite clipping boundaries.</p>
+              <p><strong>VOI LUT</strong> supplies an explicit lookup table when the desired mapping is not described by one of the functions above.</p>
+            </section>
+            <p className="monochrome-explainer"><strong>MONOCHROME2</strong> displays lower output values darker and higher values brighter. <strong>MONOCHROME1</strong> reverses that relationship.</p>
           </>}
 
           {chapter === 'presets' && <>

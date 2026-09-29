@@ -116,8 +116,12 @@ describe('Radiology Imaging Lab', () => {
     await user.click(screen.getByRole('button', { name: /Clipping and display mapping/ }))
 
     const initialCurve = screen.getByTestId('window-curve-path').getAttribute('d')
-    expect(screen.getByText('CLIPPED BLACK')).toBeInTheDocument()
-    expect(screen.getByText('CLIPPED WHITE')).toBeInTheDocument()
+    expect(screen.getByText('CLIPPED ≤ -160 HU')).toBeInTheDocument()
+    expect(screen.getByText('CLIPPED > 240 HU')).toBeInTheDocument()
+    expect(await screen.findByTestId('ct-histogram')).toHaveAttribute('data-source', 'calibrated-ct-voxels')
+    expect(screen.getByRole('heading', { name: 'Display functions' })).toBeInTheDocument()
+    expect(screen.getByText('MONOCHROME2')).toBeInTheDocument()
+    expect(screen.getByText(/displays lower output values darker/)).toBeInTheDocument()
     const width = screen.getByRole('slider', { name: 'Window width' })
     const center = screen.getByRole('slider', { name: 'Window center' })
     fireEvent.change(width, { target: { value: '1500' } })
@@ -125,6 +129,11 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByText(/LINEAR_EXACT · W 1500 · C -600/)).toBeInTheDocument()
     expect(screen.getByText('-1350 HU → 0')).toBeInTheDocument()
     expect(screen.getByTestId('window-curve-path').getAttribute('d')).not.toBe(initialCurve)
+
+    await user.click(screen.getByRole('button', { name: 'Sigmoid' }))
+    expect(screen.queryByText(/CLIPPED/)).not.toBeInTheDocument()
+    expect(screen.getByText('LOW -1350 HU → 30')).toBeInTheDocument()
+    expect(screen.getByText('HIGH 150 HU → 225')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Custom curve' }))
     expect(screen.getByRole('slider', { name: 'Selected curve point output' })).toBeInTheDocument()
