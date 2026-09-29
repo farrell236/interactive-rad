@@ -20,6 +20,13 @@ type Probe = {
   label: string
 }
 
+type HuLandmark = {
+  label: string
+  hu: number
+  x: number
+  y: number
+}
+
 type WindowPreset = {
   id: PresetId
   label: string
@@ -56,14 +63,14 @@ const presets: WindowPreset[] = [
   { id: 'bone', label: 'Bone', width: 2000, center: 400, description: 'Uses a broad, high-centered range for cortical and trabecular bone.' },
 ]
 
-const tissues = [
+const tissues: HuLandmark[] = [
   { label: 'Air', hu: -1000, x: 219, y: 173 },
   { label: 'Aerated lung', hu: -750, x: 192, y: 144 },
   { label: 'Fat', hu: -100, x: 63, y: 150 },
-  { label: 'Water', hu: 0, x: 126, y: 150 },
+  { label: 'Water reference', hu: 0, x: 126, y: 150 },
   { label: 'Soft tissue', hu: 45, x: 311, y: 176 },
-  { label: 'Contrast blood', hu: 120, x: 283, y: 141 },
-  { label: 'Cortical bone', hu: 900, x: 182, y: 395 },
+  { label: 'Enhanced blood', hu: 120, x: 283, y: 141 },
+  { label: 'Dense bone', hu: 900, x: 182, y: 395 },
 ]
 
 const teachingRescale = { slope: 1, intercept: -1024 }
@@ -82,6 +89,21 @@ function loadCtPixels() {
     })
   }
   return ctPixelPromise
+}
+
+function useCtPixels() {
+  const [pixels, setPixels] = useState<Int16Array | null>(null)
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    loadCtPixels()
+      .then((loadedPixels) => { if (!cancelled) setPixels(loadedPixels) })
+      .catch(() => { if (!cancelled) setLoadError(true) })
+    return () => { cancelled = true }
+  }, [])
+
+  return { pixels, loadError }
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -145,16 +167,7 @@ function CtSlice({ center, width, mode = 'linear-exact', curvePoints = defaultCu
   compact?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [pixels, setPixels] = useState<Int16Array | null>(null)
-  const [loadError, setLoadError] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    loadCtPixels()
-      .then((loadedPixels) => { if (!cancelled) setPixels(loadedPixels) })
-      .catch(() => { if (!cancelled) setLoadError(true) })
-    return () => { cancelled = true }
-  }, [])
+  const { pixels, loadError } = useCtPixels()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -185,7 +198,7 @@ function CtSlice({ center, width, mode = 'linear-exact', curvePoints = defaultCu
     <div
       className={`ct-slice${compact ? ' is-compact' : ''}`}
       role={compact ? undefined : 'img'}
-      aria-label={compact ? undefined : `Anonymized axial chest CT responding to the selected window. ${probePinned ? 'Selected voxel pinned; click elsewhere in the image to move it.' : 'Move over the image to inspect a calibrated voxel; click to pin it.'}`}
+      aria-label={compact ? undefined : `De-identified axial chest CT responding to the selected window. ${probePinned ? 'Selected voxel pinned; click elsewhere in the image to move it.' : 'Move over the image to inspect a calibrated voxel; click to pin it.'}`}
       aria-hidden={compact || undefined}
       onPointerMove={(event) => {
         if (!probePinned && onProbePreview) onProbePreview(probeFromPointer(event))
@@ -361,7 +374,7 @@ function SliderControl({ label, value, min, max, step, unit, onChange }: {
   )
 }
 
-function HuScale({ activeHu, onSelect }: { activeHu: number; onSelect: (probe: Probe) => void }) {
+function HuScale({ activeProbe, onSelect }: { activeProbe: Probe; onSelect: (landmark: HuLandmark) => void }) {
   return (
     <div className="hu-scale" aria-label="Representative Hounsfield unit scale">
       <div className="hu-scale-axis">
@@ -371,19 +384,20 @@ function HuScale({ activeHu, onSelect }: { activeHu: number; onSelect: (probe: P
             const markerX = clamp((tissue.hu - huScaleDomain.min) / (huScaleDomain.max - huScaleDomain.min), 0, 1) * 1000
             const labelX = ((index + 0.5) / tissues.length) * 1000
             const elbowY = 60 - (index * 7)
-            return <polyline key={tissue.label} className={tissue.hu === activeHu ? 'is-selected' : ''} points={`${markerX},0 ${markerX},${elbowY} ${labelX},${elbowY} ${labelX},72`} />
+            const selected = tissue.x === activeProbe.x && tissue.y === activeProbe.y
+            return <polyline key={tissue.label} className={selected ? 'is-selected' : ''} points={`${markerX},0 ${markerX},${elbowY} ${labelX},${elbowY} ${labelX},72`} />
           })}
         </svg>
         <div className="hu-scale-markers">
           {tissues.map((tissue) => {
-            const selected = tissue.hu === activeHu
+            const selected = tissue.x === activeProbe.x && tissue.y === activeProbe.y
             return (
               <button
                 key={tissue.label}
                 type="button"
                 aria-pressed={selected}
                 className={selected ? 'is-selected' : ''}
-                onClick={() => onSelect({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}
+                onClick={() => onSelect(tissue)}
               >
                 <strong>{tissue.label}</strong>
                 <span>{tissue.hu > 0 ? '+' : ''}{tissue.hu} HU</span>
@@ -409,6 +423,7 @@ export default function WindowingModule() {
   const [probe, setProbe] = useState<Probe>({ x: 280, y: 200, hu: 187, label: 'High soft-tissue / contrast range' })
   const [probePinned, setProbePinned] = useState(false)
   const [mlPipeline, setMlPipeline] = useState<MlPipeline>('raw')
+  const { pixels: ctPixels } = useCtPixels()
 
   useEffect(() => {
     const releaseProbe = (event: KeyboardEvent) => {
@@ -440,6 +455,11 @@ export default function WindowingModule() {
   const selectProbe = (nextProbe: Probe) => {
     setProbe(nextProbe)
     setProbePinned(true)
+  }
+
+  const selectLandmark = (landmark: HuLandmark) => {
+    const hu = ctPixels?.[(landmark.y * ctSliceSize) + landmark.x] ?? landmark.hu
+    selectProbe({ x: landmark.x, y: landmark.y, hu, label: describeHu(hu) })
   }
 
   return (
@@ -485,7 +505,13 @@ export default function WindowingModule() {
             <p className="lesson-number">01 · STORED VALUE → HU</p>
             <h3 id="windowing-hu-title">The stored integer is only the first value.</h3>
             <p>CT commonly stores voxel samples as fixed-width integers for compact, predictable storage. These are storage-domain values: their physical meaning cannot be determined from the pixel array alone. DICOM metadata defines the conversion into modality values, commonly <code>output = stored value × slope + intercept</code>. The conversion can change the number or be an identity transform, so software should apply or verify the metadata before treating an array as HU.</p>
-            <p><strong>VOI (Value of Interest)</strong> is not one recommended viewing window. It is the DICOM display stage applied after modality values have been recovered. A file can provide one or more Window Center/Width pairs or VOI LUTs as suggested presentations, and a viewer can let the user choose or adjust them. This stage selects which part of the value range receives visible contrast.</p>
+            <p><strong>VOI (Value of Interest)</strong> is the next display stage: it maps calibrated values to visible brightness. The Windowing section explores that mapping in detail.</p>
+            <dl className="ct-frame-metadata" aria-label="Metadata for this CT frame">
+              <div><dt>Stored encoding</dt><dd>16-bit signed</dd></div>
+              <div><dt>Rescale</dt><dd>× 1 − 1024</dd></div>
+              <div><dt>Pixel spacing</dt><dd>0.703 × 0.703 mm</dd></div>
+              <div><dt>Slice thickness</dt><dd>2.5 mm</dd></div>
+            </dl>
             <div className="value-pipeline" aria-label={`Example value pipeline: stored value ${storedValue}, slope 1, intercept minus 1024, ${probe.hu} Hounsfield units, display value ${probeGray}`}>
               <span><small>Pixel Data</small><strong>{storedValue}</strong><code>stored value</code></span>
               <b aria-hidden="true">× 1 + (−1024)</b>
@@ -493,11 +519,15 @@ export default function WindowingModule() {
               <b aria-hidden="true">VOI</b>
               <span><small>Display</small><strong>{probeGray} / 255</strong><code>current window</code></span>
             </div>
-            <p className="pipeline-caption">This teaching example uses Rescale Slope 1 and Rescale Intercept −1024: stored value 24 therefore becomes −1000 HU. Real files can specify different values, an identity transform, or a Modality LUT; Bits Stored and Pixel Representation define the raw numeric range.</p>
+            <p className="pipeline-caption">This LIDC-IDRI frame uses Rescale Slope 1 and Rescale Intercept −1024: stored value 24 therefore becomes −1000 HU. Other files can specify different values, an identity transform, or a Modality LUT; Bits Stored and Pixel Representation define the raw numeric range.</p>
+            <p className="lesson-note"><Info aria-hidden="true" /><span><strong>Padding is not anatomy.</strong> The black area outside this frame's circular reconstruction is background, not air in the patient. For interaction, this viewer treats values at or below −1900 HU as background; image statistics, normalization, and histograms should exclude such pixels rather than treating them as tissue.</span></p>
             <h4>What the calibrated value means</h4>
-            <p>For conventional CT, HU is a relative attenuation scale: water anchors 0 HU and air is approximately −1000 HU. Denser, more attenuating materials usually have larger positive values.</p>
+            <p>For conventional CT, HU expresses a voxel's reconstructed linear attenuation coefficient (μ) relative to water. Here, μ describes the energy-dependent probability of X-ray attenuation per unit path length. Water anchors 0 HU, air is approximately −1000 HU, and more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
-            <HuScale activeHu={probe.hu} onSelect={selectProbe} />
+            <p>HU is a measurement, not a tissue identity. Values overlap across tissues and can shift with beam spectrum, contrast timing, reconstruction, artifacts, and partial volume.</p>
+            <h4>Example landmarks in this frame</h4>
+            <p className="hu-scale-caption">The endpoints show numerical position; the labels are spaced evenly for readability. Select one to sample that actual voxel rather than substituting the printed reference value.</p>
+            <HuScale activeProbe={probe} onSelect={selectLandmark} />
           </>}
 
           {chapter === 'mapping' && <>
@@ -583,7 +613,10 @@ export default function WindowingModule() {
         <span>Reference material</span>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.html#sect_C.11.1" target="_blank" rel="noreferrer">DICOM Modality LUT</a>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.2.html" target="_blank" rel="noreferrer">DICOM VOI LUT</a>
-        <a href="https://www.cancerimagingarchive.net/collection/lidc-idri/" target="_blank" rel="noreferrer">CT image: LIDC-IDRI · CC BY 3.0</a>
+        <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.5.html" target="_blank" rel="noreferrer">DICOM Pixel Padding</a>
+        <a href="https://www.cancerimagingarchive.net/collection/lidc-idri/" target="_blank" rel="noreferrer">CT image: LIDC-IDRI</a>
+        <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>
+        <a href="https://doi.org/10.7937/K9/TCIA.2015.LO9QL9SX" target="_blank" rel="noreferrer">Dataset DOI</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK547721/" target="_blank" rel="noreferrer">Hounsfield Unit</a>
         <a href="https://www.ncbi.nlm.nih.gov/books/NBK597347/" target="_blank" rel="noreferrer">CT physics</a>
         <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10361226/" target="_blank" rel="noreferrer">Representative lung windows</a>

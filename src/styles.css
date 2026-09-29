@@ -319,12 +319,16 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .value-pipeline code { overflow: hidden; color: var(--text-faint); font-family: inherit; font-size: 0.61rem; text-overflow: ellipsis; white-space: nowrap; }
 .value-pipeline > b { color: var(--window-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.62rem; font-weight: 650; text-align: center; }
 .windowing-lesson-card > p.pipeline-caption { margin-bottom: 14px; color: var(--text-faint); font-size: 0.66rem; line-height: 1.48; }
+.ct-frame-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: -7px 0 20px; }
+.ct-frame-metadata > div { display: grid; gap: 4px; min-width: 0; padding: 10px 11px; border: 1px solid var(--separator-soft); border-radius: 7px; background: var(--surface-secondary); }
+.ct-frame-metadata dt { color: var(--text-faint); font-size: 0.57rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.055em; }
+.ct-frame-metadata dd { overflow: hidden; color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.68rem; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 .hu-equation { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 72px; margin: 0 0 23px; padding: 12px; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); font-family: ui-serif, Georgia, serif; font-size: 1rem; }
 .equation-fraction { display: grid; text-align: center; }
 .equation-fraction b { padding: 0 7px 4px; border-bottom: 1px solid var(--text-faint); font-weight: 500; }
 .equation-fraction i { padding-top: 4px; font-style: normal; }
 .hu-scale { width: 100%; margin-top: 16px; padding: 4px 0 8px; overflow-x: auto; overscroll-behavior-inline: contain; }
-.hu-scale-axis { min-width: 620px; padding: 0 48px; }
+.hu-scale-axis { min-width: 520px; padding: 0 8px; }
 .hu-scale-track { height: 24px; }
 .hu-scale-gradient { display: block; width: 100%; height: 100%; border: 1px solid var(--separator); border-radius: 3px; background: linear-gradient(to right, #050505, #292929 18%, #686868 43%, #b7b7b7 68%, #fff); box-shadow: inset 0 1px rgba(255,255,255,0.18); }
 .hu-scale-connectors { display: block; width: 100%; height: 64px; overflow: visible; }
@@ -336,6 +340,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .hu-scale-markers button.is-selected { box-shadow: inset 0 -3px var(--window-accent); }
 .hu-scale-markers span { color: var(--text-faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.62rem; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hu-scale-markers strong { display: flex; align-items: flex-start; justify-content: center; min-height: 2.4em; font-size: 0.64rem; font-weight: 620; line-height: 1.2; text-wrap: balance; }
+.windowing-lesson-card > p.hu-scale-caption { margin: -1px 0 5px; color: var(--text-faint); font-size: 0.69rem; line-height: 1.48; }
 .curve-editor { margin: 4px 0 13px; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); }
 .mapping-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 9px 9px 0; padding: 3px; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); }
 .mapping-modes button { min-height: 31px; padding: 5px 8px; border: 0; border-radius: 5px; color: var(--text-faint); background: transparent; font-size: 0.65rem; font-weight: 620; }
@@ -577,6 +582,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .probe-state-control { grid-column: 1 / -1; justify-self: end; }
   .window-definition-row { grid-template-columns: 1fr; }
   .hu-scale { margin-inline: -2px; padding-bottom: 11px; }
+  .ct-frame-metadata { grid-template-columns: 1fr; }
   .value-pipeline, .display-consequences, .ml-pipeline-options, .ml-input-preview { grid-template-columns: 1fr; }
   .value-pipeline > span { min-height: 72px; }
   .value-pipeline > b { padding: 1px 0; }

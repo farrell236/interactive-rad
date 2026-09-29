@@ -83,8 +83,12 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getByRole('heading', { name: 'The stored integer is only the first value.' })).toBeInTheDocument()
     expect(screen.getByText(/storage-domain values/)).toBeInTheDocument()
     expect(screen.getByText('VOI (Value of Interest)')).toBeInTheDocument()
-    expect(screen.getByText(/not one recommended viewing window/)).toBeInTheDocument()
-    expect(screen.getByText(/Rescale Slope 1 and Rescale Intercept/)).toBeInTheDocument()
+    expect(screen.getByText(/next display stage/)).toBeInTheDocument()
+    expect(screen.getByText(/This LIDC-IDRI frame uses Rescale Slope 1 and Rescale Intercept/)).toBeInTheDocument()
+    expect(screen.getByText('16-bit signed')).toBeInTheDocument()
+    expect(screen.getByText('0.703 × 0.703 mm')).toBeInTheDocument()
+    expect(screen.getByText(/Padding is not anatomy/)).toBeInTheDocument()
+    expect(screen.getByText(/HU is a measurement, not a tissue identity/)).toBeInTheDocument()
     expect(screen.queryByText(/Tissue values are representative ranges/)).not.toBeInTheDocument()
     expect(screen.queryByText(/CT is the calibrated case/)).not.toBeInTheDocument()
     expect(screen.queryByText(/without changing the underlying scan/)).not.toBeInTheDocument()
@@ -93,8 +97,9 @@ describe('Radiology Imaging Lab', () => {
 
     const huScale = screen.getByLabelText('Representative Hounsfield unit scale')
     expect(within(huScale).getAllByRole('button')).toHaveLength(7)
-    await user.click(within(huScale).getByRole('button', { name: /Cortical bone/ }))
-    expect(within(screen.getByRole('status')).getByText('Cortical bone')).toBeInTheDocument()
+    await user.click(within(huScale).getByRole('button', { name: /Dense bone/ }))
+    await waitFor(() => expect(within(screen.getByRole('status')).getByText('+905 HU')).toBeInTheDocument())
+    expect(within(screen.getByRole('status')).getByText('Cortical-bone range')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Model input and reproducibility/ }))
     expect(screen.getByRole('heading', { name: 'Display choices become preprocessing choices.' })).toBeInTheDocument()
@@ -140,7 +145,7 @@ describe('Radiology Imaging Lab', () => {
     render(<App />)
 
     await user.click(screen.getByRole('tab', { name: /Windowing/ }))
-    const image = await screen.findByRole('img', { name: /Anonymized axial chest CT/ })
+    const image = await screen.findByRole('img', { name: /De-identified axial chest CT/ })
     vi.spyOn(image, 'getBoundingClientRect').mockReturnValue({
       x: 0, y: 0, top: 0, left: 0, right: 512, bottom: 512, width: 512, height: 512, toJSON: () => ({}),
     })
