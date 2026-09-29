@@ -100,6 +100,43 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.queryByText(/representative teaching values/)).not.toBeInTheDocument()
   })
 
+  it('pins the image probe until it is explicitly released', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('tab', { name: /Windowing/ }))
+    const image = await screen.findByRole('img', { name: /Stylized axial chest CT/ })
+    vi.spyOn(image, 'getBoundingClientRect').mockReturnValue({
+      x: 0, y: 0, top: 0, left: 0, right: 520, bottom: 420, width: 520, height: 420, toJSON: () => ({}),
+    })
+    const readout = screen.getByRole('status')
+
+    fireEvent.pointerMove(image, { clientX: 164, clientY: 205 })
+    expect(within(readout).getByText('Aerated lung')).toBeInTheDocument()
+
+    fireEvent.pointerDown(image, { clientX: 285, clientY: 255 })
+    expect(within(readout).getByText('Heart / soft tissue')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Unpin selected voxel' })).toBeInTheDocument()
+    expect(screen.getByText('Pinned · Click elsewhere to move · Esc to release')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Unpin selected voxel' }))
+    expect(screen.queryByRole('button', { name: 'Unpin selected voxel' })).not.toBeInTheDocument()
+
+    fireEvent.pointerDown(image, { clientX: 285, clientY: 255 })
+    fireEvent.pointerMove(image, { clientX: 62, clientY: 55 })
+    expect(within(readout).getByText('Heart / soft tissue')).toBeInTheDocument()
+
+    fireEvent.pointerDown(image, { clientX: 62, clientY: 55 })
+    expect(within(readout).getByText('Air')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: 'Unpin selected voxel' })).not.toBeInTheDocument()
+    expect(screen.getByText('Live')).toBeInTheDocument()
+
+    fireEvent.pointerMove(image, { clientX: 164, clientY: 205 })
+    expect(within(readout).getByText('Aerated lung')).toBeInTheDocument()
+  })
+
   it('keeps cited parameter guidance pinned, updates its value, and closes from the explicit control', async () => {
     const user = userEvent.setup()
     render(<App />)

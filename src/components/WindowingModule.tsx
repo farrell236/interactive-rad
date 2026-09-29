@@ -1,5 +1,5 @@
-import { Activity, Contrast, Crosshair, Info, ScanLine, SlidersHorizontal } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Activity, Contrast, Crosshair, Info, Pin, PinOff, ScanLine, SlidersHorizontal } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
 type ChapterId = 'hu' | 'mapping' | 'presets'
@@ -108,13 +108,15 @@ function sampleSlice(x: number, y: number): Probe {
   return { x, y, hu: bodyEdge ? -100 : 45, label: bodyEdge ? 'Subcutaneous fat' : 'Soft tissue' }
 }
 
-function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoints, probe, onProbe, compact = false }: {
+function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoints, probe, probePinned = false, onProbePreview, onProbePin, compact = false }: {
   center: number
   width: number
   mode?: MappingMode
   curvePoints?: CurvePoint[]
   probe?: Probe
-  onProbe?: (probe: Probe) => void
+  probePinned?: boolean
+  onProbePreview?: (probe: Probe) => void
+  onProbePin?: (probe: Probe) => void
   compact?: boolean
 }) {
   const style = {
@@ -126,12 +128,11 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
     '--bone': grayColor(900, center, width, mode, curvePoints),
   } as CSSProperties
 
-  const handlePointer = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (!onProbe) return
+  const probeFromPointer = (event: ReactPointerEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const x = ((event.clientX - rect.left) / rect.width) * 520
     const y = ((event.clientY - rect.top) / rect.height) * 420
-    onProbe(sampleSlice(x, y))
+    return sampleSlice(x, y)
   }
 
   return (
@@ -139,11 +140,15 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
       className={`ct-slice${compact ? ' is-compact' : ''}`}
       viewBox="0 0 520 420"
       role={compact ? undefined : 'img'}
-      aria-label={compact ? undefined : 'Stylized axial chest CT responding to the selected window'}
+      aria-label={compact ? undefined : `Stylized axial chest CT responding to the selected window. ${probePinned ? 'Selected voxel pinned; click elsewhere in the image to move it.' : 'Move over the image to inspect tissue; click to pin the selected voxel.'}`}
       aria-hidden={compact || undefined}
       style={style}
-      onPointerMove={handlePointer}
-      onPointerDown={handlePointer}
+      onPointerMove={(event) => {
+        if (!probePinned && onProbePreview) onProbePreview(probeFromPointer(event))
+      }}
+      onPointerDown={(event) => {
+        if (onProbePin) onProbePin(probeFromPointer(event))
+      }}
     >
       <defs>
         <filter id={compact ? 'ct-soft-compact' : 'ct-soft'}>
@@ -180,7 +185,11 @@ function CtSlice({ center, width, mode = 'linear', curvePoints = defaultCurvePoi
       {!compact && <>
         <text x="22" y="32" className="ct-orientation-label">R</text>
         <text x="480" y="32" className="ct-orientation-label">L</text>
-        {probe && <g className="ct-probe" transform={`translate(${probe.x} ${probe.y})`} aria-hidden="true"><circle r="11" /><path d="M-17 0H17M0-17V17" /></g>}
+        {probe && <g className={`ct-probe ${probePinned ? 'is-pinned' : 'is-live'}`} transform={`translate(${probe.x} ${probe.y})`} aria-hidden="true">
+          <circle className="ct-probe-ring" r="11" />
+          <path className="ct-probe-lines" d="M-17 0H17M0-17V17" />
+          {probePinned && <g className="ct-probe-lock" transform="translate(15 -15)"><circle r="8" /><path d="M-2.6-1.2v-2a2.6 2.6 0 0 1 5.2 0v2M-3.4-1.2h6.8v5.5h-6.8z" /></g>}
+        </g>}
       </>}
     </svg>
   )
@@ -367,6 +376,15 @@ export default function WindowingModule() {
   const [mappingMode, setMappingMode] = useState<MappingMode>('linear')
   const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(() => defaultCurvePoints.map((point) => ({ ...point })))
   const [probe, setProbe] = useState<Probe>({ x: 285, y: 255, hu: 45, label: 'Heart / soft tissue' })
+  const [probePinned, setProbePinned] = useState(false)
+
+  useEffect(() => {
+    const releaseProbe = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProbePinned(false)
+    }
+    window.addEventListener('keydown', releaseProbe)
+    return () => window.removeEventListener('keydown', releaseProbe)
+  }, [])
 
   const activeChapter = chapters.findIndex((item) => item.id === chapter)
   const activePreset = mappingMode === 'linear' ? presets.find((preset) => preset.center === center && preset.width === width) : undefined
@@ -383,6 +401,11 @@ export default function WindowingModule() {
     setCenter(preset.center)
     setWidth(preset.width)
     setMappingMode('linear')
+  }
+
+  const selectProbe = (nextProbe: Probe) => {
+    setProbe(nextProbe)
+    setProbePinned(true)
   }
 
   return (
@@ -404,14 +427,22 @@ export default function WindowingModule() {
         <section className="ct-viewer-card" aria-label="Interactive CT window viewer">
           <div className="viewer-toolbar"><span><ScanLine aria-hidden="true" /> AXIAL · CHEST</span><span>{mappingMode.toUpperCase()} · W {width} · C {center}</span></div>
           <div className="ct-viewer-stage">
-            <CtSlice center={center} width={width} mode={mappingMode} curvePoints={curvePoints} probe={probe} onProbe={setProbe} />
-            <div className="viewer-help"><Crosshair aria-hidden="true" /> Move over the image to inspect tissue</div>
+            <CtSlice center={center} width={width} mode={mappingMode} curvePoints={curvePoints} probe={probe} probePinned={probePinned} onProbePreview={setProbe} onProbePin={selectProbe} />
+            <div className={`viewer-help${probePinned ? ' is-pinned' : ''}`}>
+              {probePinned ? <Pin aria-hidden="true" /> : <Crosshair aria-hidden="true" />}
+              {probePinned ? 'Pinned · Click elsewhere to move · Esc to release' : 'Move over image · Click to pin'}
+            </div>
           </div>
-          <div className="probe-readout" role="status" aria-live="polite">
-            <span><small>Sample</small><strong>{probe.label}</strong></span>
-            <span><small>Input</small><strong>{probe.hu > 0 ? '+' : ''}{probe.hu} HU</strong></span>
-            <span><small>Display</small><strong>{probeGray} / 255</strong></span>
-            <span className="probe-swatch" style={{ background: grayColor(probe.hu, center, width, mappingMode, curvePoints) }} aria-label={`Displayed gray value ${probeGray}`} />
+          <div className="probe-readout">
+            <div className="probe-readout-values" role="status" aria-live="polite">
+              <span><small>Sample</small><strong>{probe.label}</strong></span>
+              <span><small>Input</small><strong>{probe.hu > 0 ? '+' : ''}{probe.hu} HU</strong></span>
+              <span><small>Display</small><strong>{probeGray} / 255</strong></span>
+              <span className="probe-swatch" style={{ background: grayColor(probe.hu, center, width, mappingMode, curvePoints) }} aria-label={`Displayed gray value ${probeGray}`} />
+            </div>
+            {probePinned
+              ? <button className="probe-state-control is-pinned" type="button" aria-label="Unpin selected voxel" onPointerDown={() => setProbePinned(false)} onClick={() => setProbePinned(false)}><PinOff aria-hidden="true" />Unpin</button>
+              : <span className="probe-state-control is-live" aria-label="Selected voxel follows the pointer"><Crosshair aria-hidden="true" />Live</span>}
           </div>
         </section>
 
@@ -421,7 +452,7 @@ export default function WindowingModule() {
             <h3 id="windowing-hu-title">CT stores attenuation as Hounsfield units.</h3>
             <p>HU is a calibrated, relative scale: water anchors 0 HU and air is approximately −1000 HU. Denser, more attenuating materials usually have larger positive values.</p>
             <div className="hu-equation"><span>HU = 1000 ×</span><span className="equation-fraction"><b>μ<sub>tissue</sub> − μ<sub>water</sub></b><i>μ<sub>water</sub></i></span></div>
-            <HuScale activeHu={probe.hu} onSelect={setProbe} />
+            <HuScale activeHu={probe.hu} onSelect={selectProbe} />
             <p className="lesson-note"><Info aria-hidden="true" /> Tissue values are representative ranges, not immutable constants. Acquisition energy, reconstruction, contrast, and artifacts can shift measured HU.</p>
           </>}
 
@@ -454,7 +485,7 @@ export default function WindowingModule() {
             <div className="mapping-table-intro"><strong>Current tissue mapping</strong><span>Select a row to place the image probe.</span></div>
             <div className="mapping-table" role="table" aria-label="Current HU to display mapping">
               <div role="row" className="mapping-table-head"><span role="columnheader">Tissue</span><span role="columnheader">HU</span><span role="columnheader">8-bit</span><span role="columnheader">Output</span></div>
-              {tissueRows.map((tissue) => <button type="button" role="row" key={tissue.label} onClick={() => setProbe({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}><span role="cell">{tissue.label}</span><span role="cell">{tissue.hu}</span><span role="cell">{tissue.gray}</span><span role="cell" className="table-swatch"><i style={{ background: `rgb(${tissue.gray} ${tissue.gray} ${tissue.gray})` }} /></span></button>)}
+              {tissueRows.map((tissue) => <button type="button" role="row" key={tissue.label} onClick={() => selectProbe({ x: tissue.x, y: tissue.y, hu: tissue.hu, label: tissue.label })}><span role="cell">{tissue.label}</span><span role="cell">{tissue.hu}</span><span role="cell">{tissue.gray}</span><span role="cell" className="table-swatch"><i style={{ background: `rgb(${tissue.gray} ${tissue.gray} ${tissue.gray})` }} /></span></button>)}
             </div>
           </>}
         </section>

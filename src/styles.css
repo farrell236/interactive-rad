@@ -277,15 +277,27 @@ input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; border: 2px s
 .ct-slice { display: block; width: min(100%, 650px); height: auto; max-height: 590px; cursor: crosshair; filter: drop-shadow(0 20px 32px rgba(0,0,0,0.44)); }
 .ct-slice.is-compact { width: 100%; filter: none; pointer-events: none; }
 .ct-orientation-label { fill: rgba(255,255,255,0.82); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 19px; font-weight: 700; }
-.ct-probe circle { fill: rgba(10,132,255,0.16); stroke: #64d2ff; stroke-width: 2; }
-.ct-probe path { fill: none; stroke: #64d2ff; stroke-width: 1.5; }
+.ct-probe { pointer-events: none; transition: opacity 140ms ease; }
+.ct-probe.is-live { opacity: 0.82; }
+.ct-probe-ring { fill: rgba(10,132,255,0.16); stroke: #64d2ff; stroke-width: 2; }
+.ct-probe-lines { fill: none; stroke: #64d2ff; stroke-width: 1.5; }
+.ct-probe.is-pinned .ct-probe-ring { fill: rgba(10,132,255,0.26); stroke: #a6ecff; stroke-width: 2.5; }
+.ct-probe.is-pinned .ct-probe-lines { stroke: #a6ecff; stroke-width: 1.8; }
+.ct-probe-lock circle { fill: #0a84ff; stroke: rgba(255,255,255,0.92); stroke-width: 1; }
+.ct-probe-lock path { fill: none; stroke: white; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.25; }
 .viewer-help { position: absolute; right: 14px; bottom: 13px; display: flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; color: rgba(255,255,255,0.58); background: rgba(8,9,11,0.68); backdrop-filter: blur(10px); font-size: 0.63rem; }
 .viewer-help svg { width: 12px; height: 12px; }
-.probe-readout { display: grid; grid-template-columns: minmax(110px, 1.4fr) repeat(2, minmax(76px, 0.8fr)) 30px; align-items: center; gap: 12px; min-height: 72px; padding: 12px 15px; border-top: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); background: #101216; }
-.probe-readout span:not(.probe-swatch) { display: grid; gap: 3px; min-width: 0; }
+.viewer-help.is-pinned { border-color: rgba(100,210,255,0.34); color: rgba(255,255,255,0.84); background: rgba(5,35,52,0.78); }
+.probe-readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 72px; padding: 12px 15px; border-top: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); background: #101216; }
+.probe-readout-values { display: grid; grid-template-columns: minmax(110px, 1.4fr) repeat(2, minmax(76px, 0.8fr)) 30px; align-items: center; gap: 12px; min-width: 0; }
+.probe-readout-values > span:not(.probe-swatch) { display: grid; gap: 3px; min-width: 0; }
 .probe-readout small { color: rgba(255,255,255,0.46); font-size: 0.59rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .probe-readout strong { overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .probe-swatch { width: 27px; height: 27px; border: 1px solid rgba(255,255,255,0.35); border-radius: 5px; }
+.probe-state-control { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 62px; min-height: 30px; padding: 5px 8px; border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; color: rgba(255,255,255,0.54); background: rgba(255,255,255,0.04); font-size: 0.64rem; font-weight: 600; }
+.probe-state-control svg { width: 12px; height: 12px; }
+button.probe-state-control.is-pinned { border-color: rgba(100,210,255,0.34); color: #a6ecff; background: rgba(10,132,255,0.12); }
+button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6); background: rgba(10,132,255,0.2); }
 .windowing-lesson-card { padding: clamp(25px, 3.2vw, 45px); }
 .lesson-number { margin-bottom: 11px; color: var(--window-accent); font-size: 0.67rem; font-weight: 700; letter-spacing: 0.09em; }
 .windowing-lesson-card h3 { max-width: 630px; margin-bottom: 12px; font-size: clamp(1.42rem, 2.25vw, 2rem); font-weight: 680; line-height: 1.1; letter-spacing: -0.035em; }
@@ -479,7 +491,8 @@ input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; border: 2px s
   .windowing-chapters { grid-template-columns: repeat(3, 1fr); }
   .ct-viewer-stage { min-height: 390px; }
   .viewer-help { display: none; }
-  .probe-readout { grid-template-columns: 1fr 0.8fr 0.8fr 26px; gap: 8px; padding: 10px; }
+  .probe-readout { gap: 8px; padding: 10px; }
+  .probe-readout-values { grid-template-columns: 1fr 0.8fr 0.8fr 26px; gap: 8px; }
   .windowing-lesson-card { padding: 24px 20px; }
   .window-preset-grid { grid-template-columns: 1fr; }
   .windowing-summary { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
@@ -507,8 +520,10 @@ input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; border: 2px s
   .windowing-chapters button { grid-template-columns: 26px 1fr; padding: 10px 8px; }
   .windowing-chapters button > span { width: 25px; height: 25px; }
   .ct-viewer-stage { min-height: 320px; }
-  .probe-readout { grid-template-columns: repeat(3, 1fr); }
+  .probe-readout { grid-template-columns: 1fr; }
+  .probe-readout-values { grid-template-columns: repeat(3, 1fr); }
   .probe-swatch { display: none; }
+  .probe-state-control { grid-column: 1 / -1; justify-self: end; }
   .window-definition-row { grid-template-columns: 1fr; }
   .hu-scale-markers button { grid-template-columns: 80px 1fr; }
 }
