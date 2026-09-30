@@ -74,12 +74,17 @@ function LoadingModule() {
 
 export default function App() {
   const [active, setActive] = useState<Modality>('xray')
+  const [textSize, setTextSize] = useState(16)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light'
     return 'dark'
   })
 
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${textSize}px`
+    return () => { document.documentElement.style.removeProperty('font-size') }
+  }, [textSize])
   return (
     <div className="app-frame">
       <a className="skip-link" href="#main-content">Skip to imaging lab</a>
@@ -96,6 +101,11 @@ export default function App() {
         </div>
         <ModalityTabs active={active} onChange={setActive} />
         <div className="header-actions">
+          <div className="text-size-control" role="group" aria-label="Text size">
+            <button className="text-size-button is-decrease" type="button" title={`Decrease text size · ${textSize}px`} aria-label="Decrease text size" disabled={textSize <= 14} onClick={() => setTextSize((current) => Math.max(14, current - 2))}>A−</button>
+            <button className="text-size-button is-increase" type="button" title={`Increase text size · ${textSize}px`} aria-label="Increase text size" disabled={textSize >= 22} onClick={() => setTextSize((current) => Math.min(22, current + 2))}>A+</button>
+            <span className="sr-only" aria-live="polite" aria-atomic="true">Text size {textSize}px</span>
+          </div>
           <button className="icon-button" type="button" title={`Use ${theme === 'dark' ? 'light' : 'dark'} appearance`} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} appearance`} onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}>
             {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
           </button>

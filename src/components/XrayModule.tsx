@@ -46,7 +46,7 @@ export default function XrayModule() {
   const [settings, setSettings] = useState<XraySettings>(DEFAULT_XRAY_SETTINGS)
   const [phase, setPhase] = useState<ExposurePhase>('ready')
   const [captureId, setCaptureId] = useState(0)
-  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('Patient')
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('Beam')
   const [renderMode, setRenderMode] = useState<RenderMode>('hq')
   const timers = useRef<number[]>([])
   const rtStatusRef = useRef<HTMLDivElement>(null)
@@ -60,7 +60,7 @@ export default function XrayModule() {
   useEffect(() => () => timers.current.forEach(window.clearTimeout), [])
 
   const updateSetting = (setting: Exclude<keyof XraySettings, 'projection'>, value: number) => setSettings((current) => ({ ...current, [setting]: value }))
-  const updateProjection = (projection: Projection) => { setSettings((current) => ({ ...current, projection, rotation: 0 })); setCameraPreset('Patient') }
+  const updateProjection = (projection: Projection) => { setSettings((current) => ({ ...current, projection, rotation: 0 })); setCameraPreset('Beam') }
   const toggleRenderMode = (mode: Exclude<RenderMode, 'standard'>) => setRenderMode((current) => current === mode ? 'standard' : mode)
 
   const takeExposure = () => {

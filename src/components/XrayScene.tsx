@@ -14,7 +14,7 @@ import type { RtBackend } from '../rendering/rtBackend'
 
 const CAMERA_POSITIONS: Record<CameraPreset, [number, number, number]> = {
   Room: [8.4, 4.7, 9.6],
-  Beam: [0.1, 2.35, 9.6],
+  Beam: [0.1, 2.2, 7.8],
   Patient: [4.4, 1.4, 4.8],
   // A near side-on inspection angle makes patient-to-receptor contact legible.
   Detector: [4.15, 1.35, 7.2],

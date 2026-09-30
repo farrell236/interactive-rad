@@ -57,6 +57,27 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.getAllByRole('tab')).toHaveLength(5)
     expect(await screen.findByRole('heading', { name: 'Chest X-ray acquisition' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Take X-ray' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Beam' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('repeatedly increases and decreases interface text within limits', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const decreaseText = screen.getByRole('button', { name: 'Decrease text size' })
+    const increaseText = screen.getByRole('button', { name: 'Increase text size' })
+    expect(document.documentElement.style.fontSize).toBe('16px')
+
+    await user.click(increaseText)
+    await user.click(increaseText)
+    expect(document.documentElement.style.fontSize).toBe('20px')
+
+    await user.click(increaseText)
+    expect(document.documentElement.style.fontSize).toBe('22px')
+    expect(increaseText).toBeDisabled()
+
+    await user.click(decreaseText)
+    expect(document.documentElement.style.fontSize).toBe('20px')
   })
 
   it('switches to a future modality without reloading', async () => {
