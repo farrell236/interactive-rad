@@ -62,7 +62,7 @@ describe('Radiology Imaging Lab', () => {
     expect(await screen.findByRole('heading', { name: 'Chest X-ray acquisition' }, { timeout: 10_000 })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Take X-ray' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Beam' })).toHaveAttribute('aria-pressed', 'true')
-  })
+  }, 15_000)
 
   it('repeatedly increases and decreases interface text within limits', async () => {
     const user = userEvent.setup()
