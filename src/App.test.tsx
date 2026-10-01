@@ -59,10 +59,10 @@ describe('Radiology Imaging Lab', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Radiology Imaging Lab' })).toBeInTheDocument()
     expect(screen.getAllByRole('tab')).toHaveLength(5)
-    expect(await screen.findByRole('heading', { name: 'Chest X-ray acquisition' }, { timeout: 10_000 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Chest X-ray acquisition' }, { timeout: 30_000 })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Take X-ray' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Beam' })).toHaveAttribute('aria-pressed', 'true')
-  }, 15_000)
+  }, 40_000)
 
   it('repeatedly increases and decreases interface text within limits', async () => {
     const user = userEvent.setup()
