@@ -331,8 +331,7 @@ export default function CtManyViewsLesson() {
         </header>
 
         <div className="ct-reconstruction-primer is-domains-only">
-          <section className="ct-domain-explainer" aria-labelledby="ct-domains-title">
-            <header><div><small>Representation</small><h5 id="ct-domains-title">The domains explained</h5></div></header>
+          <section className="ct-domain-explainer" aria-label="Sinogram and image domains">
             <div className="ct-domain-grid">
               <article>
                 <strong>Sinogram domain <em>Radon space</em></strong>

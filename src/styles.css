@@ -1147,6 +1147,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-reconstruction-primer { display: grid; gap: 0; border-top: 1px solid var(--separator-soft); }
 .ct-reconstruction-primer.is-domains-only { border-top: 0; }
 .ct-reconstruction-primer > section { padding: 18px 21px; }
+.ct-reconstruction-primer.is-domains-only > section { padding-top: 4px; }
 .ct-reconstruction-primer > section + section { border-top: 1px solid var(--separator-soft); }
 .ct-reconstruction-primer section > header { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
 .ct-reconstruction-primer section > header > span { display: grid; place-items: center; flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; color: var(--ct-accent); background: color-mix(in srgb, var(--ct-accent) 10%, var(--surface-secondary)); font-size: 0.58rem; font-weight: 720; }
