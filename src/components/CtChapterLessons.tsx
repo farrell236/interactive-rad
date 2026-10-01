@@ -1,8 +1,8 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrthographicCamera, useGLTF } from '@react-three/drei'
-import { Pause, Play, RotateCcw } from 'lucide-react'
+import { OrbitControls, OrthographicCamera, useGLTF } from '@react-three/drei'
+import { Lock, LockOpen, Pause, Play, RotateCcw } from 'lucide-react'
 import * as THREE from 'three'
 import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
 import { getCtProjectionModel, simulateCtProjectionNoise } from '../lib/ctProjectionNoise'
@@ -130,6 +130,7 @@ function HelicalTrajectory({ mode, pitch, progress }: { mode: 'axial' | 'helical
 }
 
 const CONE_BEAM_MODEL_URL = `${import.meta.env.BASE_URL}models/cone-beam-planes.glb`
+const CONE_BEAM_TARGET: [number, number, number] = [0, 0, 0]
 
 function ConeBeamModel() {
   const source = useGLTF(CONE_BEAM_MODEL_URL).scene
@@ -173,7 +174,7 @@ function ConeBeamModel() {
   return <primitive object={model} />
 }
 
-function ConeBeamCamera() {
+const ConeBeamCamera = memo(function ConeBeamCamera() {
   const { size } = useThree()
   return (
     <OrthographicCamera
@@ -185,22 +186,49 @@ function ConeBeamCamera() {
       far={100}
     />
   )
-}
+})
 
 function ConeBeamIntersectionScene() {
+  const [locked, setLocked] = useState(false)
+  const [resetVersion, setResetVersion] = useState(0)
+
   return (
-    <div className="ct-cone-3d" role="img" aria-label="Three-dimensional cone-beam model showing a point source, three fan planes intersecting a patient sphere, and a two-dimensional detector array">
+    <div className={`ct-cone-3d${locked ? ' is-locked' : ''}`}>
       <div className="ct-cone-3d-stage">
         <Canvas
           className="ct-cone-3d-canvas"
+          role="img"
+          aria-label="Draggable three-dimensional cone-beam model showing a point source, three fan planes intersecting a patient sphere, and a two-dimensional detector array"
           frameloop="demand"
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: true }}
         >
-          <ConeBeamCamera />
+          <ConeBeamCamera key={resetVersion} />
+          <OrbitControls
+            key={resetVersion}
+            makeDefault
+            enabled={!locked}
+            enablePan={false}
+            target={CONE_BEAM_TARGET}
+            minPolarAngle={0.35}
+            maxPolarAngle={2.35}
+            minZoom={35}
+            maxZoom={100}
+          />
           <ambientLight intensity={0.65} />
           <Suspense fallback={null}><ConeBeamModel /></Suspense>
         </Canvas>
+        <span className="ct-cone-scene-hint" aria-live="polite">{locked ? 'View locked' : 'Drag to orbit · Scroll to zoom'}</span>
+      </div>
+      <div className="ct-cone-scene-controls" role="group" aria-label="Cone beam view controls">
+        <button type="button" aria-pressed={locked} onClick={() => setLocked((current) => !current)}>
+          {locked ? <LockOpen aria-hidden="true" /> : <Lock aria-hidden="true" />}
+          {locked ? 'Unlock' : 'Lock'}
+        </button>
+        <button type="button" onClick={() => setResetVersion((current) => current + 1)}>
+          <RotateCcw aria-hidden="true" />
+          Reset
+        </button>
       </div>
     </div>
   )

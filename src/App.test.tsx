@@ -193,6 +193,10 @@ describe('Radiology Imaging Lab', () => {
     expect(pitch).toBeEnabled()
     await user.click(screen.getByRole('button', { name: 'Axial' }))
     expect(pitch).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Cone' }))
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Lock' }))
+    expect(screen.getByRole('button', { name: 'Unlock' })).toHaveAttribute('aria-pressed', 'true')
 
     await user.click(within(chapters).getByRole('button', { name: /Measuring a ray/ }))
     expect(screen.getByRole('heading', { name: 'Photon path to line integral' })).toBeInTheDocument()
