@@ -1418,11 +1418,6 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-cone-3d { position: relative; width: 100%; height: 330px; min-height: 330px; overflow: hidden; background: var(--surface); }
 .ct-cone-3d-stage { position: absolute; top: 50%; left: 50%; width: min(600px, 100%); aspect-ratio: 600 / 330; transform: translate(-50%, -50%); }
 .ct-cone-3d-canvas { display: block; width: 100% !important; height: 100% !important; }
-.ct-cone-3d-stage > span { position: absolute; z-index: 2; pointer-events: none; color: var(--text-faint); font-size: 10px; font-weight: 650; line-height: 1; }
-.ct-cone-3d .is-source-label { top: 53%; left: 18%; transform: translateX(-50%); }
-.ct-cone-3d .is-patient-label { top: 73%; left: 47%; transform: translateX(-50%); }
-.ct-cone-3d .is-detector-label { top: 11%; right: 6%; color: var(--text); font-size: 11px; font-weight: 680; }
-.ct-cone-3d .is-detector-axis { right: 4%; bottom: 8%; color: var(--ct-accent); font-size: 10px; font-weight: 680; letter-spacing: 0; }
 .ct-geometry-reference-grid { grid-template-columns: minmax(0, 1.25fr) minmax(330px, 0.75fr); }
 .ct-beam-geometry-key { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); }
 .ct-beam-geometry-key > span { display: grid; align-content: start; gap: 4px; padding: 12px 14px 14px; }

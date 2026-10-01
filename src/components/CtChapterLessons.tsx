@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { Line } from '@react-three/drei'
+import { Canvas, useThree } from '@react-three/fiber'
+import { OrthographicCamera, useGLTF } from '@react-three/drei'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import * as THREE from 'three'
 import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
@@ -129,136 +129,84 @@ function HelicalTrajectory({ mode, pitch, progress }: { mode: 'axial' | 'helical
   )
 }
 
-type Point3 = [number, number, number]
+const CONE_BEAM_MODEL_URL = `${import.meta.env.BASE_URL}models/cone-beam-planes.glb`
 
-const CONE_SOURCE: Point3 = [-3.55, 0, 0]
-const CONE_DETECTOR_X = 3.55
-const CONE_DETECTOR_HALF_HEIGHT = 1.45
-const CONE_DETECTOR_HALF_WIDTH = 1.25
+function ConeBeamModel() {
+  const source = useGLTF(CONE_BEAM_MODEL_URL).scene
+  const { invalidate } = useThree()
+  const model = useMemo(() => {
+    const clone = source.clone(true)
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      object.material = Array.isArray(object.material)
+        ? object.material.map((material) => material.clone())
+        : object.material.clone()
+    })
+    return clone
+  }, [source])
 
-const CONE_CORNERS: Point3[] = [
-  [CONE_DETECTOR_X, CONE_DETECTOR_HALF_HEIGHT, -CONE_DETECTOR_HALF_WIDTH],
-  [CONE_DETECTOR_X, CONE_DETECTOR_HALF_HEIGHT, CONE_DETECTOR_HALF_WIDTH],
-  [CONE_DETECTOR_X, -CONE_DETECTOR_HALF_HEIGHT, CONE_DETECTOR_HALF_WIDTH],
-  [CONE_DETECTOR_X, -CONE_DETECTOR_HALF_HEIGHT, -CONE_DETECTOR_HALF_WIDTH],
-]
+  useEffect(() => {
+    const updateContrast = () => {
+      const dark = document.documentElement.dataset.theme !== 'light'
+      model.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return
+        const objectName = object.name.toLowerCase()
+        const isLabel = objectName.startsWith('label')
+        const isDetectorGrid = objectName.includes('detector') && (objectName.includes('grid') || objectName.includes('frame'))
+        if (!isLabel && !isDetectorGrid) return
+        const materials = Array.isArray(object.material) ? object.material : [object.material]
+        materials.forEach((material) => {
+          if ('color' in material && material.color instanceof THREE.Color) {
+            material.color.set(dark ? (isLabel ? '#c7d2d7' : '#7d9098') : '#162026')
+          }
+        })
+      })
+      invalidate()
+    }
 
-function BeamTriangle({ points, opacity }: { points: [Point3, Point3, Point3]; opacity: number }) {
-  const geometry = useMemo(() => {
-    const next = new THREE.BufferGeometry()
-    next.setAttribute('position', new THREE.Float32BufferAttribute(points.flat(), 3))
-    next.computeVertexNormals()
-    return next
-  }, [points])
+    updateContrast()
+    const observer = new MutationObserver(updateContrast)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [invalidate, model])
 
-  useEffect(() => () => geometry.dispose(), [geometry])
+  return <primitive object={model} />
+}
 
+function ConeBeamCamera() {
+  const { size } = useThree()
   return (
-    <mesh geometry={geometry} renderOrder={2}>
-      <meshBasicMaterial color="#28c3e6" transparent opacity={opacity} side={THREE.DoubleSide} depthTest depthWrite={false} />
-    </mesh>
+    <OrthographicCamera
+      makeDefault
+      position={[-4.845, 3.682, 12.402]}
+      rotation={[-0.29455, -0.38788, 0]}
+      zoom={Math.min(size.width / 9.9, size.height / 5.3)}
+      near={0.1}
+      far={100}
+    />
   )
 }
 
-function planeSphereIntersection(rowY: number, radius = 1.006) {
-  const a = Math.abs(CONE_SOURCE[0])
-  const normal = new THREE.Vector3(rowY, -(2 * a), 0)
-  const normalLengthSquared = normal.lengthSq()
-  const constant = rowY * a
-  const center = normal.clone().multiplyScalar(-constant / normalLengthSquared)
-  const circleRadius = Math.sqrt(Math.max(0, (radius * radius) - center.lengthSq()))
-  const normalUnit = normal.clone().normalize()
-  const basisDepth = new THREE.Vector3(0, 0, 1)
-  const basisAcross = new THREE.Vector3().crossVectors(normalUnit, basisDepth).normalize()
-
-  return Array.from({ length: 97 }, (_, index) => {
-    const angle = (index / 96) * Math.PI * 2
-    const point = center.clone()
-      .addScaledVector(basisDepth, Math.cos(angle) * circleRadius)
-      .addScaledVector(basisAcross, Math.sin(angle) * circleRadius)
-      .normalize()
-      .multiplyScalar(radius)
-    return point.toArray() as Point3
-  })
-}
-
 function ConeBeamIntersectionScene() {
-  const rowPlanes = useMemo(() => [-1.05, 0, 1.05].map((rowY) => ({
-    rowY,
-    triangle: [
-      CONE_SOURCE,
-      [CONE_DETECTOR_X, rowY, -CONE_DETECTOR_HALF_WIDTH] as Point3,
-      [CONE_DETECTOR_X, rowY, CONE_DETECTOR_HALF_WIDTH] as Point3,
-    ] as [Point3, Point3, Point3],
-    intersection: planeSphereIntersection(rowY),
-  })), [])
-
   return (
-    <div className="ct-cone-3d" role="img" aria-label="Three-dimensional cone beam intersecting a spherical patient volume before reaching a two-dimensional detector array">
+    <div className="ct-cone-3d" role="img" aria-label="Three-dimensional cone-beam model showing a point source, three fan planes intersecting a patient sphere, and a two-dimensional detector array">
       <div className="ct-cone-3d-stage">
         <Canvas
           className="ct-cone-3d-canvas"
           frameloop="demand"
           dpr={[1, 1.5]}
-          camera={{ position: [0.9, 2.65, 8.4], rotation: [-0.29, 0.105, 0.03], fov: 35, near: 0.1, far: 30 }}
           gl={{ antialias: true, alpha: true }}
         >
-          <ambientLight intensity={1.35} />
-          <directionalLight position={[-3, 4, 6]} intensity={2.7} />
-          <directionalLight position={[4, -2, 3]} intensity={1.1} color="#b9eafa" />
-
-          <group position={[0, 0.18, 0]}>
-          <mesh position={[0, 0, 0]} renderOrder={1}>
-            <sphereGeometry args={[1, 72, 48]} />
-            <meshStandardMaterial color="#9fb2ba" roughness={0.58} metalness={0.02} />
-          </mesh>
-
-          {[
-            [CONE_SOURCE, CONE_CORNERS[0], CONE_CORNERS[1]],
-            [CONE_SOURCE, CONE_CORNERS[1], CONE_CORNERS[2]],
-            [CONE_SOURCE, CONE_CORNERS[2], CONE_CORNERS[3]],
-            [CONE_SOURCE, CONE_CORNERS[3], CONE_CORNERS[0]],
-          ].map((points, index) => <BeamTriangle key={`surface-${index}`} points={points as [Point3, Point3, Point3]} opacity={index === 0 || index === 2 ? 0.17 : 0.12} />)}
-
-          {rowPlanes.map(({ rowY, triangle, intersection }) => (
-            <group key={`row-plane-${rowY}`}>
-              <BeamTriangle points={triangle} opacity={rowY === 0 ? 0.22 : 0.11} />
-              <Line points={intersection} color={rowY === 0 ? '#0e9fbe' : '#27b7d6'} lineWidth={rowY === 0 ? 1.85 : 1.2} depthTest depthWrite={false} transparent opacity={rowY === 0 ? 1 : 0.86} />
-            </group>
-          ))}
-
-          {CONE_CORNERS.map((corner, index) => (
-            <Line key={`cone-edge-${index}`} points={[CONE_SOURCE, corner]} color="#27b7d6" lineWidth={1.1} depthTest depthWrite={false} transparent opacity={0.95} />
-          ))}
-
-          <mesh position={CONE_SOURCE}>
-            <sphereGeometry args={[0.13, 24, 16]} />
-            <meshStandardMaterial color="#27b7d6" emissive="#0d6d82" emissiveIntensity={0.25} />
-          </mesh>
-
-          <mesh position={[CONE_DETECTOR_X, 0, 0]}>
-            <boxGeometry args={[0.08, CONE_DETECTOR_HALF_HEIGHT * 2, CONE_DETECTOR_HALF_WIDTH * 2]} />
-            <meshStandardMaterial color="#cbd7dc" roughness={0.72} metalness={0.02} />
-          </mesh>
-
-          {Array.from({ length: 7 }, (_, index) => {
-            const y = -CONE_DETECTOR_HALF_HEIGHT + ((index / 6) * CONE_DETECTOR_HALF_HEIGHT * 2)
-            return <Line key={`detector-row-${index}`} points={[[CONE_DETECTOR_X - 0.045, y, -CONE_DETECTOR_HALF_WIDTH], [CONE_DETECTOR_X - 0.045, y, CONE_DETECTOR_HALF_WIDTH]]} color="#546a73" lineWidth={0.72} />
-          })}
-          {Array.from({ length: 6 }, (_, index) => {
-            const z = -CONE_DETECTOR_HALF_WIDTH + ((index / 5) * CONE_DETECTOR_HALF_WIDTH * 2)
-            return <Line key={`detector-column-${index}`} points={[[CONE_DETECTOR_X - 0.045, -CONE_DETECTOR_HALF_HEIGHT, z], [CONE_DETECTOR_X - 0.045, CONE_DETECTOR_HALF_HEIGHT, z]]} color="#546a73" lineWidth={0.72} />
-          })}
-          </group>
+          <ConeBeamCamera />
+          <ambientLight intensity={0.65} />
+          <Suspense fallback={null}><ConeBeamModel /></Suspense>
         </Canvas>
-        <span className="is-source-label">source</span>
-        <span className="is-patient-label">patient</span>
-        <span className="is-detector-label">2D detector array</span>
-        <span className="is-detector-axis">rows × channels</span>
       </div>
     </div>
   )
 }
+
+useGLTF.preload(CONE_BEAM_MODEL_URL)
 
 export function CtScannerGeometryLesson() {
   const [mode, setMode] = useState<'axial' | 'helical'>('helical')
