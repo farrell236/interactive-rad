@@ -27,15 +27,19 @@ vi.mock('@react-three/fiber', () => ({
   useThree: () => ({ camera: { position: { lerp: vi.fn(), distanceTo: () => 0 }, lookAt: vi.fn() }, invalidate: vi.fn() }),
 }))
 
-vi.mock('@react-three/drei', () => ({
-  ContactShadows: () => null,
-  Environment: () => null,
-  Lightformer: () => null,
-  MeshReflectorMaterial: () => null,
-  OrbitControls: () => null,
-  RoundedBox: () => null,
-  Line: () => null,
-}))
+vi.mock('@react-three/drei', () => {
+  const useGLTF = Object.assign(vi.fn(), { preload: vi.fn() })
+  return {
+    ContactShadows: () => null,
+    Environment: () => null,
+    Lightformer: () => null,
+    MeshReflectorMaterial: () => null,
+    OrbitControls: () => null,
+    RoundedBox: () => null,
+    Line: () => null,
+    useGLTF,
+  }
+})
 
 vi.mock('@react-three/postprocessing', () => ({
   Bloom: () => null,
@@ -80,12 +84,140 @@ describe('Radiology Imaging Lab', () => {
     expect(document.documentElement.style.fontSize).toBe('20px')
   })
 
-  it('switches to a future modality without reloading', async () => {
+  it('switches to the interactive CT curriculum without reloading', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('tab', { name: 'CT' }))
-    expect(screen.getByRole('heading', { name: 'CT acquisition and reconstruction' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'From projections to a volume.' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'CT' })).toHaveAttribute('aria-selected', 'true')
+    const chapters = screen.getByRole('navigation', { name: 'CT learning chapters' })
+    expect(within(chapters).getAllByRole('button')).toHaveLength(6)
+    expect(screen.getByRole('heading', { name: 'From one projection to many views' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Chapter explanation' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'A projection collapses depth; tomography reconstructs it.' })).toBeInTheDocument()
+    expect(screen.getByText(/Inside the gantry, an X-ray tube faces a detector array/)).toBeInTheDocument()
+    expect(document.querySelector('.ct-core-concept')).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'CT room camera view' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Watch a chest scan become a volume' })).toBeInTheDocument()
+    expect(screen.getByText('Slice acquisition')).toBeInTheDocument()
+    expect(screen.getByText('Current reconstruction')).toBeInTheDocument()
+    expect(screen.getByText('Accumulated volume')).toBeInTheDocument()
+    expect(screen.getByText('Slice reconstruction')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'From sinogram space to image space' })).toBeInTheDocument()
+    const volumeProgress = screen.getByRole('slider', { name: 'CT acquisition progress' })
+    const rotationTime = screen.getByRole('slider', { name: 'CT rotation time' })
+    const acquisitionPitch = screen.getByRole('slider', { name: 'Helical pitch in acquisition animation' })
+    const sliceThickness = screen.getByRole('slider', { name: 'Reconstructed slice thickness' })
+    expect(Number((volumeProgress as HTMLInputElement).value)).toBeGreaterThanOrEqual(0)
+    expect(Number((volumeProgress as HTMLInputElement).value)).toBeLessThanOrEqual(1000)
+    expect(rotationTime).toHaveValue('0.7')
+    expect(acquisitionPitch).toHaveValue('1')
+    expect(sliceThickness).toHaveValue('2.5')
+    expect(screen.getByRole('img', { name: /Current LIDC-IDRI axial chest CT slice/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /Growing CT volume/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Pause CT acquisition' }))
+    expect(screen.getByRole('button', { name: 'Play CT acquisition' })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.change(volumeProgress, { target: { value: '180' } })
+    const stackPlanesAtEighteenPercent = document.querySelectorAll('.ct-volume-stack canvas').length
+    fireEvent.change(volumeProgress, { target: { value: '500' } })
+    expect(volumeProgress).toHaveValue('500')
+    expect(document.querySelectorAll('.ct-volume-stack canvas').length).toBeGreaterThan(stackPlanesAtEighteenPercent)
+    fireEvent.change(volumeProgress, { target: { value: '1000' } })
+    const defaultThicknessPlanes = Array.from(document.querySelectorAll<HTMLCanvasElement>('.ct-volume-stack canvas'))
+    expect(document.querySelector('.ct-current-slice-card header strong')).toHaveTextContent(`Slice ${defaultThicknessPlanes.length} of ${defaultThicknessPlanes.length}`)
+    const defaultThicknessExtent = defaultThicknessPlanes.at(-1)?.style.getPropertyValue('--stack-offset')
+    fireEvent.change(sliceThickness, { target: { value: '5' } })
+    expect(sliceThickness).toHaveValue('5')
+    const thickSlicePlanes = Array.from(document.querySelectorAll<HTMLCanvasElement>('.ct-volume-stack canvas'))
+    expect(document.querySelector('.ct-current-slice-card header strong')).toHaveTextContent(`Slice ${thickSlicePlanes.length} of ${thickSlicePlanes.length}`)
+    expect(screen.getByRole('img', { name: `Current LIDC-IDRI axial chest CT slice ${thickSlicePlanes.length} of ${thickSlicePlanes.length}` })).toBeInTheDocument()
+    expect(thickSlicePlanes.length).toBeLessThan(defaultThicknessPlanes.length)
+    expect(thickSlicePlanes.at(-1)?.style.getPropertyValue('--stack-offset')).toBe(defaultThicknessExtent)
+    fireEvent.change(volumeProgress, { target: { value: '500' } })
+    const partialThickSlicePlanes = Array.from(document.querySelectorAll<HTMLCanvasElement>('.ct-volume-stack canvas'))
+    const fixedThickSliceExtent = partialThickSlicePlanes.at(-1)?.style.getPropertyValue('--stack-offset')
+    fireEvent.change(volumeProgress, { target: { value: '520' } })
+    const planesBeforeNextReconstruction = Array.from(document.querySelectorAll<HTMLCanvasElement>('.ct-volume-stack canvas'))
+    expect(planesBeforeNextReconstruction).toHaveLength(partialThickSlicePlanes.length)
+    expect(planesBeforeNextReconstruction.at(-1)?.style.getPropertyValue('--stack-offset')).toBe(fixedThickSliceExtent)
+    expect(screen.getByRole('heading', { name: 'From sinogram space to image space' })).toBeInTheDocument()
+    expect(screen.queryByText('Planned asset')).not.toBeInTheDocument()
+    const viewsUsed = screen.getByRole('slider', { name: 'Views in a full sweep' })
+    const acquisitionProgress = screen.getByRole('slider', { name: 'Acquisition progress' })
+    expect(viewsUsed).toHaveValue('60')
+    expect(Number((acquisitionProgress as HTMLInputElement).value)).toBeGreaterThanOrEqual(0)
+    expect(Number((acquisitionProgress as HTMLInputElement).value)).toBeLessThan(60)
+    expect(screen.getByRole('button', { name: 'Pause' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Pause' }))
+    expect(screen.getByRole('button', { name: 'Play' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('img', { name: /Progressive reconstruction using \d+ of 60 views/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /Sinogram wipe showing \d+ of 60 views/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Sparse' }))
+    expect(viewsUsed).toHaveValue('12')
+    expect(acquisitionProgress).toHaveValue('0')
+    expect(screen.getByRole('img', { name: 'Progressive reconstruction using 1 of 12 views' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Sinogram wipe showing 1 of 12 views' })).toBeInTheDocument()
+    fireEvent.change(acquisitionProgress, { target: { value: '6' } })
+    expect(screen.getByRole('img', { name: 'Schematic CT source and detector at 90 degrees' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Sinogram wipe showing 7 of 12 views' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Play' }))
+    expect(screen.getByRole('button', { name: 'Pause' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('heading', { name: 'Two interiors can cast the same projection.' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'What changes with more views' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+
+    await user.click(within(chapters).getByRole('button', { name: /Reconstruction/ }))
+    expect(screen.getByRole('heading', { name: 'Reconstructing a slice' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Backprojection reverses the ray geometry' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Progressive reconstruction' })).toBeInTheDocument()
+    const reconstructionViewCount = screen.getByRole('slider', { name: 'Reconstruction view count' })
+    const reconstructionStageControls = document.querySelector('.ct-recon-stages') as HTMLElement
+    expect(within(reconstructionStageControls).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['1. Measure', '2. Filter', '3. Backproject', '4. Accumulate', '5. Final slice'])
+    expect(reconstructionViewCount).toHaveValue('36')
+    expect(screen.getByText('Changes the multi-view accumulation and final reconstruction')).toBeInTheDocument()
+    await user.click(within(reconstructionStageControls).getByRole('button', { name: '2. Filter' }))
+    expect(screen.getByRole('img', { name: 'Ramp-filtered detector profile' })).toBeInTheDocument()
+    await user.click(within(reconstructionStageControls).getByRole('button', { name: '3. Backproject' }))
+    expect(screen.getByRole('img', { name: 'Backprojection of one filtered projection' })).toBeInTheDocument()
+    fireEvent.change(reconstructionViewCount, { target: { value: '12' } })
+    await user.click(within(reconstructionStageControls).getByRole('button', { name: '4. Accumulate' }))
+    expect(screen.getByRole('img', { name: 'Accumulation of 6 of 12 filtered views' })).toBeInTheDocument()
+    await user.click(within(reconstructionStageControls).getByRole('button', { name: '5. Final slice' }))
+    expect(screen.getByRole('img', { name: 'Final filtered-backprojection slice using 12 views' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Compare reconstruction approaches' })).toBeInTheDocument()
+
+    await user.click(within(chapters).getByRole('button', { name: /Scanner geometry/ }))
+    expect(screen.getByRole('heading', { name: 'Gantry and table motion' })).toBeInTheDocument()
+    const pitch = screen.getByRole('slider', { name: 'Helical pitch' })
+    expect(pitch).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Axial' }))
+    expect(pitch).toBeDisabled()
+
+    await user.click(within(chapters).getByRole('button', { name: /Measuring a ray/ }))
+    expect(screen.getByRole('heading', { name: 'Photon path to line integral' })).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('slider', { name: 'Attenuation coefficient' }), { target: { value: '0.38' } })
+    expect(screen.getByText('p = 4.56')).toBeInTheDocument()
+
+    await user.click(within(chapters).getByRole('button', { name: /Resolution & noise/ }))
+    expect(screen.getByRole('heading', { name: 'Protocol trade-off dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: /Poisson-noisy reconstruction of a real LIDC-IDRI chest slice/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /Poisson-noisy reconstruction/ }).tagName).toBe('CANVAS')
+    expect(screen.getByRole('group', { name: 'Noise simulation pipeline' })).toHaveTextContent('HU → μ→sinogram→Poisson counts→−ln(I / I₀)→FBP')
+    const protocolMas = screen.getByRole('slider', { name: 'CT tube current-time' })
+    expect(protocolMas).toHaveAttribute('min', '10')
+    expect(protocolMas).toHaveAttribute('max', '400')
+    fireEvent.change(protocolMas, { target: { value: '20' } })
+    expect(screen.getByText('10,923')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Sharp' }))
+    expect(screen.getByText('sharp kernel')).toBeInTheDocument()
+
+    await user.click(within(chapters).getByRole('button', { name: /Artifacts & output/ }))
+    expect(screen.getByRole('heading', { name: 'Cause → projection data → reconstructed image' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Scanner to model input' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'What may vary between CT series' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Rings' }))
+    expect(screen.getByText(/detector-fixed error/)).toBeInTheDocument()
+    expect(screen.queryByText('Planned asset')).not.toBeInTheDocument()
   })
 
   it('offers the image data learning backbone and the interactive windowing module', async () => {

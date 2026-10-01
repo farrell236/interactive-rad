@@ -16,3 +16,17 @@ Data citation:
 > Armato III, S. G., et al. (2015). Data From LIDC-IDRI. The Cancer Imaging Archive. https://doi.org/10.7937/K9/TCIA.2015.LO9QL9SX
 
 Transformation performed for this app: Pixel Data was decoded, converted with `HU = stored value × Rescale Slope + Rescale Intercept`, rounded to integer HU, and exported row-major as signed 16-bit little-endian values. No anatomical pixels were altered.
+
+## LIDC-IDRI teaching volume
+
+`lidc-idri-0001-chest-192x192x133-hu16le.bin` contains all 133 axial images from the same series, ordered superior to inferior. The complete source volume was converted to Hounsfield units and resized in-plane from 512 × 512 to 192 × 192 with bilinear interpolation. Its source 2.5 mm slice positions were preserved; the derived in-plane pixel spacing is 1.875 × 1.875 mm. The companion `lidc-idri-0001-chest-volume.json` records the dimensions, geometry, identifiers, ordering, and storage representation.
+
+The compact volume is used only by the CT acquisition lesson. The animation traverses the 81-slice thoracic range recorded in the metadata while retaining the full series in the asset. It is displayed with a lung window while the app synchronizes the current axial level with the gantry animation and growing slice stack. The 5.0 and 7.5 mm teaching settings average neighboring source images; they do not create additional resolution.
+
+To reproduce the asset after downloading the source DICOM series:
+
+```sh
+python3 scripts/prepare_lidc_volume.py DICOM_DIRECTORY \
+  src/assets/ct/lidc-idri-0001-chest-192x192x133-hu16le.bin \
+  src/assets/ct/lidc-idri-0001-chest-volume.json
+```

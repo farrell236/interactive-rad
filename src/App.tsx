@@ -5,6 +5,7 @@ import { PlaceholderModule } from './components/PlaceholderModule'
 import type { Modality } from './types'
 
 const XrayModule = lazy(() => import('./components/XrayModule'))
+const CtModule = lazy(() => import('./components/CtModule'))
 const WindowingModule = lazy(() => import('./components/WindowingModule'))
 const ImageDataModule = lazy(() => import('./components/ImageDataModule'))
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
@@ -117,6 +118,8 @@ export default function App() {
           <section key={modality.id} id={`panel-${modality.id}`} role="tabpanel" aria-labelledby={`tab-${modality.id}`} hidden={active !== modality.id}>
             {modality.id === 'xray'
               ? <Suspense fallback={<LoadingModule />}><XrayModule /></Suspense>
+              : modality.id === 'ct'
+                ? <Suspense fallback={<LoadingModule />}><CtModule /></Suspense>
               : modality.id === 'image-data'
                 ? <Suspense fallback={<LoadingModule />}><ImageDataModule /></Suspense>
                 : modality.id === 'windowing'
