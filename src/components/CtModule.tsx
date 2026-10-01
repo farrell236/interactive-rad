@@ -369,7 +369,7 @@ export default function CtModule() {
           <h2>From projections to a volume.</h2>
           <p>Follow the CT pipeline from rotating X-ray measurements through sinograms and reconstruction to the series used for viewing and machine learning.</p>
         </div>
-        <div className="ct-learning-progress-copy"><strong>{chapterIndex + 1} / {chapters.length}</strong><span>Acquisition and reconstruction</span></div>
+        <div className="ct-learning-progress-copy"><strong>{chapterIndex + 1} / {chapters.length}</strong></div>
         <div className="ct-learning-progress" aria-label={`CT chapter ${chapterIndex + 1} of ${chapters.length}`}>{chapters.map((item, index) => <span key={item.id} className={index <= chapterIndex ? 'is-active' : ''} />)}</div>
       </header>
 
@@ -390,7 +390,6 @@ export default function CtModule() {
         <section className="ct-learning-lesson" aria-labelledby="ct-learning-lesson-title">
           <header className="ct-learning-lesson-heading">
             <div><span><ChapterIcon aria-hidden="true" /> Chapter {chapterIndex + 1}</span><h3 id="ct-learning-lesson-title">{chapter.title}</h3><p>{chapter.summary}</p></div>
-            <em>Interactive lesson</em>
           </header>
 
           {chapter.id !== 'many-views' && (

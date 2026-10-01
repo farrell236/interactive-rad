@@ -557,7 +557,7 @@ export default function WindowingModule() {
           <h2>From stored pixels to visible contrast.</h2>
           <p>Follow a CT value from its encoded integer through HU calibration, windowing, and model-ready input.</p>
         </div>
-        <div className="windowing-progress" aria-label={`Section ${activeChapter + 1} of ${chapters.length}`}><strong>{activeChapter + 1} / {chapters.length}</strong><span>Explore at your own pace</span></div>
+        <div className="windowing-progress" aria-label={`Section ${activeChapter + 1} of ${chapters.length}`}><strong>{activeChapter + 1} / {chapters.length}</strong></div>
       </header>
 
       <nav className="windowing-chapters" aria-label="Windowing learning sections">

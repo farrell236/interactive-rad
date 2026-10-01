@@ -1005,7 +1005,7 @@ function ImageDataModule() {
           <h2>An image is more than an array.</h2>
           <p>Follow an image from file container to voxel grid, physical geometry, anatomical planes, and coordinate conventions.</p>
         </div>
-        <div className="image-data-progress-copy"><strong>{activeChapter + 1} / {chapters.length}</strong><span>Learning backbone</span></div>
+        <div className="image-data-progress-copy"><strong>{activeChapter + 1} / {chapters.length}</strong></div>
         <div className="image-data-progress" role="progressbar" aria-label="Image data chapter progress" aria-valuemin={1} aria-valuemax={chapters.length} aria-valuenow={activeChapter + 1}>
           {chapters.map((item, index) => <span key={item.id} className={index <= activeChapter ? 'is-active' : undefined} />)}
         </div>
@@ -1032,7 +1032,7 @@ function ImageDataModule() {
         </nav>
 
         <section className="image-data-lesson" aria-labelledby="image-data-lesson-title">
-          <div className="image-data-lesson-copy"><div><h3 id="image-data-lesson-title">{chapter.title}</h3><p>{chapter.summary}</p></div><span>Content first · interaction where useful</span></div>
+          <div className="image-data-lesson-copy"><div><h3 id="image-data-lesson-title">{chapter.title}</h3><p>{chapter.summary}</p></div></div>
           <ChapterAsset chapter={chapter} />
           <LearningPoints chapter={chapter} />
         </section>
