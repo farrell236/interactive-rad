@@ -267,7 +267,7 @@ function AmbiguousInterior({ reversed, label }: { reversed: boolean; label: stri
   return (
     <figure>
       <figcaption>{label}</figcaption>
-      <svg viewBox="0 0 300 176" role="img" aria-label={`${label}: the same objects arranged at different depths produce the same parallel-beam projection`}>
+      <svg viewBox="0 20 300 156" role="img" aria-label={`${label}: the same objects arranged at different depths produce the same parallel-beam projection`}>
         <defs>
           <linearGradient id={beamId} x1="0" x2="1">
             <stop offset="0" stopColor="currentColor" stopOpacity="0.06" />
