@@ -302,7 +302,7 @@ export default function CtVolumeAcquisition() {
                   />
                 ))}
               </div>
-              <div className="ct-volume-stack-axis" aria-hidden="true"><span>Superior</span><i /><span>Inferior</span></div>
+              <div className="ct-volume-stack-axis" aria-hidden="true"><span>Inferior</span><i /><span>Superior</span></div>
             </div>
             <p className="ct-volume-result-copy">Each completed slice is placed at its position along the superior–inferior axis. The ordered stack forms a three-dimensional voxel volume that can be viewed in other planes or supplied to an ML pipeline.</p>
             <p>Helical acquisition is continuous, but reconstructed images occupy discrete output positions. Pitch controls table travel per rotation relative to the total beam width. In this demo, reconstruction interval matches slice thickness, so thicker images appear farther apart across the same scanned extent; neither setting changes the couch movement.</p>

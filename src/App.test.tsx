@@ -115,6 +115,7 @@ describe('Radiology Imaging Lab', () => {
     expect(sliceThickness).toHaveValue('2.5')
     expect(screen.getByRole('img', { name: /Current LIDC-IDRI axial chest CT slice/ })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /Growing CT volume/ })).toBeInTheDocument()
+    expect(Array.from(document.querySelectorAll('.ct-volume-stack-axis span'), (label) => label.textContent)).toEqual(['Inferior', 'Superior'])
     await user.click(screen.getByRole('button', { name: 'Pause CT acquisition' }))
     expect(screen.getByRole('button', { name: 'Play CT acquisition' })).toHaveAttribute('aria-pressed', 'false')
     fireEvent.change(volumeProgress, { target: { value: '180' } })

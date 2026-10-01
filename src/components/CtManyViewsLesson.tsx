@@ -55,10 +55,21 @@ function createModifiedSheppLoganPhantom() {
 
 const SHEPP_LOGAN_PHANTOM = createModifiedSheppLoganPhantom()
 
+function sourceDetectorAngleRadians(acquisitionAngleRadians: number) {
+  // Present 0° as a vertical source–detector axis, matching the conventional
+  // CT teaching view rather than the mathematical +x-axis convention.
+  return acquisitionAngleRadians - (Math.PI / 2)
+}
+
+function detectorCoordinate(x: number, y: number, acquisitionAngleRadians: number) {
+  // Detector channels run along the tangent perpendicular to the displayed
+  // source–detector axis.
+  const scannerAngle = sourceDetectorAngleRadians(acquisitionAngleRadians)
+  return (-x * Math.sin(scannerAngle)) + (y * Math.cos(scannerAngle))
+}
+
 function forwardProject(image: Float32Array, angle: number) {
   const projection = new Float32Array(DETECTOR_COUNT)
-  const cosine = Math.cos(angle)
-  const sine = Math.sin(angle)
 
   for (let row = 0; row < GRID_SIZE; row += 1) {
     const y = ((row + 0.5) / GRID_SIZE) * 2 - 1
@@ -67,7 +78,7 @@ function forwardProject(image: Float32Array, angle: number) {
       if (value === 0) continue
 
       const x = ((column + 0.5) / GRID_SIZE) * 2 - 1
-      const detectorPosition = (x * cosine) + (y * sine)
+      const detectorPosition = detectorCoordinate(x, y, angle)
       const detectorIndex = ((detectorPosition + ROOT_TWO) / (ROOT_TWO * 2)) * (DETECTOR_COUNT - 1)
       const lower = Math.floor(detectorIndex)
       const fraction = detectorIndex - lower
@@ -111,7 +122,7 @@ function reconstruct(viewCount: number, acquiredViews = viewCount) {
       let sum = 0
 
       for (const { angle, projection } of projections) {
-        const detectorPosition = (x * Math.cos(angle)) + (y * Math.sin(angle))
+        const detectorPosition = detectorCoordinate(x, y, angle)
         const detectorIndex = ((detectorPosition + ROOT_TWO) / (ROOT_TWO * 2)) * (DETECTOR_COUNT - 1)
         const lower = Math.floor(detectorIndex)
         const fraction = detectorIndex - lower
@@ -220,7 +231,7 @@ function projectionPath(projection: Float32Array, maximum: number) {
 }
 
 function ScannerDiagram({ angle }: { angle: number }) {
-  const radians = (angle / 180) * Math.PI
+  const radians = sourceDetectorAngleRadians((angle / 180) * Math.PI)
   const directionX = Math.cos(radians)
   const directionY = Math.sin(radians)
   const tangentX = -directionY
@@ -231,7 +242,7 @@ function ScannerDiagram({ angle }: { angle: number }) {
   const detectorEnd = { x: detector.x + (tangentX * 53), y: detector.y + (tangentY * 53) }
 
   return (
-    <svg className="ct-views-scanner" viewBox="0 0 320 300" role="img" aria-label={`Schematic CT source and detector at ${angle} degrees`}>
+    <svg className="ct-views-scanner" viewBox="10 8 300 300" role="img" aria-label={`Schematic CT source and detector at ${angle} degrees`}>
       <circle className="ct-views-orbit" cx="160" cy="150" r="120" />
       {Array.from({ length: 13 }, (_, index) => {
         const offset = -1 + ((index / 12) * 2)

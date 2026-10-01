@@ -1201,7 +1201,9 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-many-views-stage > section > p { margin: 9px 0 0; color: var(--text-soft); font-size: 0.69rem; line-height: 1.45; text-wrap: pretty; }
 .ct-many-views-demo > footer { padding: 11px 21px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); background: var(--surface-secondary); font-size: 0.65rem; line-height: 1.45; }
 
-.ct-views-scanner { display: block; width: 100%; max-height: 246px; color: var(--ct-accent); }
+.ct-views-scanner,
+.ct-projection-profile { display: block; width: min(100%, 246px); aspect-ratio: 1; margin-inline: auto; }
+.ct-views-scanner { color: var(--ct-accent); }
 .ct-views-orbit { fill: none; stroke: var(--separator); stroke-width: 1.3; stroke-dasharray: 4 5; }
 .ct-views-ray { stroke: color-mix(in srgb, var(--ct-accent) 65%, transparent); stroke-width: 1.4; }
 .ct-views-ray.is-edge { opacity: 0.5; }
@@ -1215,7 +1217,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-views-phantom .is-feature { fill: color-mix(in srgb, var(--text) 30%, var(--surface)); }
 .ct-views-phantom .is-detail { fill: color-mix(in srgb, var(--ct-accent) 52%, var(--surface)); }
 
-.ct-projection-profile { display: block; width: 100%; min-height: 185px; color: var(--ct-accent); }
+.ct-projection-profile { color: var(--ct-accent); }
 .ct-projection-profile line { stroke: var(--separator); stroke-width: 1; }
 .ct-projection-profile path:not(.ct-projection-profile-fill) { fill: none; stroke: var(--ct-accent); stroke-width: 2.2; stroke-linejoin: round; }
 .ct-projection-profile-fill { fill: color-mix(in srgb, var(--ct-accent) 14%, transparent); stroke: none; }
@@ -1799,7 +1801,6 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .ct-acquisition-actions button { flex: 1; min-height: 42px; }
   .ct-many-views-stage { grid-template-columns: minmax(0, 1fr); }
   .ct-many-views-stage > section + section { border-top: 1px solid var(--separator-soft); border-left: 0; }
-  .ct-projection-profile { min-height: 150px; }
   .ct-ambiguity-pair { grid-template-columns: minmax(0, 1fr); }
   .ct-ambiguity-equals { display: flex; justify-content: center; }
   .ct-ambiguity-equals small { max-width: none; }
