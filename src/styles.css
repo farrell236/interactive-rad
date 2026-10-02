@@ -250,7 +250,7 @@ h1 { margin: 0; overflow: hidden; font-size: 0.94rem; font-weight: 650; letter-s
 .parameter-references a:hover, .parameter-references a:focus-visible { color: var(--accent); }
 .parameter-references svg { flex: 0 0 auto; width: 11px; height: 11px; margin-top: 2px; }
 
-input[type="range"] { width: 100%; height: 28px; margin: 2px 0 0; appearance: none; background: linear-gradient(90deg, var(--accent) var(--range-progress), color-mix(in srgb, var(--text-faint) 24%, transparent) var(--range-progress)) center / 100% 4px no-repeat; cursor: pointer; }
+input[type="range"] { --range-progress: 0%; width: 100%; height: 28px; margin: 2px 0 0; appearance: none; background: linear-gradient(90deg, var(--accent) var(--range-progress), color-mix(in srgb, var(--text-faint) 34%, transparent) var(--range-progress)) center / 100% 5px no-repeat; cursor: pointer; }
 input[type="range"]::-webkit-slider-thumb { width: 20px; height: 20px; border: 2px solid var(--surface-secondary); border-radius: 50%; appearance: none; background: white; box-shadow: 0 1px 5px var(--shadow); }
 input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; border: 2px solid var(--surface-secondary); border-radius: 50%; background: white; box-shadow: 0 1px 5px var(--shadow); }
 .science-strip { display: flex; align-items: center; gap: 10px; min-height: 43px; padding: 10px 20px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); font-size: 0.7rem; line-height: 1.45; }
@@ -1249,8 +1249,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-learning-chapters > p { margin: 6px 9px 9px; color: var(--text-faint); font-size: 0.67rem; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; }
 .ct-learning-chapters > button { display: grid; grid-template-columns: 26px 16px minmax(0, 1fr); gap: 8px; align-items: center; width: 100%; min-height: 50px; padding: 7px 8px; border: 0; border-radius: 8px; color: var(--text-faint); background: transparent; text-align: left; transition: color 140ms ease, background 140ms ease; }
 .ct-learning-chapters > button:hover:not(:disabled) { color: var(--text); background: var(--surface-secondary); }
-.ct-learning-chapters > button:disabled { color: var(--text-faint); background: transparent; opacity: 0.38; filter: saturate(0.2); }
-.ct-learning-chapters > button:disabled svg { color: var(--text-faint); }
+.mri-learning-module .ct-learning-chapters > button:disabled { color: var(--text-faint); background: transparent; cursor: not-allowed; opacity: 0.38; filter: saturate(0.2); }
+.mri-learning-module .ct-learning-chapters > button:disabled svg { color: var(--text-faint); }
 .ct-learning-chapters > button.is-selected { color: var(--text); background: color-mix(in srgb, var(--ct-accent) 11%, var(--surface-secondary)); }
 .ct-learning-chapters > button > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: var(--text-faint); background: var(--surface-secondary); font-size: 0.65rem; font-weight: 650; }
 .ct-learning-chapters > button.is-selected > span { color: var(--text); background: var(--surface-raised); box-shadow: 0 1px 4px var(--shadow); }
@@ -2259,6 +2259,198 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 @keyframes mri-receiver-waiting { 0%, 17% { opacity: 1; } 19%, 82% { opacity: 0; } 84%, 100% { opacity: 1; } }
 @keyframes mri-receiver-blanked { 0%, 17% { opacity: 0; } 19%, 31% { opacity: 1; } 33%, 100% { opacity: 0; } }
 @keyframes mri-receiver-recording { 0%, 31% { opacity: 0; } 34%, 80% { opacity: 1; } 82%, 100% { opacity: 0; } }
+
+.mri-relaxation-lab,
+.mri-weighting-comparison,
+.mri-property-reference { overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 12px; background: var(--surface); box-shadow: var(--panel-shadow); }
+.mri-relaxation-lab { margin-bottom: 14px; }
+.mri-relaxation-lab > header,
+.mri-weighting-comparison > header,
+.mri-property-reference > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 19px 21px 16px; }
+.mri-relaxation-lab > header > div,
+.mri-weighting-comparison > header > div:first-child,
+.mri-property-reference > header { min-width: 0; }
+.mri-relaxation-lab > header span,
+.mri-weighting-comparison > header > div:first-child > span,
+.mri-property-reference > header > span { display: block; margin-bottom: 4px; color: var(--ct-accent); font-size: 0.59rem; font-weight: 730; letter-spacing: 0.065em; text-transform: uppercase; }
+.mri-relaxation-lab h4,
+.mri-weighting-comparison h4,
+.mri-property-reference h4 { margin: 0; color: var(--text); font-size: 0.94rem; line-height: 1.25; }
+.mri-relaxation-lab > header p,
+.mri-weighting-comparison > header p,
+.mri-property-reference > header p { max-width: 890px; margin: 5px 0 0; color: var(--text-soft); font-size: 0.71rem; line-height: 1.5; }
+.mri-relaxation-mode { flex: 0 0 auto; min-width: 124px; padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--ct-accent) 24%, var(--separator-soft)); border-radius: 8px; background: color-mix(in srgb, var(--ct-accent) 7%, var(--surface-secondary)); text-align: right; }
+.mri-relaxation-mode small { display: block; color: var(--text-faint); font-size: 0.56rem; font-weight: 650; }
+.mri-relaxation-mode strong { display: block; margin-top: 2px; color: var(--ct-accent); font-size: 0.7rem; font-weight: 720; }
+.mri-relaxation-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--separator-soft); background: var(--surface-secondary); }
+.mri-relaxation-presets button { display: grid; gap: 3px; min-width: 0; min-height: 58px; padding: 11px 14px; border: 0; color: var(--text-faint); background: transparent; font: inherit; text-align: left; cursor: pointer; transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.mri-relaxation-presets button + button { border-left: 1px solid var(--separator-soft); }
+.mri-relaxation-presets button:hover { color: var(--text); background: color-mix(in srgb, var(--ct-accent) 5%, var(--surface)); }
+.mri-relaxation-presets button.is-selected { color: var(--text); background: var(--surface-raised); box-shadow: inset 0 -3px var(--ct-accent); }
+.mri-relaxation-presets button:disabled { color: var(--text-faint); background: color-mix(in srgb, var(--surface-secondary) 68%, var(--separator-soft)); box-shadow: none; cursor: not-allowed; opacity: 0.38; }
+.mri-relaxation-presets strong { font-size: 0.71rem; font-weight: 700; }
+.mri-relaxation-presets small { overflow: hidden; font-size: 0.59rem; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.mri-relaxation-workbench { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(245px, 0.7fr); min-height: 345px; }
+.mri-relaxation-curves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; padding: 16px 12px 9px; }
+.mri-relaxation-plot { position: relative; min-width: 0; margin: 0; padding: 0 7px; }
+.mri-relaxation-plot + .mri-relaxation-plot { border-left: 1px solid var(--separator-soft); }
+.mri-relaxation-plot figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 0 8px; }
+.mri-relaxation-plot figcaption strong { color: var(--text); font-size: 0.7rem; font-weight: 690; }
+.mri-relaxation-plot figcaption span { color: var(--text-faint); font-size: 0.6rem; font-weight: 630; }
+.mri-relaxation-plot-control { display: grid; gap: 1px; margin-top: 7px; }
+.mri-relaxation-plot-control > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-inline: 8.57%; }
+.mri-relaxation-plot-control strong { color: var(--text-soft); font-size: 0.61rem; font-weight: 660; }
+.mri-relaxation-plot-control output { color: var(--ct-accent); font-size: 0.62rem; font-weight: 720; font-variant-numeric: tabular-nums; }
+.mri-relaxation-plot-control > div { padding-inline: calc(8.57% - 10px); }
+.mri-relaxation-plot-control input { display: block; width: 100%; margin: 0; }
+.mri-relaxation-plot-control small { min-height: 2.7em; padding-inline: 8.57%; color: var(--text-faint); font-size: 0.54rem; line-height: 1.35; }
+.mri-relaxation-chart { display: block; width: 100%; height: auto; margin-top: -2px; }
+.mri-relaxation-chart.is-compact { display: none; }
+.mri-relaxation-legend { display: flex; align-items: center; justify-content: center; gap: 13px; margin-top: -1px; color: var(--text-faint); font-size: 0.52rem; font-weight: 670; }
+.mri-relaxation-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.mri-relaxation-legend i { width: 14px; height: 0; border-top: 2px solid currentColor; border-radius: 0; }
+.mri-relaxation-chart path.is-tissue-gray,
+.mri-relaxation-legend i.is-tissue-gray { stroke-dasharray: 9 5; border-top-style: dashed; }
+.mri-relaxation-chart path.is-tissue-csf,
+.mri-relaxation-legend i.is-tissue-csf { stroke-dasharray: 2 5; border-top-style: dotted; }
+.mri-relaxation-grid line { stroke: var(--separator-soft); stroke-width: 0.7; }
+.mri-relaxation-axis { fill: none; stroke: var(--text-faint); stroke-width: 1.15; }
+.mri-relaxation-sample-line { stroke: var(--ct-accent); stroke-width: 1.6; stroke-dasharray: 4 4; }
+.mri-relaxation-axis-text { fill: var(--text-faint); font-size: 8.5px; font-weight: 600; }
+.mri-relaxation-axis-label { fill: var(--text-soft); font-size: 7.5px; font-weight: 680; letter-spacing: 0.01em; }
+.mri-relaxation-axis-tick { fill: var(--text-faint); font-size: 7.5px; font-weight: 620; }
+.mri-relaxation-readout { display: grid; align-content: start; gap: 15px; min-width: 0; padding: 17px 18px; border-left: 1px solid var(--separator-soft); background: color-mix(in srgb, var(--surface-secondary) 76%, var(--surface)); }
+.mri-relaxation-readout > header { display: grid; gap: 3px; }
+.mri-relaxation-readout > header span { color: var(--text); font-size: 0.72rem; font-weight: 700; }
+.mri-relaxation-readout > header small { color: var(--text-faint); font-size: 0.58rem; }
+.mri-relaxation-bars { display: grid; gap: 12px; }
+.mri-relaxation-bars > div { display: grid; gap: 5px; }
+.mri-relaxation-bars > div > span { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.mri-relaxation-bars strong { color: var(--text-soft); font-size: 0.64rem; font-weight: 650; }
+.mri-relaxation-bars output { color: var(--text-faint); font-size: 0.62rem; font-variant-numeric: tabular-nums; }
+.mri-relaxation-bars i { display: block; height: 8px; overflow: hidden; border-radius: 999px; background: var(--separator-soft); }
+.mri-relaxation-bars b { display: block; height: 100%; border-radius: inherit; box-shadow: 0 0 10px color-mix(in srgb, var(--ct-accent) 20%, transparent); transition: width 180ms ease; }
+.mri-relaxation-equation { container-type: inline-size; display: grid; gap: 7px; padding: 11px 10px; border: 1px solid var(--separator-soft); border-radius: 8px; background: var(--surface); text-align: center; }
+.mri-relaxation-equation small { color: var(--text-faint); font-size: 0.55rem; }
+.mri-relaxation-equation strong { color: var(--text); font-family: Georgia, 'Times New Roman', serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.01em; }
+.mri-relaxation-equation sup { font-size: 0.63em; }
+.mri-relaxation-equation.is-gradient-echo strong { display: flex; align-items: center; justify-content: center; gap: 0.7em; font-size: clamp(0.38rem, 4cqw, 0.72rem); line-height: 1.08; white-space: nowrap; }
+.mri-equation-fraction { display: inline-grid; vertical-align: middle; }
+.mri-equation-fraction i { padding-inline: 3px; font-style: normal; line-height: 1.1; }
+.mri-equation-fraction i:first-child { border-bottom: 1px solid currentColor; }
+.mri-equation-definition { display: inline-flex; align-items: center; align-self: stretch; padding-left: 0.7em; border-left: 1px solid color-mix(in srgb, var(--text) 48%, var(--separator-soft)); }
+.mri-relaxation-readout > p { margin: 0; color: var(--text-soft); font-size: 0.64rem; line-height: 1.48; }
+.mri-relaxation-interpretation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); background: var(--surface-secondary); }
+.mri-relaxation-interpretation div { display: grid; gap: 3px; padding: 13px 16px; }
+.mri-relaxation-interpretation div + div { border-left: 1px solid var(--separator-soft); }
+.mri-relaxation-interpretation b { color: var(--text); font-size: 0.66rem; }
+.mri-relaxation-interpretation span { color: var(--text-faint); font-size: 0.6rem; line-height: 1.4; }
+
+.mri-relaxation-references { display: grid; gap: 14px; margin-bottom: 14px; }
+.mri-property-reference > header { display: block; }
+.mri-weighting-tabs { display: inline-grid; flex: 0 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 8px; background: var(--surface-secondary); }
+.mri-weighting-tabs button { min-width: 86px; min-height: 34px; padding: 7px 11px; border: 0; color: var(--text-faint); background: transparent; font: inherit; font-size: 0.63rem; font-weight: 680; cursor: pointer; transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease; }
+.mri-weighting-tabs button + button { border-left: 1px solid var(--separator-soft); }
+.mri-weighting-tabs button:hover { color: var(--text); }
+.mri-weighting-tabs button[aria-selected='true'] { color: var(--text); background: var(--surface-raised); box-shadow: inset 0 -2px var(--ct-accent); }
+.mri-weighting-images { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--separator-soft); }
+.mri-weighting-images figure { min-width: 0; margin: 0; background: var(--surface-secondary); }
+.mri-weighting-images figure + figure { border-left: 1px solid var(--separator-soft); }
+.mri-weighting-images figure > div { display: grid; place-items: center; min-height: 280px; padding: 16px; background: #05070a; }
+.mri-weighting-images img { display: block; width: min(100%, 270px); aspect-ratio: 1; object-fit: contain; image-rendering: auto; }
+.mri-weighting-images figcaption { display: grid; gap: 8px; padding: 13px 15px 15px; }
+.mri-weighting-images figcaption > span { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.mri-weighting-images figcaption strong { color: var(--text); font-size: 0.72rem; font-weight: 700; }
+.mri-weighting-images figcaption small { color: var(--ct-accent); font-size: 0.56rem; font-weight: 680; white-space: nowrap; }
+.mri-weighting-images figcaption p { margin: 0; color: var(--text-soft); font-size: 0.64rem; line-height: 1.45; }
+.mri-weighting-source { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; color: var(--text-faint); background: var(--surface); font-size: 0.58rem; }
+.mri-weighting-source a { display: inline-flex; align-items: center; gap: 4px; color: var(--ct-accent); text-decoration: none; }
+.mri-weighting-source svg { width: 11px; height: 11px; }
+.mri-custom-weighting { border-top: 1px solid var(--separator-soft); background: var(--surface-secondary); }
+.mri-custom-lab { min-width: 0; }
+.mri-custom-lab-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); min-width: 0; padding-block: 15px 10px; }
+.mri-custom-lab-grid > .mri-relaxation-plot { padding-inline: 14px; }
+.mri-custom-output { display: grid; align-content: start; justify-items: center; gap: 9px; min-width: 0; margin: 0; padding: 0 14px; border-left: 1px solid var(--separator-soft); }
+.mri-custom-output > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; padding: 0 3px; }
+.mri-custom-output > header span { color: var(--text); font-size: 0.7rem; font-weight: 690; }
+.mri-custom-output > header output { color: var(--ct-accent); font-size: 0.58rem; font-weight: 700; }
+.mri-custom-output-body { display: grid; grid-template-columns: minmax(0, 300px) 36px; align-items: stretch; justify-content: center; gap: 8px; width: 100%; }
+.mri-intensity-scale { display: inline-grid; flex: 0 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 6px; background: var(--surface); }
+.mri-intensity-scale button { min-height: 25px; padding: 4px 7px; border: 0; color: var(--text-faint); background: transparent; font: inherit; font-size: 0.5rem; font-weight: 680; cursor: pointer; }
+.mri-intensity-scale button + button { border-left: 1px solid var(--separator-soft); }
+.mri-intensity-scale button.is-selected { color: var(--text); background: color-mix(in srgb, var(--ct-accent) 10%, var(--surface-raised)); box-shadow: inset 0 -2px var(--ct-accent); }
+.mri-custom-slice { position: relative; width: min(100%, 300px); aspect-ratio: 1; overflow: hidden; background: #000; }
+.mri-custom-slice img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; transform: scale(1.35); mix-blend-mode: screen; transition: opacity 180ms ease; }
+.mri-flip-angle-control.is-vertical { display: grid; grid-template-rows: auto minmax(80px, 1fr) auto; align-items: center; justify-items: center; gap: 5px; min-width: 0; padding-block: 2px; transition: opacity 150ms ease; }
+.mri-flip-angle-control.is-vertical strong { color: var(--text-soft); font-size: 0.53rem; font-weight: 680; line-height: 1; writing-mode: vertical-rl; transform: rotate(180deg); }
+.mri-flip-angle-control.is-vertical output { color: var(--ct-accent); font-size: 0.57rem; font-weight: 720; font-variant-numeric: tabular-nums; }
+.mri-flip-angle-control.is-vertical input { align-self: center; width: 28px; height: calc(100% - 18px); min-height: 68px; margin: 9px 0; border: 0; appearance: none; -webkit-appearance: none; direction: rtl; writing-mode: vertical-lr; background: linear-gradient(to top, var(--accent) var(--range-progress), color-mix(in srgb, var(--text-faint) 34%, transparent) var(--range-progress)) center / 5px 100% no-repeat; cursor: ns-resize; }
+.mri-flip-angle-control.is-vertical input::-moz-range-track { width: 5px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--text-faint) 34%, transparent); }
+.mri-flip-angle-control.is-disabled { opacity: 0.4; }
+.mri-flip-angle-control.is-disabled input { cursor: not-allowed; }
+.mri-custom-output-signals { display: grid; gap: 6px; width: 100%; }
+.mri-custom-output-signals > div { display: grid; gap: 3px; }
+.mri-custom-output-signals > div > span { display: grid; grid-template-columns: 7px minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.mri-custom-output-signals > div > span i { width: 7px; height: 7px; border-radius: 50%; }
+.mri-custom-output-signals strong { color: var(--text-soft); font-size: 0.55rem; }
+.mri-custom-output-signals output { color: var(--text-faint); font-size: 0.54rem; font-variant-numeric: tabular-nums; }
+.mri-custom-output-signals > div > b { height: 4px; overflow: hidden; border-radius: 999px; background: var(--separator-soft); }
+.mri-custom-output-signals > div > b i { display: block; height: 100%; border-radius: inherit; transition: width 180ms ease; }
+.mri-custom-model-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; padding: 0; border-top: 1px solid var(--separator-soft); background: var(--surface); }
+.mri-custom-model-summary > * { display: grid; align-content: center; min-width: 0; padding: 12px 16px; }
+.mri-custom-model-summary > * + * { border-left: 1px solid var(--separator-soft); }
+.mri-custom-model-summary .mri-relaxation-equation { padding: 8px 10px; }
+.mri-custom-model-summary p { margin: 0; color: var(--text-soft); font-size: 0.62rem; line-height: 1.45; }
+.mri-custom-model-summary p strong { color: var(--text); }
+.mri-custom-weighting > .mri-weighting-source { border-top: 1px solid var(--separator-soft); }
+.mri-property-reference-body { display: grid; grid-template-columns: minmax(675px, 1fr) minmax(295px, 0.44fr); border-block: 1px solid var(--separator-soft); }
+.mri-property-table-wrap { min-width: 0; overflow-x: auto; }
+.mri-property-reference table { width: 100%; min-width: 675px; border-collapse: collapse; }
+.mri-property-reference th,
+.mri-property-reference td { padding: 11px 14px; border-bottom: 1px solid var(--separator-soft); color: var(--text-soft); font-size: 0.64rem; line-height: 1.42; text-align: left; vertical-align: top; }
+.mri-property-reference thead th { color: var(--text-faint); background: var(--surface-secondary); font-size: 0.57rem; font-weight: 720; letter-spacing: 0.045em; text-transform: uppercase; }
+.mri-property-reference tbody th { width: 145px; color: var(--text); font-weight: 700; white-space: nowrap; }
+.mri-property-reference tbody tr:last-child > * { border-bottom: 0; }
+.mri-property-reference tbody tr:hover > * { background: color-mix(in srgb, var(--ct-accent) 4%, var(--surface)); }
+.mri-t2-star-comparison { display: grid; grid-template-rows: auto auto auto; align-content: space-between; align-items: start; gap: 12px; min-width: 0; margin: 0; padding: 14px; border-left: 1px solid var(--separator-soft); background: color-mix(in srgb, var(--ct-accent) 4%, var(--surface-secondary)); }
+.mri-t2-star-comparison figcaption { display: grid; gap: 3px; }
+.mri-t2-star-comparison figcaption span { color: var(--ct-accent); font-size: 0.56rem; font-weight: 730; letter-spacing: 0.055em; text-transform: uppercase; }
+.mri-t2-star-comparison figcaption strong { color: var(--text); font-size: 0.61rem; font-weight: 700; line-height: 1.4; }
+.mri-t2-star-comparison svg { display: block; width: 100%; height: auto; }
+.mri-t2-star-comparison svg path { fill: none; stroke-width: 3; stroke-linecap: round; }
+.mri-t2-star-comparison svg .is-t2 { stroke: #c39cff; }
+.mri-t2-star-comparison svg .is-t2-star { stroke: #60d4ea; }
+.mri-t2-star-grid line { stroke: var(--separator-soft); stroke-width: 1; }
+.mri-t2-star-comparison svg text { fill: var(--text-faint); font-size: 8px; font-weight: 620; }
+.mri-t2-star-comparison svg .is-t2-label { fill: #a57bdd; font-size: 9px; font-weight: 740; }
+.mri-t2-star-comparison svg .is-t2-star-label { fill: #2faec8; font-size: 9px; font-weight: 740; }
+.mri-t2-star-comparison svg .mri-t2-star-axis-label { fill: var(--text-soft); font-size: 7.5px; font-weight: 680; }
+.mri-t2-star-comparison svg .mri-t2-star-axis-tick { fill: var(--text-faint); font-size: 7.5px; font-weight: 620; }
+.mri-t2-star-paths { display: grid; gap: 5px; }
+.mri-t2-star-paths p { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 0; padding-top: 5px; border-top: 1px solid var(--separator-soft); font-size: 0.53rem; line-height: 1.25; }
+.mri-t2-star-paths strong { color: var(--text); font-weight: 700; }
+.mri-t2-star-paths span { overflow: hidden; color: var(--text-faint); text-overflow: ellipsis; white-space: nowrap; }
+.mri-t2-star-paths b { color: var(--ct-accent); font-size: 0.58rem; }
+.mri-property-reference > aside { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 13px 16px; background: color-mix(in srgb, var(--ct-accent) 7%, var(--surface-secondary)); }
+.mri-property-reference > aside strong { color: var(--ct-accent); font-size: 0.63rem; white-space: nowrap; }
+.mri-property-reference > aside p { margin: 0; color: var(--text-soft); font-size: 0.64rem; line-height: 1.45; }
+
+@media (max-width: 1080px) {
+  .mri-relaxation-workbench { grid-template-columns: minmax(0, 1fr); }
+  .mri-relaxation-readout { grid-template-columns: minmax(180px, 0.7fr) minmax(230px, 1fr); border-top: 1px solid var(--separator-soft); border-left: 0; }
+  .mri-relaxation-readout > header,
+  .mri-relaxation-bars { grid-column: 1; }
+  .mri-relaxation-equation,
+  .mri-relaxation-readout > p { grid-column: 2; }
+  .mri-relaxation-equation { grid-row: 1 / span 2; align-content: center; }
+  .mri-weighting-images figure > div { min-height: 240px; }
+  .mri-property-reference-body { grid-template-columns: minmax(0, 1fr); }
+  .mri-t2-star-comparison { grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr); grid-template-rows: auto auto; align-items: center; gap: 8px 14px; padding: 10px 14px; border-top: 1px solid var(--separator-soft); border-left: 0; }
+  .mri-t2-star-comparison figcaption { grid-column: 1; grid-row: 1; }
+  .mri-t2-star-comparison svg { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: min(100%, 360px); margin-left: auto; }
+  .mri-t2-star-paths { grid-column: 1; grid-row: 2; }
+}
+
 @media (max-width: 980px) {
   .mri-sequence-stage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mri-sequence-scanner { border-right: 1px solid var(--separator-soft); border-bottom: 1px solid var(--separator-soft); }
@@ -2268,6 +2460,72 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 }
 
 @media (max-width: 760px) {
+  .mri-relaxation-lab > header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
+  .mri-relaxation-mode { display: block; align-self: start; min-width: 112px; white-space: normal; }
+  .mri-relaxation-mode small,
+  .mri-relaxation-mode strong { display: block; }
+  .mri-relaxation-mode strong { margin-top: 2px; }
+  .mri-relaxation-curves { grid-template-columns: minmax(0, 1fr); }
+  .mri-relaxation-plot + .mri-relaxation-plot { padding-top: 13px; border-top: 1px solid var(--separator-soft); border-left: 0; }
+  .mri-relaxation-readout { grid-template-columns: minmax(0, 1fr); }
+  .mri-relaxation-readout > header,
+  .mri-relaxation-bars,
+  .mri-relaxation-equation,
+  .mri-relaxation-readout > p { grid-column: auto; grid-row: auto; }
+  .mri-relaxation-interpretation { grid-template-columns: minmax(0, 1fr); }
+  .mri-relaxation-interpretation div + div { border-top: 1px solid var(--separator-soft); border-left: 0; }
+  .mri-weighting-images { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mri-weighting-images figure + figure { border-top: 0; border-left: 1px solid var(--separator-soft); }
+  .mri-weighting-images figure { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .mri-weighting-images figure > div { min-height: 0; padding: 10px; aspect-ratio: 1; }
+  .mri-weighting-images img { width: 100%; }
+  .mri-weighting-images figcaption { align-content: start; gap: 7px; padding: 10px; }
+  .mri-weighting-images figcaption > span { display: grid; gap: 3px; }
+  .mri-weighting-images figcaption strong { font-size: 0.65rem; line-height: 1.2; }
+  .mri-weighting-images figcaption small { font-size: 0.52rem; white-space: normal; }
+  .mri-weighting-images figcaption p { font-size: 0.58rem; line-height: 1.4; }
+  .mri-weighting-source { align-items: center; flex-flow: row wrap; }
+  .mri-custom-lab-grid .mri-relaxation-plot + .mri-relaxation-plot { padding-top: 0; border-top: 0; border-left: 1px solid var(--separator-soft); }
+  .mri-custom-lab-grid { padding-block: 12px 8px; }
+  .mri-custom-lab-grid > .mri-relaxation-plot,
+  .mri-custom-output { padding-inline: 9px; }
+  .mri-relaxation-plot figcaption { gap: 5px; padding-inline: 2px; }
+  .mri-relaxation-plot figcaption strong { font-size: 0.65rem; line-height: 1.18; }
+  .mri-relaxation-plot figcaption span { font-size: 0.54rem; white-space: nowrap; }
+  .mri-relaxation-plot-control > span,
+  .mri-relaxation-plot-control small { padding-inline: 0; }
+  .mri-relaxation-plot-control > div { padding-inline: calc(9.33% - 10px); }
+  .mri-relaxation-plot-control output { white-space: nowrap; }
+  .mri-relaxation-control-kind { display: none; }
+  .mri-relaxation-chart.is-wide { display: none; }
+  .mri-relaxation-chart.is-compact { display: block; }
+  .mri-custom-output > header { gap: 4px; padding-inline: 0; }
+  .mri-custom-output > header span { font-size: 0.65rem; white-space: nowrap; }
+  .mri-intensity-scale button { min-height: 23px; padding-inline: 5px; font-size: 0.47rem; }
+  .mri-relaxation-legend { gap: 6px; font-size: 0.46rem; }
+  .mri-relaxation-legend span { gap: 3px; }
+  .mri-relaxation-legend i { width: 11px; }
+  .mri-relaxation-chart.is-compact .mri-relaxation-axis-label { font-size: 10.5px; }
+  .mri-relaxation-chart.is-compact .mri-relaxation-axis-tick { font-size: 9px; }
+  .mri-t2-star-comparison svg .mri-t2-star-axis-label,
+  .mri-t2-star-comparison svg .mri-t2-star-axis-tick { font-size: 9px; }
+  .mri-property-table-wrap { overflow: visible; }
+  .mri-property-reference table { min-width: 0; }
+  .mri-property-reference thead { display: none; }
+  .mri-property-reference tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mri-property-reference tbody tr { display: grid; align-content: start; min-width: 0; background: var(--surface); }
+  .mri-property-reference tbody tr:nth-child(even) { border-left: 1px solid var(--separator-soft); }
+  .mri-property-reference tbody tr:nth-child(n + 3) { border-top: 1px solid var(--separator-soft); }
+  .mri-property-reference tbody th,
+  .mri-property-reference tbody td { display: block; width: auto; padding: 8px 12px; border: 0; }
+  .mri-property-reference tbody th { padding-block: 10px; background: var(--surface-secondary); white-space: normal; }
+  .mri-property-reference tbody td + td { border-top: 1px solid color-mix(in srgb, var(--separator-soft) 72%, transparent); }
+  .mri-property-reference tbody td::before { display: block; margin-bottom: 3px; color: var(--text-faint); content: attr(data-label); font-size: 0.49rem; font-weight: 720; letter-spacing: 0.045em; line-height: 1.2; text-transform: uppercase; }
+  .mri-t2-star-comparison { grid-template-columns: minmax(0, 1.08fr) minmax(170px, 0.92fr); gap: 7px 8px; padding: 9px 10px; }
+  .mri-t2-star-paths p { grid-template-columns: auto auto; }
+  .mri-t2-star-paths span { display: none; }
+  .mri-t2-star-comparison svg { width: 100%; margin-left: auto; }
+  .mri-property-reference > aside { grid-template-columns: minmax(0, 1fr); gap: 5px; }
   .mri-signal-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .mri-signal-tabs button { gap: 4px; min-height: 52px; padding: 8px 5px 10px; }
   .mri-signal-tabs button:nth-child(3) { border-left: 1px solid var(--separator-soft); }
@@ -2278,6 +2536,32 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-learning-module .ct-chapter-takeaways ol:has(> li:nth-child(4)) { gap: 5px; }
   .mri-learning-module .ct-chapter-takeaways ol:has(> li:nth-child(4)) li { min-height: 0; padding: 34px 8px 9px; font-size: 0.62rem; line-height: 1.38; }
   .mri-learning-module .ct-chapter-takeaways ol:has(> li:nth-child(4)) li::before { top: 8px; left: 8px; }
+}
+
+@media (max-width: 520px) {
+  .mri-relaxation-lab > header { padding-inline: 14px; }
+  .mri-relaxation-mode { padding: 7px 8px; }
+  .mri-relaxation-mode small { font-size: 0.52rem; }
+  .mri-relaxation-mode strong { font-size: 0.62rem; }
+  .mri-relaxation-presets button { min-height: 55px; padding-inline: 6px; }
+  .mri-relaxation-presets strong { font-size: 0.6rem; line-height: 1.15; }
+  .mri-relaxation-presets small { font-size: 0.47rem; line-height: 1.25; white-space: normal; }
+  .mri-weighting-images figure { grid-template-columns: minmax(0, 1fr); }
+  .mri-weighting-images figure > div { min-height: 0; padding: 7px; }
+  .mri-weighting-images figcaption { padding: 8px 7px 10px; }
+  .mri-weighting-images figcaption strong { font-size: 0.61rem; }
+  .mri-weighting-images figcaption small { font-size: 0.49rem; }
+  .mri-weighting-images figcaption p { font-size: 0.54rem; line-height: 1.35; }
+  .mri-weighting-comparison > header { display: grid; gap: 12px; }
+  .mri-weighting-tabs { width: 100%; }
+  .mri-custom-lab-grid > .mri-relaxation-plot,
+  .mri-custom-output { padding-inline: 7px; }
+  .mri-custom-output > header { display: grid; justify-items: start; }
+  .mri-intensity-scale { width: 100%; }
+  .mri-custom-output-body { grid-template-columns: minmax(0, 1fr) 28px; gap: 4px; }
+  .mri-flip-angle-control.is-vertical strong { font-size: 0.48rem; }
+  .mri-flip-angle-control.is-vertical output { font-size: 0.51rem; }
+  .mri-custom-model-summary > * { padding-inline: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
 import { Box, Database, Gauge, Grid3X3, Layers3, Magnet, ScanLine, Table2, TriangleAlert, Waves, Workflow } from 'lucide-react'
+import { MriRelaxationReferences } from './MriRelaxationLesson'
 import { MriSignalReferences } from './MriSignalLesson'
 import { MriSignalSequenceLesson } from './MriSignalSequenceLesson'
 
@@ -84,47 +85,41 @@ const chapters: MriChapter[] = [
   },
   {
     id: 'relaxation',
-    label: 'Relaxation & contrast',
+    label: 'Relaxation & weighting',
     icon: Waves,
-    title: 'Why the same anatomy can look different',
-    summary: 'Connect tissue-dependent relaxation to acquisition timing, then separate image weighting from quantitative measurement.',
-    coreTitle: 'MRI contrast is created by when and how the signal is measured.',
-    coreCopy: 'After excitation, longitudinal magnetization recovers with a T1-dependent time course while transverse coherence decays with a T2-dependent time course. TR, TE, TI, and flip angle determine how much of those differences enters a particular measurement. The result is a weighted image whose pixel values are relative signal—not a universal tissue scale like CT Hounsfield units.',
+    title: 'How tissue response becomes signal weighting',
+    summary: 'Separate proton density, T1, T2, and T2* from the acquisition timing that makes one property more visible than another.',
+    coreTitle: 'Relaxation describes tissue behavior; weighting describes how the acquisition samples it.',
+    coreCopy: 'After excitation, longitudinal magnetization recovers with a T1-dependent time course while transverse coherence decays with a T2-dependent time course. Proton density sets the available signal. TR and TE determine when that evolving signal is sampled, so a weighted image emphasizes selected differences without directly measuring a tissue time constant.',
     teaching: {
-      layout: 'depth',
-      kicker: 'Properties are not weightings',
-      cues: ['Recover', 'Dephase', 'Weight'],
+      layout: 'geometry',
+      kicker: 'Property → sampled signal → weighting',
+      cues: ['Properties', 'Timing', 'Output'],
       sections: [
         {
-          title: 'T1 and T2 describe different forms of relaxation',
+          title: 'Proton density, T1, and T2 are properties of the spin system',
           paragraphs: [
-            'T1 describes recovery of longitudinal magnetization toward equilibrium. T2 describes loss of transverse phase coherence caused by interactions within the spin system. T2* includes additional dephasing from magnetic-field nonuniformity.',
-            'These time constants are tissue and acquisition dependent physical properties. Proton density describes how much MR-visible hydrogen contributes signal in the sampled tissue.',
+            'A voxel’s MR-visible hydrogen sets its available equilibrium magnetization. After RF excitation, its longitudinal component recovers toward equilibrium with T1 while its transverse component loses coherence with T2. T2* adds dephasing from local field offsets before refocusing. These parameters describe signal evolution—not pulse-sequence names—and their values vary with field strength and acquisition conditions.',
           ],
         },
         {
-          title: 'Timing controls which differences dominate',
+          title: 'TR and TE choose which part of the response is observed',
           paragraphs: [
-            'TR controls how much longitudinal recovery occurs before the next excitation. TE controls how long transverse decay evolves before the echo is sampled. In inversion recovery, TI selects the delay between inversion and excitation.',
-            'Flip angle also changes the available longitudinal and transverse components, especially in gradient-echo imaging. A contrast label therefore describes a combined sequence and timing choice—not one isolated slider.',
+            'TR is the interval between repeated excitations, so it controls how much longitudinal recovery occurs before the spin system is perturbed again. TE is the delay from excitation to the measured echo, so it controls how much transverse signal remains at readout.',
+            'Changing either time changes the relative signal contributed by tissues with different relaxation behavior. Refocusing, inversion, flip angle, and fast-readout strategies build on this timing foundation in the pulse-sequence chapter.',
           ],
         },
         {
-          title: 'Weighted images and quantitative maps answer different questions',
+          title: 'Weighting emphasizes a property; mapping estimates it',
           paragraphs: [
-            'A T1-weighted image emphasizes T1-related differences but its pixel values are not direct T1 measurements. A quantitative T1 or T2 map estimates a parameter at each voxel using multiple measurements and a signal model.',
-            'Conventional magnitude intensities can change with coil sensitivity, gain, reconstruction, field strength, and preprocessing. Brightness should not be interpreted as a fixed material identity across unrelated series.',
+            'A weighted image emphasizes selected tissue differences, but its pixel values are not direct measurements of T1 or T2. Quantitative maps fit a parameter from multiple measurements and a signal model. Conventional magnitude brightness also changes with coil sensitivity, gain, reconstruction, field strength, and preprocessing, so it is not a fixed material identity across unrelated series.',
           ],
         },
       ],
-      callout: { title: 'MRI has no single HU equivalent.', body: 'Quantitative maps such as T1, T2, or ADC can carry interpretable units or calibrated meaning, but conventional T1-, T2-, and FLAIR-weighted intensities are relative within their acquisition and processing context.' },
+      callout: { title: 'MRI has no single HU equivalent.', body: 'Quantitative T1 and T2 maps can carry interpretable units, but conventional proton-density-, T1-, and T2-weighted intensities remain relative to their acquisition and processing context.' },
     },
-    assets: [
-      { kind: 'demo', label: 'Primary interactive', title: 'Relaxation-to-image laboratory', purpose: 'Link recovery and decay curves to a visible contrast change without pretending to simulate a complete clinical sequence.', wide: true, preview: ['T1 recovery', 'T2 decay', 'Relative signal'], notes: ['Controls: TR, TE, TI, and flip angle, revealed only when relevant.', 'Plot two or three tissue curves and mark the sample time.', 'Update a registered real multi-contrast image set or clearly labeled normalized teaching output.'] },
-      { kind: 'comparison', label: 'Image comparison', title: 'One anatomy, several contrasts', purpose: 'Make “same patient, different measurement” immediately visible.', preview: ['T1-weighted', 'T2-weighted', 'FLAIR'], notes: ['Use registered images from the same subject and slice.', 'Keep orientation, crop, and zoom identical.', 'Captions explain why fluid, fat, or tissue boundaries differ without teaching diagnosis.'] },
-      { kind: 'table', label: 'Timing reference', title: 'Timing control → signal consequence', purpose: 'Keep the four central timing controls available without forcing the learner to memorize a recipe.', preview: ['TR', 'TE', 'TI'], notes: ['Rows: TR, TE, TI, and flip angle.', 'State which part of the signal history each parameter changes.', 'Use directional effects rather than fixed clinical protocol values.'] },
-    ],
-    takeaways: ['T1 recovery, T2 decay, and T2* dephasing are different processes.', 'TR, TE, TI, and flip angle shape weighting by changing when and how signal is sampled.', 'A weighted MR image is not a quantitative map and does not have a universal intensity scale.'],
+    assets: [],
+    takeaways: ['Proton density, T1 recovery, T2 decay, and T2* dephasing describe different signal properties.', 'TR and TE select when the evolving signal is excited again and measured.', 'A weighted MR image is not a quantitative map and does not have a universal intensity scale.'],
   },
   {
     id: 'encoding',
@@ -216,16 +211,16 @@ const chapters: MriChapter[] = [
   },
   {
     id: 'sequences',
-    label: 'Sequences & contrasts',
+    label: 'Pulse sequences',
     icon: ScanLine,
-    title: 'Pulse sequences shape image contrast',
-    summary: 'Organize common MR images by the measurement strategy that produced them instead of memorizing a long list of acronyms.',
+    title: 'How MRI measurement recipes differ',
+    summary: 'Compare how RF pulses, gradients, delays, echoes, and readouts are arranged into common acquisition families and derived outputs.',
     coreTitle: 'A pulse sequence is an ordered measurement recipe.',
-    coreCopy: 'A sequence schedules RF pulses, gradients, delays, and readouts to create echoes and fill k-space. Spin echo, gradient echo, inversion recovery, and EPI describe broad strategies. T1-weighted, T2-weighted, FLAIR, DWI, ADC, and susceptibility-sensitive images describe different outputs or contrasts built from those strategies.',
+    coreCopy: 'A sequence schedules RF pulses, gradients, delays, and readouts to create echoes and fill k-space. Spin echo, gradient echo, inversion recovery, and EPI are broad acquisition strategies. Their parameters—including TR, TE, TI, and flip angle—determine how the relaxation behavior from chapter 2 is sampled and which output is produced.',
     teaching: {
       layout: 'reconstruction',
-      kicker: 'Read the recipe, then the output',
-      cues: ['Refocus', 'Prepare', 'Read fast'],
+      kicker: 'Read the measurement recipe',
+      cues: ['Excite', 'Form echo', 'Read'],
       sections: [
         {
           title: 'Spin echo and gradient echo form echoes differently',
@@ -235,10 +230,10 @@ const chapters: MriChapter[] = [
           ],
         },
         {
-          title: 'Preparation pulses emphasize or suppress selected signal',
+          title: 'Preparation pulses and flip angle modify the starting state',
           paragraphs: [
             'Inversion recovery begins with an inversion pulse and waits for a chosen TI before excitation. Selecting the timing can reduce signal from a tissue whose longitudinal magnetization crosses zero near that point.',
-            'FLAIR uses this principle to suppress fluid-like signal; STIR suppresses fat-like signal. The labels describe intended contrast behavior, not fixed pixel values.',
+            'FLAIR uses this principle to suppress fluid-like signal, while STIR suppresses fat-like signal. Flip angle controls how strongly an excitation rotates net magnetization and is especially important in gradient-echo families. These are recipe choices layered on top of T1 and T2 behavior.',
           ],
         },
         {
@@ -252,11 +247,11 @@ const chapters: MriChapter[] = [
       callout: { title: 'Series names are clues, not complete protocol definitions.', body: 'A label such as “T2” or “DWI” does not uniquely specify timing, resolution, acceleration, field strength, orientation, or reconstruction. Preserve the accompanying metadata.' },
     },
     assets: [
-      { kind: 'gallery', label: 'Primary image set', title: 'One subject, different MR contrasts', purpose: 'Anchor sequence language to consistent anatomy rather than isolated textbook thumbnails.', wide: true, lead: true, preview: ['T1w', 'T2w', 'FLAIR', 'DWI', 'ADC', 'GRE / SWI'], notes: ['Use one licensed, registered subject wherever possible.', 'Keep slice position, crop, orientation labels, and display size consistent.', 'Clicking a contrast reveals its sequence family, important timing fields, and what was derived.'] },
-      { kind: 'figure', label: 'Timing figure', title: 'Four sequence families on one timeline', purpose: 'Compare the role of excitation, refocusing or inversion, gradients, and readout.', preview: ['Spin echo', 'Gradient echo', 'Inversion recovery', 'EPI'], notes: ['Use aligned rows with the same time direction.', 'Show only the pulses necessary to distinguish the families.', 'Avoid vendor-specific diagrams and exhaustive gradient waveforms.'] },
-      { kind: 'table', label: 'Reference table', title: 'Output → what it represents', purpose: 'Separate acquired weighted images from derived quantitative maps.', preview: ['T1w / T2w', 'FLAIR', 'DWI', 'ADC'], notes: ['Columns: output, acquired or derived, primary sensitivity, metadata to check.', 'Include magnitude and phase where relevant.', 'Do not turn the table into a clinical differential diagnosis guide.'] },
+      { kind: 'gallery', label: 'Primary sequence map', title: 'Recipe family → echo → output', purpose: 'Organize sequences by how the measurement is produced rather than repeating the weighting comparison from chapter 2.', wide: true, lead: true, preview: ['Spin echo', 'Gradient echo', 'Inversion recovery', 'EPI / diffusion'], notes: ['Use one selected family at a time with a compact pulse-and-readout sketch beside one representative output.', 'Keep the anatomy secondary to the acquisition mechanism.', 'Reveal the important timing fields and whether the displayed output was directly acquired or derived.'] },
+      { kind: 'figure', label: 'Timing figure', title: 'Four measurement recipes on one timeline', purpose: 'Compare excitation, refocusing or inversion, gradient action, echo formation, and readout using a shared time axis.', preview: ['Spin echo', 'Gradient echo', 'Inversion recovery', 'EPI'], notes: ['Use aligned rows with the same time direction.', 'Show only the events needed to distinguish the families.', 'Highlight the event that forms or samples the echo; avoid vendor-specific diagrams and exhaustive waveforms.'] },
+      { kind: 'table', label: 'Output reference', title: 'Sequence output → acquired or derived', purpose: 'Distinguish acquisition families, weighted outputs, and maps without re-teaching basic relaxation.', preview: ['SE / GRE', 'FLAIR / STIR', 'DWI', 'ADC'], notes: ['Columns: sequence family, key preparation or readout, acquired output, derived output, and metadata to check.', 'Use DWI versus ADC as the clearest acquired-versus-derived example.', 'Keep clinical interpretation out; focus on representation and provenance needed by an ML pipeline.'] },
     ],
-    takeaways: ['A sequence coordinates RF pulses, gradients, timing, and readout.', 'One sequence family can produce several contrasts depending on its parameters.', 'DWI is acquired with diffusion weighting; ADC is estimated from multiple measurements.'],
+    takeaways: ['A pulse sequence coordinates RF pulses, gradients, timing, echo formation, and readout.', 'Spin echo, gradient echo, inversion recovery, and EPI are measurement families—not tissue properties.', 'DWI is acquired with diffusion weighting; ADC is estimated from multiple measurements.'],
   },
   {
     id: 'quality',
@@ -398,6 +393,7 @@ function MriTeachingBlock({ content }: { content: MriTeachingContent }) {
 
 export default function MriModule() {
   const [chapterIndex, setChapterIndex] = useState(0)
+  const [relaxationTiming, setRelaxationTiming] = useState({ tr: 500, te: 15 })
   const chapter = chapters[chapterIndex] ?? chapters[0]
   const ChapterIcon = chapter.icon
   const leadAssets = chapter.assets.filter((asset) => asset.lead)
@@ -418,14 +414,14 @@ export default function MriModule() {
       <div className="ct-learning-workspace">
         <label className="ct-learning-chapter-picker">
           <span><small>Chapter</small><strong>{chapter.title}</strong></span>
-          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > 0}>{index + 1}. {item.label}</option>)}</select>
+          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > 1}>{index + 1}. {item.label}</option>)}</select>
         </label>
 
         <nav className="ct-learning-chapters" aria-label="MRI learning chapters">
           <p>Chapters</p>
           {chapters.map((item, index) => {
             const Icon = item.icon
-            return <button key={item.id} type="button" className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} disabled={index > 0} title={index > 0 ? 'Coming soon' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
+            return <button key={item.id} type="button" disabled={index > 1} className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
           })}
         </nav>
 
@@ -444,11 +440,20 @@ export default function MriModule() {
 
           {chapter.id === 'signal'
             ? <MriSignalSequenceLesson />
-            : leadAssets.length > 0 && <div className="ct-asset-grid mri-lead-assets">{leadAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
-          <MriTeachingBlock content={chapter.teaching} />
+            : chapter.id === 'relaxation'
+              ? <MriTeachingBlock content={chapter.teaching} />
+              : leadAssets.length > 0 && <div className="ct-asset-grid mri-lead-assets">{leadAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
+          {chapter.id !== 'relaxation' && <MriTeachingBlock content={chapter.teaching} />}
           {chapter.id === 'signal'
             ? <MriSignalReferences />
-            : supportAssets.length > 0 && <div className="ct-asset-grid">{supportAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
+            : chapter.id === 'relaxation'
+              ? <MriRelaxationReferences
+                  tr={relaxationTiming.tr}
+                  te={relaxationTiming.te}
+                  onTrChange={(tr) => setRelaxationTiming((current) => ({ ...current, tr }))}
+                  onTeChange={(te) => setRelaxationTiming((current) => ({ ...current, te }))}
+                />
+              : supportAssets.length > 0 && <div className="ct-asset-grid">{supportAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
 
           <section className="ct-chapter-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
             <span>Keep from this chapter</span>
