@@ -300,7 +300,7 @@ export default function CtScannerScene({ scanProgress = 0, gantryAngle = 0 }: Ct
           <Scene scanProgress={scanProgress} gantryAngle={gantryAngle} />
         </Canvas>
       </div>
-      <footer>The scanner and room fixtures are imported CC0 mesh assets at a shared real-world scale. The anatomical patient reuses the licensed Blender anatomy already used in the radiography lesson.</footer>
+      <footer>Scanner and room meshes: 3D Assets, “Hospital Wards and Clinic Operations” (CC0 1.0). Anatomical patient: ogbog’s Blender adaptation of BodyParts3D (CC BY-SA).</footer>
     </section>
   )
 }
