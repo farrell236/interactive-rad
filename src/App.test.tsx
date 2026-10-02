@@ -84,6 +84,35 @@ describe('Radiology Imaging Lab', () => {
     expect(document.documentElement.style.fontSize).toBe('20px')
   })
 
+  it('offers the MRI teaching backbone and a built signal lesson', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('tab', { name: 'MRI' }))
+    expect(await screen.findByRole('heading', { name: 'From magnetization to image.' }, { timeout: 30_000 })).toBeInTheDocument()
+    const chapters = screen.getByRole('navigation', { name: 'MRI learning chapters' })
+    const chapterButtons = within(chapters).getAllByRole('button')
+    expect(chapterButtons).toHaveLength(7)
+    expect(chapterButtons[0]).toBeEnabled()
+    chapterButtons.slice(1).forEach((button) => expect(button).toBeDisabled())
+    expect(screen.getByRole('heading', { name: 'From hydrogen to image' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Follow the MR signal' })).toBeInTheDocument()
+    const signalStages = screen.getByRole('tablist', { name: 'MRI signal sequence' })
+    expect(within(signalStages).getAllByRole('tab')).toHaveLength(4)
+    expect(within(signalStages).getByRole('tab', { name: /Hydrogen/ })).toHaveAttribute('aria-selected', 'true')
+    await user.click(within(signalStages).getByRole('tab', { name: /Pulse cycle/ }))
+    expect(screen.getByRole('img', { name: 'RF blanking → schematic signal → recovery' })).toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: /Pulse cycle/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('MRI scanner components and measurement jobs')).toBeInTheDocument()
+    const hardwareLayers = screen.getByRole('group', { name: 'MRI scanner hardware layer' })
+    expect(within(hardwareLayers).getByRole('button', { name: 'Rx' })).toBeInTheDocument()
+    expect(screen.queryByText('Planned asset')).not.toBeInTheDocument()
+
+    const chapterOptions = within(screen.getByRole('combobox', { name: 'Select MRI chapter' })).getAllByRole('option')
+    expect(chapterOptions[0]).toBeEnabled()
+    chapterOptions.slice(1).forEach((option) => expect(option).toBeDisabled())
+  }, 40_000)
+
   it('switches to the interactive CT curriculum without reloading', async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -96,7 +125,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.queryByRole('region', { name: 'Chapter explanation' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'A projection collapses depth; tomography reconstructs it.' })).toBeInTheDocument()
     expect(screen.getByText(/Inside the gantry, an X-ray tube faces a detector array/)).toBeInTheDocument()
-    expect(document.querySelector('.ct-core-concept')).not.toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: 'CT' }).querySelector('.ct-core-concept')).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'CT room camera view' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Watch a chest scan become a volume' })).toBeInTheDocument()
     expect(screen.getByText('Slice acquisition')).toBeInTheDocument()
@@ -142,7 +171,7 @@ describe('Radiology Imaging Lab', () => {
     expect(planesBeforeNextReconstruction).toHaveLength(partialThickSlicePlanes.length)
     expect(planesBeforeNextReconstruction.at(-1)?.style.getPropertyValue('--stack-offset')).toBe(fixedThickSliceExtent)
     expect(screen.getByRole('heading', { name: 'From sinogram space to image space' })).toBeInTheDocument()
-    expect(screen.queryByText('Planned asset')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('tabpanel', { name: 'CT' })).queryByText('Planned asset')).not.toBeInTheDocument()
     const viewsUsed = screen.getByRole('slider', { name: 'Views in a full sweep' })
     const acquisitionProgress = screen.getByRole('slider', { name: 'Acquisition progress' })
     expect(viewsUsed).toHaveValue('60')
@@ -222,7 +251,7 @@ describe('Radiology Imaging Lab', () => {
     expect(screen.queryByRole('heading', { name: 'What may vary between CT series' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Rings' }))
     expect(screen.getByText(/detector-fixed error/)).toBeInTheDocument()
-    expect(screen.queryByText('Planned asset')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('tabpanel', { name: 'CT' })).queryByText('Planned asset')).not.toBeInTheDocument()
   })
 
   it('offers the image data learning backbone and the interactive windowing module', async () => {

@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { ComponentType, KeyboardEvent, SVGProps } from 'react'
 import { Aperture, Contrast, Database, Magnet, Moon, ScanLine, Sun } from 'lucide-react'
-import { PlaceholderModule } from './components/PlaceholderModule'
 import type { Modality } from './types'
 
 const XrayModule = lazy(() => import('./components/XrayModule'))
 const CtModule = lazy(() => import('./components/CtModule'))
+const MriModule = lazy(() => import('./components/MriModule'))
 const WindowingModule = lazy(() => import('./components/WindowingModule'))
 const ImageDataModule = lazy(() => import('./components/ImageDataModule'))
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
@@ -120,11 +120,13 @@ export default function App() {
               ? <Suspense fallback={<LoadingModule />}><XrayModule /></Suspense>
               : modality.id === 'ct'
                 ? <Suspense fallback={<LoadingModule />}><CtModule /></Suspense>
+              : modality.id === 'mri'
+                ? <Suspense fallback={<LoadingModule />}><MriModule /></Suspense>
               : modality.id === 'image-data'
                 ? <Suspense fallback={<LoadingModule />}><ImageDataModule /></Suspense>
                 : modality.id === 'windowing'
                   ? <Suspense fallback={<LoadingModule />}><WindowingModule /></Suspense>
-                : <PlaceholderModule modality={modality.id} />}
+                : null}
           </section>
         ))}
       </main>
