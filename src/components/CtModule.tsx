@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
-import { Aperture, Box, Gauge, Layers3, RotateCw, ScanLine, SlidersHorizontal, Table2, TriangleAlert, Waves } from 'lucide-react'
-import { CtArtifactsLesson, CtProtocolLesson, CtRayLesson, CtReconstructionLesson, CtScannerGeometryLesson } from './CtChapterLessons'
+import { Aperture, Box, Droplets, Gauge, Layers3, RotateCw, ScanLine, SlidersHorizontal, Table2, TriangleAlert, Waves } from 'lucide-react'
+import { CtArtifactsLesson, CtContrastLesson, CtProtocolLesson, CtRayLesson, CtReconstructionLesson, CtScannerGeometryLesson } from './CtChapterLessons'
 import CtManyViewsLesson from './CtManyViewsLesson'
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
@@ -120,6 +120,21 @@ const chapters: CtChapter[] = [
       { kind: 'table', label: 'Effect table', title: 'Parameter → visible consequence', purpose: 'Give ML engineers a concise domain-shift reference.', notes: ['Rows: mAs, kVp, pitch, field of view, slice thickness, kernel.', 'Columns: primary effect, common visual change, linked trade-off.', 'Use qualitative directions rather than clinical technique values.'] },
     ],
     takeaways: ['Spatial resolution and noise are coupled.', 'Slice thickness and kernel are important sources of dataset variation.', 'Acquisition settings and reconstruction settings affect the image through different mechanisms.'],
+  },
+  {
+    id: 'contrast-timing',
+    label: 'Contrast phases',
+    icon: Droplets,
+    title: 'Contrast phases and injection timing',
+    summary: 'Follow an intravenous iodine bolus through time, relate scan timing to arterial, portal venous, and delayed enhancement, and preserve the information an ML pipeline needs to distinguish phases.',
+    coreTitle: 'A contrast phase is a finite acquisition window placed on a moving bolus.',
+    coreCopy: 'Iodine attenuates X-rays strongly, so blood and tissues containing more iodine reconstruct at higher Hounsfield units and usually appear brighter at a fixed display window. After intravenous injection, the bolus travels through the right heart, lungs, left heart, arteries, capillaries, veins, and extracellular space. The scanner captures only selected windows along that changing enhancement curve. Injection design, patient circulation, trigger method, scan duration, direction, and organ coverage therefore determine what “arterial,” “portal venous,” or “delayed” actually looks like.',
+    assets: [
+      { kind: 'demo', label: 'Primary interactive', title: 'Injection-to-scan timeline', purpose: 'Connect injection duration, bolus arrival, trigger detection, scan delay, acquisition duration, and observed enhancement on one clock.', wide: true, notes: ['Plot schematic arterial, portal venous, and parenchymal time–attenuation curves above a shared seconds-to-minutes axis.', 'Controls: fixed delay / bolus tracking, bolus arrival, injection duration, and scan duration; changing a control moves the acquisition window rather than relabeling anatomy.', 'Show the injection and saline-flush intervals, trigger threshold, post-trigger delay, scan direction, and the portion of each curve sampled by the acquisition.', 'Use an explicitly illustrative abdominal protocol and state that values are not patient-specific acquisition instructions.'] },
+      { kind: 'comparison', label: 'Matched phase figure', title: 'One anatomy at four time points', purpose: 'Show that phase changes measured attenuation and conspicuity without changing the underlying anatomy.', notes: ['Matched non-contrast, late arterial, portal venous, and delayed images at the same position and window.', 'Keep anatomy, crop, reconstruction, and display scale fixed so timing is the intended difference.', 'Annotate the dominant vascular and parenchymal enhancement pattern instead of presenting phase labels alone.', 'Use openly licensed or public-domain multiphasic CT data when the full lesson is built.'] },
+      { kind: 'table', label: 'Phase reference', title: 'Phase intent, clock, and metadata', purpose: 'Give ML engineers a compact reference for phase classification and provenance.', notes: ['Rows: non-contrast, early/late arterial, portal venous, delayed/equilibrium, plus organ-specific examples such as nephrographic or excretory.', 'Columns: timing reference, expected enhancement pattern, common acquisition strategy, metadata needed, and likely phase-confusion risk.', 'Treat numerical ranges as representative examples tied to a named protocol—not universal definitions.', 'Include contrast agent/concentration, volume, flow rate and duration, saline flush, injection start, trigger method/threshold, scan start, direction, and coverage.'] },
+    ],
+    takeaways: ['Phase describes enhancement during an acquisition window, not an intrinsic property of the anatomy.', 'Fixed delays, test boluses, and bolus tracking use different clock references to place the acquisition.', 'Phase labels and pixel values can become major sources of domain shift or shortcut learning.'],
   },
   {
     id: 'artifacts-output',
@@ -253,6 +268,35 @@ const teachingContent: Partial<Record<string, CtTeachingContent>> = {
     ],
     callout: { title: 'Equal matrix size does not mean equal image quality.', body: 'For model development, record physical spacing, slice thickness, reconstruction kernel, dose-related noise, and scan protocol—not only rows and columns.' },
   },
+  'contrast-timing': {
+    layout: 'pipeline',
+    kicker: 'Follow the bolus, then place the scan',
+    cues: ['Inject', 'Sample', 'Preserve'],
+    sections: [
+      {
+        title: 'Injection creates a time-dependent enhancement curve',
+        paragraphs: [
+          'The contrast bolus is defined by iodine concentration, injected volume, flow rate, injection duration, and any saline flush. Total iodine dose is volume × concentration; iodine delivery rate is flow rate × concentration. These determine how much iodine is delivered and how compactly it enters the circulation, while patient cardiac output and circulation influence arrival and dispersion.',
+          'Enhancement is therefore a curve rather than an on/off state. Arterial blood rises first, venous and parenchymal enhancement follow, and later images reflect redistribution and washout. A scan records a finite window along those curves, not one instantaneous whole-body time point.',
+        ],
+      },
+      {
+        title: 'Phase names describe different sampled windows',
+        paragraphs: [
+          'A non-contrast acquisition occurs before intravenous iodine. An arterial acquisition samples first-pass arterial enhancement; early and late arterial phases are not interchangeable. Portal venous imaging occurs later, when portal veins and many abdominal organs are more uniformly enhanced. Delayed or equilibrium imaging occurs minutes later, after further redistribution.',
+          'For orientation only, published fixed-delay multiphasic liver examples commonly place late arterial imaging roughly 35–45 seconds after injection begins, portal venous imaging around 60–80 seconds, and delayed imaging around 3–5 minutes. These are protocol-dependent examples—not universal phase boundaries. Bolus-tracked arterial timing uses a separate clock referenced to threshold crossing; angiographic, renal, cardiac, and other examinations use different targets and may add nephrographic, excretory, or other organ-specific phases.',
+        ],
+      },
+      {
+        title: 'The timing method and provenance matter to a model',
+        paragraphs: [
+          'A fixed-delay protocol starts scanning a chosen interval after injection begins. A test bolus estimates patient-specific arrival before the diagnostic injection. Bolus tracking repeatedly monitors a vessel and starts the diagnostic scan after a threshold and additional delay. The reported delay is ambiguous unless its clock origin is known.',
+          'For dataset construction, preserve the intended phase together with injection start, agent and iodine concentration, volume, flow rate and duration, saline flush, trigger method and threshold, post-trigger delay, acquisition time, scan direction, and coverage. Phase labels can be missing or inconsistent, so validate them against timing and enhancement rather than Series Description alone.',
+        ],
+      },
+    ],
+    callout: { title: 'Do not treat phase as a filename category.', body: 'The same nominal phase can differ across patients, scanners, injection protocols, and body positions. Split related phases from one examination together, and avoid letting phase or acquisition site become an unintended shortcut for the target label.' },
+  },
   'artifacts-output': {
     layout: 'pipeline',
     kicker: 'Trace the signature upstream',
@@ -351,6 +395,7 @@ function CtChapterExperience({ chapter }: { chapter: CtChapter }) {
   if (chapter.id === 'projection-data') return <CtRayLesson />
   if (chapter.id === 'reconstruction') return <CtReconstructionLesson />
   if (chapter.id === 'protocol') return <CtProtocolLesson />
+  if (chapter.id === 'contrast-timing') return <CtContrastLesson />
   if (chapter.id === 'artifacts-output') return <CtArtifactsLesson />
   return <div className="ct-asset-grid">{chapter.assets.map((asset) => <CtAssetCard key={asset.title} asset={asset} />)}</div>
 }

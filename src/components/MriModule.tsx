@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
 import { Box, Database, Gauge, Grid3X3, Layers3, Magnet, ScanLine, Table2, TriangleAlert, Waves, Workflow } from 'lucide-react'
 import { MriEncodingLesson } from './MriEncodingLesson'
+import { MriArtifactLesson, MriMlPipelineLesson, MriSequenceLesson } from './MriAdvancedLessons'
+import { MriKspaceLesson } from './MriKspaceLesson'
 import { MriRelaxationReferences } from './MriRelaxationLesson'
 import { MriSignalReferences } from './MriSignalLesson'
 import { MriSignalSequenceLesson } from './MriSignalSequenceLesson'
@@ -167,88 +169,84 @@ const chapters: MriChapter[] = [
     label: 'K-space',
     icon: Layers3,
     title: 'From frequency samples to an image',
-    summary: 'Make k-space a concrete measurement grid: show what is stored, how it is filled, and what changes when samples are removed.',
+    summary: 'Connect one encoded readout to a complex measurement grid, then show how grid geometry, phase, and missing samples determine the reconstructed image.',
     coreTitle: 'MRI fills measurement space before it reconstructs image space.',
-    coreCopy: 'Each k-space sample is a complex number that summarizes a spatial-frequency pattern across the selected anatomy. Central samples describe broad, slowly varying structure; samples farther from the center describe progressively finer spatial variation. A Fourier transform combines the acquired samples into the familiar spatial image.',
+    coreCopy: 'During Cartesian acquisition, one readout samples a line across k-space and repeated phase-encoding steps fill the other direction. Each stored value is complex and weights a spatial-frequency pattern across the selected anatomy—not one image pixel. The inverse Fourier transform combines the completed grid into the familiar spatial image.',
     teaching: {
       layout: 'geometry',
       kicker: 'Two linked domains',
-      cues: ['Sample', 'Transform', 'Undersample'],
+      cues: ['Fill', 'Geometry', 'Reconstruct'],
       sections: [
         {
-          title: 'K-space stores spatial-frequency measurements',
+          title: 'Repeated readouts fill a measurement grid',
           paragraphs: [
-            'K-space is not a scrambled anatomical picture and each point does not map to one image pixel. Every sample influences the reconstructed field of view through its spatial-frequency basis pattern.',
-            'The data are complex: magnitude and phase are both required to reconstruct position correctly. Discarding phase before reconstruction removes essential information.',
+            'Chapter 3 ended with one frequency-encoded readout. In a simplified 2D Cartesian acquisition, that waveform supplies many kx samples along one ky line. The sequence repeats with a different phase-encoding gradient moment to acquire another ky line.',
+            'Acquisition order can be linear, center-out, or sequence-specific, but array location still identifies a spatial frequency. K-space is therefore a measurement grid—not a scrambled anatomical picture.',
           ],
         },
         {
-          title: 'The Fourier transform links measurement and image domains',
+          title: 'Grid spacing and extent set image geometry',
           paragraphs: [
-            'Low spatial frequencies vary slowly across the image and dominate broad intensity structure. Higher spatial frequencies vary more rapidly and support fine boundaries and texture.',
-            'This is a continuum, not a strict split where the center is “contrast” and the edge is “resolution.” Windowing or displaying only selected regions is a teaching intervention, not normal reconstruction.',
+            'The spacing between adjacent samples sets the reconstructed field of view: Δk = 1/FOV. The sampled extent sets nominal pixel spacing: kₘₐₓ ≈ 1/(2Δx). For a Cartesian matrix, N = FOV/Δx.',
+            'These are sampling relationships, not guarantees of true anatomical resolution. Signal bandwidth, gradients, motion, point-spread effects, reconstruction, and interpolation can all change the detail actually recoverable from the image.',
           ],
         },
         {
-          title: 'Sampling pattern determines the failure mode',
+          title: 'Complex values reconstruct position and structure',
           paragraphs: [
-            'Leaving gaps in Cartesian phase encoding can shorten acquisition, but naïve reconstruction may produce wraparound or coherent aliasing. Other trajectories and acceleration methods create different sampling patterns and reconstruction requirements.',
-            'A reconstruction algorithm can use coil sensitivity, prior assumptions, or learned models to estimate missing information, but that estimate does not turn unmeasured data into ground truth.',
+            'Every k-space value has real and imaginary components, or equivalently magnitude and phase. Low spatial frequencies describe broad variation; progressively higher frequencies support faster spatial changes. The inverse Fourier transform combines all retained basis patterns across the image.',
+            'Missing samples do not have one universal appearance. Regularly skipped Cartesian lines create coherent aliasing, while other masks or trajectories create different errors. Coil sensitivity, model assumptions, or learned priors may estimate missing information, but estimates are not measured ground truth.',
           ],
         },
       ],
-      callout: { title: 'Do not train on a picture of k-space.', body: 'Raw MRI commonly contains complex, multi-coil arrays with acquisition-specific dimensions. Saving a rendered log-magnitude screenshot destroys phase, scale, and much of the structure needed for reconstruction.' },
+      callout: { title: 'Do not train on a picture of k-space.', body: 'Raw MRI commonly contains complex, multi-coil arrays with acquisition-specific dimensions. A rendered log-magnitude screenshot discards phase, scale, coil channels, and sampling metadata required to reproduce the reconstruction.' },
     },
-    assets: [
-      { kind: 'demo', label: 'Primary interactive', title: 'Linked k-space and image explorer', purpose: 'Let the learner manipulate measured samples and see the exact reconstructed consequence.', wide: true, lead: true, preview: ['Sampling mask', 'Complex k-space', 'Reconstruction'], notes: ['Use a licensed real MR slice and its computed Fourier representation.', 'Brush or select center, outer bands, lines, and acceleration masks.', 'Show both retained k-space and inverse-FFT image; keep display scaling fixed for honest comparison.'] },
-      { kind: 'comparison', label: 'Failure comparison', title: 'Different missing samples, different artifacts', purpose: 'Connect sampling strategy to recognizable reconstruction failure.', preview: ['Full', 'Center only', 'Every 2nd line'], notes: ['Compare full sampling, low-pass crop, regular undersampling, and random variable-density sampling.', 'Use one source image and one display scale.', 'Caption blur, wraparound, and incoherent artifact patterns in plain language.'] },
-      { kind: 'table', label: 'Data reference', title: 'What one k-space sample contains', purpose: 'Clarify the value, coordinate, and coil context needed to interpret raw MRI data.', preview: ['Complex value', 'k-space coordinate', 'Coil channel'], notes: ['Distinguish a complex sample from its display magnitude.', 'Explain that the coordinate identifies a spatial-frequency basis, not a voxel.', 'Include coil and acquisition indices as surrounding array dimensions.'] },
-    ],
-    takeaways: ['A k-space point is a complex spatial-frequency measurement, not an image location.', 'The Fourier transform combines all acquired samples into a spatial image.', 'Where samples are missing determines the appearance and structure of reconstruction error.'],
+    assets: [],
+    takeaways: ['One readout samples kx; repeated phase encodes fill ky.', 'Δk sets FOV; sampled extent sets nominal pixel spacing.', 'Magnitude and phase jointly determine the inverse FFT.', 'The missing-sample pattern determines the artifact.'],
   },
   {
     id: 'sequences',
     label: 'Pulse sequences',
     icon: ScanLine,
     title: 'How MRI measurement recipes differ',
-    summary: 'Compare how RF pulses, gradients, delays, echoes, and readouts are arranged into common acquisition families and derived outputs.',
-    coreTitle: 'A pulse sequence is an ordered measurement recipe.',
-    coreCopy: 'A sequence schedules RF pulses, gradients, delays, and readouts to create echoes and fill k-space. Spin echo, gradient echo, inversion recovery, and EPI are broad acquisition strategies. Their parameters—including TR, TE, TI, and flip angle—determine how the relaxation behavior from chapter 2 is sampled and which output is produced.',
+    summary: 'Separate echo formation, preparation, echo-train architecture, and readout, then connect those building blocks to reconstructed images and fitted maps.',
+    coreTitle: 'A pulse sequence composes several measurement jobs on one clock.',
+    coreCopy: 'A sequence schedules preparation, RF excitation and refocusing, spatial-encoding gradients, and readout. Spin echo and gradient echo describe how an echo forms; inversion and diffusion modify the signal before readout; FSE/TSE uses an echo train; and EPI rapidly traverses k-space. These are composable building blocks—not interchangeable labels for tissue contrast.',
     teaching: {
       layout: 'reconstruction',
       kicker: 'Read the measurement recipe',
-      cues: ['Excite', 'Form echo', 'Read'],
+      cues: ['Optional prep', 'Form echo', 'Read'],
       sections: [
+        {
+          title: 'Optional preparation and excitation modify the signal before readout',
+          paragraphs: [
+            'Inversion recovery begins with an inversion pulse and waits for a chosen TI before excitation. A tissue can be suppressed when its longitudinal magnetization is near zero, but the required TI depends on the tissue, field strength, and readout. FLAIR and STIR use different timing to suppress fluid-like and fat-like signal, respectively.',
+            'Diffusion gradients add motion-dependent phase before readout. Gradient amplitude, duration, separation, and waveform shape jointly determine the b-value. For conventional linear encoding, a unit b-vector records direction; a b-matrix describes the full directional weighting. Flip angle controls how strongly excitation rotates net magnetization. Each setting changes the signal delivered to the echo and readout.',
+          ],
+        },
         {
           title: 'Spin echo and gradient echo form echoes differently',
           paragraphs: [
-            'Spin-echo imaging uses an RF refocusing pulse to recover signal lost to static field differences, making the measured echo primarily T2 dependent at the chosen TE. Gradient-echo imaging reverses gradient dephasing without an RF refocusing pulse and remains sensitive to T2* effects.',
-            'Either family can produce several weightings. The family name alone does not fully specify contrast, resolution, or acquisition speed.',
+            'Spin echo uses an RF refocusing pulse to reverse dephasing caused by static field offsets. It does not restore irreversible T2 signal loss, so the echo amplitude still depends on T2 at the selected TE. Gradient echo forms an echo by reversing gradient area without an RF refocusing pulse and therefore retains T2* sensitivity.',
+            'A single spin echo can acquire one k-space line per repetition. Fast or turbo spin echo (FSE/TSE) generates a train of refocused echoes so several lines can be acquired per TR. Effective TE identifies when central k-space is sampled; echo-train length, spacing, ordering, and refocusing angles affect speed, contrast, and blurring.',
           ],
         },
         {
-          title: 'Preparation pulses and flip angle modify the starting state',
+          title: 'Readout strategy determines how k-space is traversed',
           paragraphs: [
-            'Inversion recovery begins with an inversion pulse and waits for a chosen TI before excitation. Selecting the timing can reduce signal from a tissue whose longitudinal magnetization crosses zero near that point.',
-            'FLAIR uses this principle to suppress fluid-like signal, while STIR suppresses fat-like signal. Flip angle controls how strongly an excitation rotates net magnetization and is especially important in gradient-echo families. These are recipe choices layered on top of T1 and T2 behavior.',
-          ],
-        },
-        {
-          title: 'EPI and diffusion change how data are acquired and interpreted',
-          paragraphs: [
-            'Echo-planar imaging acquires many k-space samples after one excitation, enabling fast imaging while increasing sensitivity to distortion and field inhomogeneity. Diffusion weighting adds gradients that make signal sensitive to microscopic motion.',
-            'DWI is the measured diffusion-weighted image. ADC is a derived map estimated from measurements with different diffusion weightings; the two should not be treated as interchangeable channels.',
+            'A basic single-echo Cartesian acquisition usually collects one phase-encoded ky line per repetition. FSE/TSE assigns several ky lines to successive refocused echoes. Single-shot EPI is also commonly Cartesian, but alternates the readout gradient and inserts phase blips to traverse many ky lines in one zig-zag echo train after a single excitation.',
+            'Diffusion preparation is often followed by an EPI readout, but the two describe different jobs. For an ML dataset, keep preparation metadata such as b-value and b-vector separate from readout metadata such as echo spacing, phase-encoding direction, acceleration, and bandwidth.',
           ],
         },
       ],
-      callout: { title: 'Series names are clues, not complete protocol definitions.', body: 'A label such as “T2” or “DWI” does not uniquely specify timing, resolution, acceleration, field strength, orientation, or reconstruction. Preserve the accompanying metadata.' },
+      callout: { title: 'Series names are clues, not protocol definitions.', body: 'Do not identify a dataset from Series Description alone. Preserve TR, TE, TI, flip angle, echo-train details, acquisition dimensionality, phase direction, diffusion b-values and b-vectors, original/derived status, geometry, and reconstruction provenance. Normalize units during ingestion: BIDS timing fields such as EchoTime and EffectiveEchoSpacing are stored in seconds, while the corresponding DICOM Echo Time value is stored in milliseconds.' },
     },
     assets: [
       { kind: 'gallery', label: 'Primary sequence map', title: 'Recipe family → echo → output', purpose: 'Organize sequences by how the measurement is produced rather than repeating the weighting comparison from chapter 2.', wide: true, lead: true, preview: ['Spin echo', 'Gradient echo', 'Inversion recovery', 'EPI / diffusion'], notes: ['Use one selected family at a time with a compact pulse-and-readout sketch beside one representative output.', 'Keep the anatomy secondary to the acquisition mechanism.', 'Reveal the important timing fields and whether the displayed output was directly acquired or derived.'] },
-      { kind: 'figure', label: 'Timing figure', title: 'Four measurement recipes on one timeline', purpose: 'Compare excitation, refocusing or inversion, gradient action, echo formation, and readout using a shared time axis.', preview: ['Spin echo', 'Gradient echo', 'Inversion recovery', 'EPI'], notes: ['Use aligned rows with the same time direction.', 'Show only the events needed to distinguish the families.', 'Highlight the event that forms or samples the echo; avoid vendor-specific diagrams and exhaustive waveforms.'] },
+      { kind: 'figure', label: 'Timing figure', title: 'Six measurement recipes on millisecond timelines', purpose: 'Compare excitation, refocusing or inversion, gradient action, echo formation, and readout using numerical timing while allowing each example its own time range.', preview: ['Spin echo', 'FSE / TSE', 'Gradient echo', 'Inversion recovery', 'EPI', 'Diffusion'], notes: ['Use aligned rows with time increasing left to right.', 'Label the independent horizontal range in each tab.', 'Highlight the event that forms or samples the echo; avoid vendor-specific diagrams and exhaustive waveforms.'] },
       { kind: 'table', label: 'Output reference', title: 'Sequence output → acquired or derived', purpose: 'Distinguish acquisition families, weighted outputs, and maps without re-teaching basic relaxation.', preview: ['SE / GRE', 'FLAIR / STIR', 'DWI', 'ADC'], notes: ['Columns: sequence family, key preparation or readout, acquired output, derived output, and metadata to check.', 'Use DWI versus ADC as the clearest acquired-versus-derived example.', 'Keep clinical interpretation out; focus on representation and provenance needed by an ML pipeline.'] },
     ],
-    takeaways: ['A pulse sequence coordinates RF pulses, gradients, timing, echo formation, and readout.', 'Spin echo, gradient echo, inversion recovery, and EPI are measurement families—not tissue properties.', 'DWI is acquired with diffusion weighting; ADC is estimated from multiple measurements.'],
+    takeaways: ['A sequence composes echo formation, preparation, echo-train architecture, encoding, and readout.', 'FSE/TSE acquires several k-space lines across a refocused echo train; EPI traverses many lines rapidly after one excitation.', 'Preserve the provenance chain: acquired complex signals → reconstructed weighted image → fitted parameter map.'],
   },
   {
     id: 'quality',
@@ -395,6 +393,7 @@ export default function MriModule() {
   const ChapterIcon = chapter.icon
   const leadAssets = chapter.assets.filter((asset) => asset.lead)
   const supportAssets = chapter.assets.filter((asset) => !asset.lead)
+  const hasBuiltLesson = ['signal', 'relaxation', 'encoding', 'k-space', 'sequences', 'quality', 'model-input'].includes(chapter.id)
 
   return (
     <article className="ct-learning-module mri-learning-module">
@@ -411,14 +410,14 @@ export default function MriModule() {
       <div className="ct-learning-workspace">
         <label className="ct-learning-chapter-picker">
           <span><small>Chapter</small><strong>{chapter.title}</strong></span>
-          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > 2}>{index + 1}. {item.label}</option>)}</select>
+          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index}>{index + 1}. {item.label}</option>)}</select>
         </label>
 
         <nav className="ct-learning-chapters" aria-label="MRI learning chapters">
           <p>Chapters</p>
           {chapters.map((item, index) => {
             const Icon = item.icon
-            return <button key={item.id} type="button" disabled={index > 2} className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
+            return <button key={item.id} type="button" className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
           })}
         </nav>
 
@@ -435,12 +434,7 @@ export default function MriModule() {
             </section>
           )}
 
-          {chapter.id === 'signal'
-            ? <MriSignalSequenceLesson />
-            : chapter.id === 'relaxation' || chapter.id === 'encoding'
-              ? <MriTeachingBlock content={chapter.teaching} />
-              : leadAssets.length > 0 && <div className="ct-asset-grid mri-lead-assets">{leadAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
-          {chapter.id !== 'relaxation' && chapter.id !== 'encoding' && <MriTeachingBlock content={chapter.teaching} />}
+          {chapter.id === 'signal' ? <MriSignalSequenceLesson /> : <MriTeachingBlock content={chapter.teaching} />}
           {chapter.id === 'signal'
             ? <MriSignalReferences />
             : chapter.id === 'relaxation'
@@ -452,7 +446,18 @@ export default function MriModule() {
                 />
               : chapter.id === 'encoding'
                 ? <MriEncodingLesson />
-              : supportAssets.length > 0 && <div className="ct-asset-grid">{supportAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
+              : chapter.id === 'k-space'
+                ? <MriKspaceLesson />
+              : chapter.id === 'sequences'
+                ? <MriSequenceLesson />
+              : chapter.id === 'quality'
+                ? <MriArtifactLesson />
+              : chapter.id === 'model-input'
+                ? <MriMlPipelineLesson />
+              : !hasBuiltLesson && <>
+                  {leadAssets.length > 0 && <div className="ct-asset-grid mri-lead-assets">{leadAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
+                  {supportAssets.length > 0 && <div className="ct-asset-grid">{supportAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
+                </>}
 
           <section className="ct-chapter-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
             <span>Keep from this chapter</span>

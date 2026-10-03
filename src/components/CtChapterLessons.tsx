@@ -811,6 +811,297 @@ export function CtProtocolLesson() {
   )
 }
 
+type ContrastTimingMode = 'fixed' | 'tracking'
+type ContrastPhaseId = 'noncontrast' | 'arterial' | 'portal' | 'delayed'
+
+const contrastPhaseImages: Array<{
+  id: ContrastPhaseId
+  label: string
+  timing: string
+  crop: number
+  description: string
+  pattern: string
+}> = [
+  {
+    id: 'noncontrast',
+    label: 'Non-contrast',
+    timing: 'Before injection',
+    crop: 0,
+    description: 'Baseline attenuation before intravenous iodine enters the circulation.',
+    pattern: 'The aorta and abdominal organs retain their native attenuation. This is a separate acquisition, not the zero-second point of an enhanced scan.',
+  },
+  {
+    id: 'arterial',
+    label: 'Arterial',
+    timing: 'First-pass window',
+    crop: 1,
+    description: 'The arterial system enhances strongly while portal venous and parenchymal enhancement are still evolving.',
+    pattern: 'The baked-in white arrow marks a transient hepatic attenuation difference beside the abscess; it is conspicuous during this arterial phase.',
+  },
+  {
+    id: 'portal',
+    label: 'Portal venous',
+    timing: 'Commonly 60–80 s',
+    crop: 2,
+    description: 'Portal venous inflow and abdominal parenchymal enhancement are more established.',
+    pattern: 'At the same baked-in white arrow, the transient arterial-phase difference has become isodense with the rest of the liver.',
+  },
+  {
+    id: 'delayed',
+    label: 'Delayed',
+    timing: 'Minutes after injection',
+    crop: 3,
+    description: 'Further redistribution and washout create a later enhancement state.',
+    pattern: 'The baked-in white arrow again marks the previously conspicuous region, which remains isodense with the rest of the liver in this case.',
+  },
+]
+
+function gammaCurve(time: number, start: number, peakOffset: number, amplitude: number, shape: number) {
+  if (time <= start) return 0
+  const normalized = (time - start) / peakOffset
+  return amplitude * Math.pow(normalized, shape) * Math.exp(shape * (1 - normalized))
+}
+
+const representativeContrastWindows = [
+  { start: 0, end: 35, label: 'Pre-/early enhancement', shortLabel: 'pre-/early enhancement', note: 'This is before the representative late-arterial window; the enhancement state depends strongly on arrival and the clinical target.' },
+  { start: 35, end: 45, label: 'Late arterial example', shortLabel: 'late arterial', note: 'A representative fixed-delay late-arterial window for multiphasic liver imaging.' },
+  { start: 45, end: 60, label: 'Transitional', shortLabel: 'transitional', note: 'Between the representative late-arterial and portal-venous windows.' },
+  { start: 60, end: 80, label: 'Portal venous example', shortLabel: 'portal venous', note: 'A representative portal-venous window for abdominal imaging.' },
+  { start: 80, end: 180, label: 'Late venous', shortLabel: 'late venous', note: 'Enhancement continues to redistribute after the usual portal-venous window.' },
+  { start: 180, end: Number.POSITIVE_INFINITY, label: 'Delayed example', shortLabel: 'delayed', note: 'Minutes after injection; the exact target depends on the examination.' },
+]
+
+function contrastPhaseAt(scanStart: number, scanEnd: number) {
+  if (scanEnd <= 0) return { label: 'Non-contrast', note: 'The entire acquisition finishes before injection begins.' }
+  if (scanStart < 0) return { label: 'Straddles injection start', note: 'Part of the acquisition occurs before injection and part occurs after it begins.' }
+  const overlaps = representativeContrastWindows.filter((window) => scanStart < window.end && scanEnd > window.start)
+  if (overlaps.length === 1) return { label: overlaps[0].label, note: overlaps[0].note }
+  if (overlaps.length > 1) return {
+    label: `${overlaps[0].shortLabel} → ${overlaps[overlaps.length - 1].shortLabel}`,
+    note: 'The acquisition window crosses representative timing regions, so one phase name hides within-volume timing variation.',
+  }
+  return { label: 'Outside teaching range', note: 'This timing falls outside the representative windows used by the teaching model.' }
+}
+
+function ContrastTimingGraph({
+  volume,
+  flowRate,
+  iodineConcentration,
+  salineFlushVolume,
+  arrival,
+  scanStart,
+  scanDuration,
+  triggerTime,
+}: {
+  volume: number
+  flowRate: number
+  iodineConcentration: number
+  salineFlushVolume: number
+  arrival: number
+  scanStart: number
+  scanDuration: number
+  triggerTime: number | null
+}) {
+  const width = 760
+  const height = 320
+  const margin = { left: 58, right: 18, top: 35, bottom: 54 }
+  const plotWidth = width - margin.left - margin.right
+  const plotHeight = height - margin.top - margin.bottom
+  const minimumTime = -15
+  const maximumTime = 300
+  const injectionDuration = volume / flowRate
+  const salineFlushDuration = salineFlushVolume / flowRate
+  const flushEnd = injectionDuration + salineFlushDuration
+  const xFor = (time: number) => margin.left + ((time - minimumTime) / (maximumTime - minimumTime)) * plotWidth
+  const yFor = (value: number) => margin.top + plotHeight - (value / 180) * plotHeight
+  const times = Array.from({ length: maximumTime - minimumTime + 1 }, (_, index) => minimumTime + index)
+  const compactness = clamp(4 / flowRate, 0.65, 1.35)
+  const arterialPeak = 12 + (injectionDuration * 0.28 * compactness)
+  const iodineDeliveryRate = (flowRate * iodineConcentration) / 1000
+  const totalIodineDose = (volume * iodineConcentration) / 1000
+  const arterialAmplitude = 126 * Math.sqrt(iodineDeliveryRate / 1.4)
+  const doseFactor = clamp(totalIodineDose / 35, 0.55, 1.6)
+  const arterial = times.map((time) => gammaCurve(time, arrival, arterialPeak, arterialAmplitude, 3.1))
+  const portal = times.map((time) => gammaCurve(time, arrival + 7, 43 + (injectionDuration * 0.18), 112 * Math.pow(doseFactor, 0.38), 2.2))
+  const parenchyma = times.map((time) => gammaCurve(time, arrival + 11, 64 + (injectionDuration * 0.2), 84 * Math.pow(doseFactor, 0.38), 1.65))
+  const pathFor = (values: number[]) => values.map((value, index) => `${index === 0 ? 'M' : 'L'} ${xFor(times[index]).toFixed(2)} ${yFor(value).toFixed(2)}`).join(' ')
+  const ticks = [-10, 0, 30, 60, 90, 180, 300]
+  const scanEnd = scanStart + scanDuration
+  const scanX = xFor(scanStart)
+  const scanWidth = Math.max(2, xFor(scanEnd) - scanX)
+
+  return (
+    <svg className="ct-contrast-timing-graph" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Illustrative contrast enhancement curves for ${iodineConcentration} milligrams iodine per milliliter, with contrast injection from 0 to ${injectionDuration.toFixed(1)} seconds, saline flush ending at ${flushEnd.toFixed(1)} seconds, and acquisition from ${scanStart.toFixed(0)} to ${scanEnd.toFixed(0)} seconds`}>
+      <title>Injection and CT acquisition timing</title>
+      <desc>Illustrative relative enhancement curves for arterial blood, portal venous blood, and abdominal parenchyma. The upper bar separates iodine injection from the following saline flush, and the shaded vertical band shows the selected acquisition window.</desc>
+      <g className="ct-contrast-phase-bands" aria-hidden="true">
+        <rect className="is-arterial" x={xFor(35)} y={margin.top} width={xFor(45) - xFor(35)} height={plotHeight} />
+        <rect className="is-portal" x={xFor(60)} y={margin.top} width={xFor(80) - xFor(60)} height={plotHeight} />
+        <rect className="is-delayed" x={xFor(180)} y={margin.top} width={xFor(300) - xFor(180)} height={plotHeight} />
+      </g>
+      <g className="ct-contrast-grid" aria-hidden="true">
+        {[0, 60, 120, 180].map((value) => <line key={`y-${value}`} x1={margin.left} x2={width - margin.right} y1={yFor(value)} y2={yFor(value)} />)}
+        {ticks.map((time) => <line key={`x-${time}`} x1={xFor(time)} x2={xFor(time)} y1={margin.top} y2={margin.top + plotHeight} />)}
+      </g>
+      <rect className="ct-contrast-scan-window" x={scanX} y={margin.top} width={scanWidth} height={plotHeight} />
+      <line className="ct-contrast-injection-start" x1={xFor(0)} x2={xFor(0)} y1={margin.top - 7} y2={margin.top + plotHeight} />
+      {triggerTime !== null && <line className="ct-contrast-trigger" x1={xFor(triggerTime)} x2={xFor(triggerTime)} y1={margin.top - 7} y2={margin.top + plotHeight} />}
+      <path className="ct-contrast-curve is-arterial" d={pathFor(arterial)} />
+      <path className="ct-contrast-curve is-portal" d={pathFor(portal)} />
+      <path className="ct-contrast-curve is-parenchyma" d={pathFor(parenchyma)} />
+      <g className="ct-contrast-injection-bar">
+        <rect className="is-contrast" x={xFor(0)} y={14} width={Math.max(2, xFor(injectionDuration) - xFor(0))} height={8} rx={4} />
+        <rect className="is-saline" x={xFor(injectionDuration)} y={14} width={Math.max(2, xFor(flushEnd) - xFor(injectionDuration))} height={8} rx={4} />
+        <text className="is-contrast" x={(xFor(0) + xFor(injectionDuration)) / 2} y={10} textAnchor="middle">iodine contrast</text>
+        <text className="is-saline" x={xFor(flushEnd) + 5} y={21}>saline flush</text>
+      </g>
+      <line className="ct-contrast-axis" x1={margin.left} x2={width - margin.right} y1={margin.top + plotHeight} y2={margin.top + plotHeight} />
+      <line className="ct-contrast-axis" x1={margin.left} x2={margin.left} y1={margin.top} y2={margin.top + plotHeight} />
+      {ticks.map((time, index) => <text className="ct-contrast-tick" key={time} x={xFor(time)} y={height - 28} textAnchor={index === 0 ? 'start' : index === ticks.length - 1 ? 'end' : 'middle'}>{time}</text>)}
+      <text className="ct-contrast-axis-title" x={(margin.left + width - margin.right) / 2} y={height - 7} textAnchor="middle">Time from injection start (s)</text>
+      <text className="ct-contrast-y-title" x={15} y={margin.top + (plotHeight / 2)} textAnchor="middle" transform={`rotate(-90 15 ${margin.top + (plotHeight / 2)})`}>Schematic relative enhancement</text>
+      <g className="ct-contrast-legend" transform={`translate(${margin.left + 10} ${margin.top + 12})`}>
+        <line className="is-arterial" x1="0" x2="18" y1="0" y2="0" /><text x="23" y="4">arterial blood</text>
+        <line className="is-portal" x1="117" x2="135" y1="0" y2="0" /><text x="140" y="4">portal venous blood</text>
+        <line className="is-parenchyma" x1="286" x2="304" y1="0" y2="0" /><text x="309" y="4">parenchyma</text>
+        <rect className="is-scan" x="390" y="-6" width="12" height="10" rx="2" /><text x="408" y="4">scan window</text>
+      </g>
+      {triggerTime !== null && <text className="ct-contrast-trigger-label" x={xFor(triggerTime)} y={margin.top + plotHeight - 8} textAnchor="middle">threshold</text>}
+    </svg>
+  )
+}
+
+export function CtContrastLesson() {
+  const [timingMode, setTimingMode] = useState<ContrastTimingMode>('fixed')
+  const [volume, setVolume] = useState(100)
+  const [flowRate, setFlowRate] = useState(4)
+  const [iodineConcentration, setIodineConcentration] = useState(350)
+  const [arrival, setArrival] = useState(18)
+  const [thresholdRiseTime, setThresholdRiseTime] = useState(3)
+  const [fixedScanStart, setFixedScanStart] = useState(35)
+  const [postTriggerDelay, setPostTriggerDelay] = useState(8)
+  const [scanDuration, setScanDuration] = useState(8)
+  const [selectedPhase, setSelectedPhase] = useState<ContrastPhaseId>('arterial')
+  const salineFlushVolume = 30
+  const injectionDuration = volume / flowRate
+  const salineFlushDuration = salineFlushVolume / flowRate
+  const iodineDeliveryRate = (flowRate * iodineConcentration) / 1000
+  const totalIodineDose = (volume * iodineConcentration) / 1000
+  const triggerTime = arrival + thresholdRiseTime
+  const scanStart = timingMode === 'tracking' ? triggerTime + postTriggerDelay : fixedScanStart
+  const scanPhase = contrastPhaseAt(scanStart, scanStart + scanDuration)
+  const activePhase = contrastPhaseImages.find((phase) => phase.id === selectedPhase) ?? contrastPhaseImages[0]
+  const setPreset = (phase: ContrastPhaseId, start: number) => {
+    setTimingMode('fixed')
+    setFixedScanStart(start)
+    setSelectedPhase(phase)
+  }
+  const movePhaseFocus = (phase: ContrastPhaseId, direction: -1 | 1 | 'first' | 'last') => {
+    const currentIndex = contrastPhaseImages.findIndex((candidate) => candidate.id === phase)
+    const nextIndex = direction === 'first'
+      ? 0
+      : direction === 'last'
+        ? contrastPhaseImages.length - 1
+        : (currentIndex + direction + contrastPhaseImages.length) % contrastPhaseImages.length
+    const nextPhase = contrastPhaseImages[nextIndex]
+    setSelectedPhase(nextPhase.id)
+    requestAnimationFrame(() => document.getElementById(`ct-phase-tab-${nextPhase.id}`)?.focus())
+  }
+
+  return (
+    <div className="ct-built-lesson ct-contrast-lesson">
+      <section className="ct-built-primary" aria-labelledby="ct-contrast-demo-title">
+        <LessonHeader
+          id="ct-contrast-demo-title"
+          eyebrow="Interactive bolus timing"
+          title="Place the scan on the enhancement curve"
+          copy="Adjust injection and circulation, then move the acquisition window. Curves and timings are an illustrative abdominal teaching model—not patient-specific protocol recommendations."
+          value={scanPhase.label}
+        />
+        <div className="ct-contrast-presets" aria-label="Representative contrast phase preset">
+          <button type="button" aria-pressed={timingMode === 'fixed' && fixedScanStart < 0} onClick={() => setPreset('noncontrast', -10)}><small>Before injection</small><strong>Non-contrast</strong></button>
+          <button type="button" aria-pressed={timingMode === 'fixed' && fixedScanStart === 35} onClick={() => setPreset('arterial', 35)}><small>35 s example</small><strong>Late arterial</strong></button>
+          <button type="button" aria-pressed={timingMode === 'fixed' && fixedScanStart === 65} onClick={() => setPreset('portal', 65)}><small>65 s example</small><strong>Portal venous</strong></button>
+          <button type="button" aria-pressed={timingMode === 'fixed' && fixedScanStart === 240} onClick={() => setPreset('delayed', 240)}><small>4 min example</small><strong>Delayed</strong></button>
+        </div>
+        <div className="ct-contrast-workbench">
+          <div className="ct-contrast-controls">
+            <div>
+              <span className="ct-control-label">Timing method</span>
+              <div className="ct-segmented" aria-label="Contrast timing method">
+                <button type="button" aria-pressed={timingMode === 'fixed'} onClick={() => setTimingMode('fixed')}>Fixed delay</button>
+                <button type="button" aria-pressed={timingMode === 'tracking'} onClick={() => setTimingMode('tracking')}>Bolus tracking</button>
+              </div>
+            </div>
+            <label><span>Contrast volume <strong>{volume} mL</strong></span><input aria-label="Contrast volume" type="range" min="60" max="140" step="5" value={volume} style={ctRangeProgressStyle(volume, 60, 140)} onChange={(event) => setVolume(Number(event.target.value))} /></label>
+            <label><span>Iodine concentration <strong>{iodineConcentration} mg I/mL</strong></span><input aria-label="Iodine concentration" type="range" min="250" max="400" step="10" value={iodineConcentration} style={ctRangeProgressStyle(iodineConcentration, 250, 400)} onChange={(event) => setIodineConcentration(Number(event.target.value))} /></label>
+            <label><span>Flow rate <strong>{flowRate.toFixed(1)} mL/s</strong></span><input aria-label="Contrast flow rate" type="range" min="2" max="6" step="0.5" value={flowRate} style={ctRangeProgressStyle(flowRate, 2, 6)} onChange={(event) => setFlowRate(Number(event.target.value))} /></label>
+            <label><span>Estimated arrival <strong>{arrival} s</strong></span><input aria-label="Estimated bolus arrival" type="range" min="12" max="30" step="1" value={arrival} style={ctRangeProgressStyle(arrival, 12, 30)} onChange={(event) => setArrival(Number(event.target.value))} /></label>
+            {timingMode === 'tracking' && <label><span>Arrival → ROI threshold <strong>{thresholdRiseTime} s</strong></span><input aria-label="Modeled time from bolus arrival to ROI threshold" type="range" min="1" max="10" step="1" value={thresholdRiseTime} style={ctRangeProgressStyle(thresholdRiseTime, 1, 10)} onChange={(event) => setThresholdRiseTime(Number(event.target.value))} /></label>}
+            {timingMode === 'fixed'
+              ? <label><span>Scan starts <strong>{fixedScanStart < 0 ? `${Math.abs(fixedScanStart)} s before injection` : `${fixedScanStart} s`}</strong></span><input aria-label="Fixed scan start after injection" type="range" min="-12" max="300" step="1" value={fixedScanStart} style={ctRangeProgressStyle(fixedScanStart, -12, 300)} onChange={(event) => setFixedScanStart(Number(event.target.value))} /></label>
+              : <label><span>Post-trigger delay <strong>{postTriggerDelay} s</strong></span><input aria-label="Bolus tracking post-trigger delay" type="range" min="3" max="30" step="1" value={postTriggerDelay} style={ctRangeProgressStyle(postTriggerDelay, 3, 30)} onChange={(event) => setPostTriggerDelay(Number(event.target.value))} /></label>}
+            <label><span>Scan duration <strong>{scanDuration} s</strong></span><input aria-label="Contrast scan duration" type="range" min="4" max="20" step="1" value={scanDuration} style={ctRangeProgressStyle(scanDuration, 4, 20)} onChange={(event) => setScanDuration(Number(event.target.value))} /></label>
+          </div>
+          <div className="ct-contrast-plot">
+            <ContrastTimingGraph volume={volume} flowRate={flowRate} iodineConcentration={iodineConcentration} salineFlushVolume={salineFlushVolume} arrival={arrival} scanStart={scanStart} scanDuration={scanDuration} triggerTime={timingMode === 'tracking' ? triggerTime : null} />
+          </div>
+        </div>
+        <div className="ct-contrast-readout" aria-live="polite">
+          <div><span>Iodine delivery</span><strong>{totalIodineDose.toFixed(1)} g I total · {iodineDeliveryRate.toFixed(2)} g I/s</strong><small>{volume} mL at {iodineConcentration} mg I/mL over {injectionDuration.toFixed(1)} s</small></div>
+          <div><span>{timingMode === 'tracking' ? 'Schematic trigger' : 'Clock origin'}</span><strong>{timingMode === 'tracking' ? `ROI threshold at ${triggerTime} s` : 'injection start = 0 s'}</strong><small>{timingMode === 'tracking' ? `${thresholdRiseTime} s after modeled arrival · ${postTriggerDelay} s post-trigger delay` : `${salineFlushVolume} mL saline flush follows for ${salineFlushDuration.toFixed(1)} s`}</small></div>
+          <div><span>Acquisition window</span><strong>{scanStart.toFixed(0)}–{(scanStart + scanDuration).toFixed(0)} s</strong><small>{scanDuration} s means different z positions are sampled at slightly different times</small></div>
+          <div><span>Teaching classification</span><strong>{scanPhase.label}</strong><small>{scanPhase.note}</small></div>
+        </div>
+        <p className="ct-built-caption">The graph is a schematic teaching model. It makes iodine dose, iodine delivery rate, bolus arrival, ROI threshold crossing, and the saline flush visible, but it does not predict measured vessel HU, patient enhancement, diagnostic adequacy, or safety.</p>
+      </section>
+
+      <section className="ct-built-card" aria-labelledby="ct-phase-comparison-title">
+        <LessonHeader id="ct-phase-comparison-title" eyebrow="Matched clinical phases" title="One examination at four time points" copy="Compare the same case across phases. Small differences in breath-hold and slice position can remain even within one examination." value={activePhase.label} />
+        <div className="ct-contrast-phase-tabs" role="tablist" aria-label="Matched CT contrast phase">
+          {contrastPhaseImages.map((phase) => (
+            <button key={phase.id} type="button" role="tab" id={`ct-phase-tab-${phase.id}`} aria-controls="ct-phase-panel" aria-selected={selectedPhase === phase.id} tabIndex={selectedPhase === phase.id ? 0 : -1} onClick={() => setSelectedPhase(phase.id)} onKeyDown={(event) => {
+              if (event.key === 'ArrowLeft') { event.preventDefault(); movePhaseFocus(phase.id, -1) }
+              if (event.key === 'ArrowRight') { event.preventDefault(); movePhaseFocus(phase.id, 1) }
+              if (event.key === 'Home') { event.preventDefault(); movePhaseFocus(phase.id, 'first') }
+              if (event.key === 'End') { event.preventDefault(); movePhaseFocus(phase.id, 'last') }
+            }}>
+              <span className="ct-contrast-phase-image">
+                <img src={`${import.meta.env.BASE_URL}assets/ct-contrast-phases.jpg`} style={{ transform: `translateY(-${phase.crop * 25}%)` }} alt={`Axial abdominal CT from the matched liver abscess case, ${phase.label.toLowerCase()} phase`} />
+              </span>
+              <span><strong>{phase.label}</strong><small>{phase.timing}</small></span>
+            </button>
+          ))}
+        </div>
+        <div id="ct-phase-panel" role="tabpanel" aria-labelledby={`ct-phase-tab-${selectedPhase}`} className="ct-contrast-phase-panel" aria-live="polite">
+          <div><span>What this phase represents</span><p>{activePhase.description}</p></div>
+          <div><span>What changes in this case</span><p>{activePhase.pattern}</p></div>
+        </div>
+        <p className="ct-contrast-attribution">The baked-in white arrows mark the transient hepatic attenuation difference described by the source. Clinical image: Khaladkar, Bakshi, Bhargava, and Kulkarni, cropped from <a href="https://commons.wikimedia.org/wiki/File:CT_of_abscess_and_THAD.jpg" target="_blank" rel="noreferrer">CT of abscess and THAD</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.</p>
+      </section>
+
+      <section className="ct-built-card" aria-labelledby="ct-phase-reference-title">
+        <LessonHeader id="ct-phase-reference-title" eyebrow="Phase and provenance reference" title="Classify by timing and enhancement—not name alone" copy="Representative ranges below orient the learner to a common multiphasic liver examination. Other clinical questions use different targets and phase names." />
+        <div className="ct-table-wrap"><table className="ct-built-table ct-contrast-reference-table" aria-label="CT contrast phase reference"><colgroup><col className="is-phase" /><col className="is-timing" /><col className="is-emphasis" /><col className="is-risk" /></colgroup><thead><tr><th>Phase or target</th><th>Representative timing reference</th><th>Enhancement emphasis</th><th>ML ingestion risk</th></tr></thead><tbody>
+          <tr><th>Non-contrast</th><td>Before IV iodine</td><td>Baseline tissue, calcification, blood products, fat</td><td>Misclassified as a poorly enhanced post-contrast series</td></tr>
+          <tr><th>First-pass / angiographic target</th><td>Usually bolus tracked; vessel and examination specific</td><td>Target arterial lumen</td><td>Grouped with late arterial despite different parenchymal enhancement</td></tr>
+          <tr><th>Late arterial</th><td>Illustrative fixed-delay liver example: about 35–45 s from injection start</td><td>Arteries plus developing organ enhancement</td><td>Fixed-delay and triggered acquisitions treated as equivalent</td></tr>
+          <tr><th>Portal venous</th><td>Illustrative abdominal example: about 60–80 s</td><td>Portal veins and more uniform abdominal parenchyma</td><td>Mixed with late venous or single-phase routine abdomen</td></tr>
+          <tr><th>Delayed</th><td>Illustrative liver example: about 3–5 min</td><td>Redistribution, retention, and washout</td><td>“Delayed” or “equilibrium” used without the actual delay or clinical target</td></tr>
+          <tr><th>Organ-specific phases</th><td>Protocol dependent</td><td>Examples include nephrographic and excretory targets</td><td>Forced into generic arterial/venous labels</td></tr>
+        </tbody></table></div>
+        <div className="ct-contrast-metadata" aria-label="Contrast metadata to preserve">
+          <div><strong>Injection</strong><span>agent · iodine concentration · volume · flow rate · duration · saline flush</span></div>
+          <div><strong>Timing</strong><span>injection start/stop · test bolus or tracking · vessel/threshold · post-trigger delay · acquisition time</span></div>
+          <div><strong>Acquisition</strong><span>intended phase · scan duration · direction · coverage · tube voltage or spectral energy · reconstruction and series relationship</span></div>
+          <p><strong>DICOM caveat.</strong> Standard fields can encode agent, route, volume, start/stop time, total dose, flow rate/duration, ingredient, and concentration, but these fields may be absent or incomplete. Injector logs and protocol records may be needed to recover the full timing chain.</p>
+        </div>
+        <nav className="ct-contrast-sources" aria-label="Contrast timing references"><span>References</span><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9406360/" target="_blank" rel="noreferrer">Representative multiphasic liver timing</a><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5893493/" target="_blank" rel="noreferrer">Iodine delivery rate and dose</a><a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.4.html" target="_blank" rel="noreferrer">Current DICOM Contrast/Bolus Module</a></nav>
+      </section>
+    </div>
+  )
+}
+
 type ArtifactId = 'motion' | 'metal' | 'beam-hardening' | 'partial-volume' | 'truncation' | 'rings' | 'sparse-views'
 
 const artifactDefinitions: Array<{ id: ArtifactId; label: string; cause: string; signature: string; image: string; note: string }> = [
