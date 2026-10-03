@@ -1249,6 +1249,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-learning-chapters > p { margin: 6px 9px 9px; color: var(--text-faint); font-size: 0.67rem; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; }
 .ct-learning-chapters > button { display: grid; grid-template-columns: 26px 16px minmax(0, 1fr); gap: 8px; align-items: center; width: 100%; min-height: 50px; padding: 7px 8px; border: 0; border-radius: 8px; color: var(--text-faint); background: transparent; text-align: left; transition: color 140ms ease, background 140ms ease; }
 .ct-learning-chapters > button:hover:not(:disabled) { color: var(--text); background: var(--surface-secondary); }
+.ct-learning-chapters > button:disabled { cursor: not-allowed; opacity: 0.42; }
 .ct-learning-chapters > button.is-selected { color: var(--text); background: color-mix(in srgb, var(--ct-accent) 11%, var(--surface-secondary)); }
 .ct-learning-chapters > button > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: var(--text-faint); background: var(--surface-secondary); font-size: 0.65rem; font-weight: 650; }
 .ct-learning-chapters > button.is-selected > span { color: var(--text); background: var(--surface-raised); box-shadow: 0 1px 4px var(--shadow); }

@@ -338,6 +338,8 @@ const chapters: MriChapter[] = [
   },
 ]
 
+const lastAvailableChapterIndex = 4
+
 const assetIcons: Record<MriAssetKind, IconComponent> = {
   demo: Gauge,
   figure: Box,
@@ -410,14 +412,15 @@ export default function MriModule() {
       <div className="ct-learning-workspace">
         <label className="ct-learning-chapter-picker">
           <span><small>Chapter</small><strong>{chapter.title}</strong></span>
-          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index}>{index + 1}. {item.label}</option>)}</select>
+          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > lastAvailableChapterIndex}>{index + 1}. {item.label}</option>)}</select>
         </label>
 
         <nav className="ct-learning-chapters" aria-label="MRI learning chapters">
           <p>Chapters</p>
           {chapters.map((item, index) => {
             const Icon = item.icon
-            return <button key={item.id} type="button" className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
+            const isDisabled = index > lastAvailableChapterIndex
+            return <button key={item.id} type="button" className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} disabled={isDisabled} title={isDisabled ? 'Coming soon' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
           })}
         </nav>
 
