@@ -28,6 +28,13 @@
 - Modification: the same axial plane was selected from the four co-registered 1 mm templates, intensity-windowed per contrast, cropped identically, and resized to 512 × 512 PNG
 - Use in the app: spatially matched T1-, proton-density-, T2-, and T2*-weighted population-average templates in the predefined comparison
 
+## `cie-t2-volume/cie-t2-z-*.png`
+
+- Source: the `CIE_T2.nii` volume from [Dadar, Camicioli, and Duchesne, Multi-Sequence Average Templates for Aging and Neurodegenerative Disease Populations](https://doi.org/10.5281/zenodo.5018356)
+- License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Modification: 31 ordered axial planes from z = −60 mm through z = +90 mm were intensity-windowed consistently, padded to a shared square field, and exported as 8-bit PNG files
+- Use in the app: real slice-by-slice anatomy for the Chapter 3 slice-selection volume and movable selected slab
+
 ## `openbrain-white-matter.png`, `openbrain-gray-matter.png`, and `openbrain-csf-matter.png`
 
 - Source: [OpenBrain v1.0](https://huggingface.co/datasets/openbrain-anon/openbrain_v1_0), reviewer sample case `ds000053__sub-004__ses-DEFAULT__sub-004_T1w`

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
 import { Box, Database, Gauge, Grid3X3, Layers3, Magnet, ScanLine, Table2, TriangleAlert, Waves, Workflow } from 'lucide-react'
+import { MriEncodingLesson } from './MriEncodingLesson'
 import { MriRelaxationReferences } from './MriRelaxationLesson'
 import { MriSignalReferences } from './MriSignalLesson'
 import { MriSignalSequenceLesson } from './MriSignalSequenceLesson'
@@ -128,7 +129,7 @@ const chapters: MriChapter[] = [
     title: 'Giving the signal a location',
     summary: 'Show how controlled field gradients turn one combined MR signal into measurements that can be assigned to a slice and in-plane position.',
     coreTitle: 'Gradients make resonance frequency and phase depend on position.',
-    coreCopy: 'The receive coil hears signal from a region rather than reading one voxel at a time. MRI localizes that signal by applying gradients: one selects a slice with an RF pulse, one encodes position as phase, and one encodes position as frequency during readout. Repeating the measurement with different phase encoding fills the information needed for an image.',
+    coreCopy: 'The receive coil hears signal from a region rather than reading one voxel at a time. MRI localizes that signal by combining a slice-selection gradient with an RF pulse, encoding one in-plane direction as phase, and encoding the other as frequency during readout. Repeating the measurement with different phase encoding fills the information needed for an image.',
     teaching: {
       layout: 'ray',
       kicker: 'Encode one plane',
@@ -145,7 +146,7 @@ const chapters: MriChapter[] = [
           title: 'Encode one in-plane direction as phase',
           paragraphs: [
             'A phase-encoding gradient briefly makes spins at different positions accumulate different phase shifts. When the gradient turns off, that positional phase difference remains in the signal.',
-            'The sequence repeats with different phase-encoding strengths. Each repetition contributes a different spatial-frequency sample rather than directly measuring one image row.',
+            'The sequence repeats with different phase-encoding strengths. In this simplified Cartesian acquisition, each repetition contributes one k-space line containing many spatial-frequency samples rather than directly measuring one image row.',
           ],
         },
         {
@@ -158,11 +159,7 @@ const chapters: MriChapter[] = [
       ],
       callout: { title: 'Encoding axes are acquisition choices.', body: 'Slice, phase, and readout directions are not permanently tied to left–right, anterior–posterior, or superior–inferior. Their relationship to the patient belongs in image geometry and acquisition metadata.' },
     },
-    assets: [
-      { kind: 'figure', label: 'Annotated sequence figure', title: 'Slice → phase → readout', purpose: 'Keep the three encoding jobs spatially and temporally connected.', wide: true, preview: ['Slice select', 'Phase encode', 'Readout'], notes: ['Patient volume on the left; simplified gradient/RF timeline below.', 'Highlight only one encoding role at a time.', 'Show the selected plane and the evolving phase/frequency pattern in that plane.'] },
-      { kind: 'table', label: 'Reference table', title: 'Control → spatial consequence', purpose: 'Connect acquisition settings to image geometry without duplicating the Image Data module.', preview: ['FOV', 'Matrix', 'Bandwidth', 'Slice'], notes: ['Rows: FOV, matrix, slice thickness, phase direction, receiver bandwidth.', 'Columns: what changes, visible consequence, metadata clue.', 'Link physical spacing back to the Image Data module rather than re-teaching geometry.'] },
-      { kind: 'comparison', label: 'Encoding comparison', title: 'Phase encoding versus readout', purpose: 'Separate two encoding operations that are often collapsed into “the gradients.”', preview: ['Brief phase step', 'Sample during readout'], notes: ['Use the same selected slice and coordinate frame in both panels.', 'Compare when the gradient is applied and what remains in the signal.', 'Show that phase encoding repeats at several strengths while readout samples a waveform.'] },
-    ],
+    assets: [],
     takeaways: ['Slice selection combines a gradient with a frequency-selective RF pulse.', 'Phase and frequency encoding describe position indirectly through the measured signal.', 'Acquisition encoding axes and patient anatomical axes are related through geometry metadata.'],
   },
   {
@@ -414,14 +411,14 @@ export default function MriModule() {
       <div className="ct-learning-workspace">
         <label className="ct-learning-chapter-picker">
           <span><small>Chapter</small><strong>{chapter.title}</strong></span>
-          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > 1}>{index + 1}. {item.label}</option>)}</select>
+          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > 2}>{index + 1}. {item.label}</option>)}</select>
         </label>
 
         <nav className="ct-learning-chapters" aria-label="MRI learning chapters">
           <p>Chapters</p>
           {chapters.map((item, index) => {
             const Icon = item.icon
-            return <button key={item.id} type="button" disabled={index > 1} className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
+            return <button key={item.id} type="button" disabled={index > 2} className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
           })}
         </nav>
 
@@ -440,10 +437,10 @@ export default function MriModule() {
 
           {chapter.id === 'signal'
             ? <MriSignalSequenceLesson />
-            : chapter.id === 'relaxation'
+            : chapter.id === 'relaxation' || chapter.id === 'encoding'
               ? <MriTeachingBlock content={chapter.teaching} />
               : leadAssets.length > 0 && <div className="ct-asset-grid mri-lead-assets">{leadAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
-          {chapter.id !== 'relaxation' && <MriTeachingBlock content={chapter.teaching} />}
+          {chapter.id !== 'relaxation' && chapter.id !== 'encoding' && <MriTeachingBlock content={chapter.teaching} />}
           {chapter.id === 'signal'
             ? <MriSignalReferences />
             : chapter.id === 'relaxation'
@@ -453,6 +450,8 @@ export default function MriModule() {
                   onTrChange={(tr) => setRelaxationTiming((current) => ({ ...current, tr }))}
                   onTeChange={(te) => setRelaxationTiming((current) => ({ ...current, te }))}
                 />
+              : chapter.id === 'encoding'
+                ? <MriEncodingLesson />
               : supportAssets.length > 0 && <div className="ct-asset-grid">{supportAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
 
           <section className="ct-chapter-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
