@@ -199,6 +199,7 @@ h1, h2, h3, p { margin-top: 0; }
 .landing-xray-patient-3d canvas { display: block; width: 100% !important; height: 100% !important; background: transparent !important; }
 .landing-ct-scanner-3d { position: absolute; z-index: 2; top: 14.6%; left: 3.7%; width: 54.5%; height: 67.3%; overflow: hidden; border-radius: 24px; pointer-events: none; background: #20363d; }
 .landing-ct-scanner-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+.landing-ct-stack-panel { position: absolute; z-index: 2; top: 14.6%; right: 3.7%; width: 35.5%; height: 67.3%; overflow: hidden; border-radius: 24px; }
 .landing-ct-scanner-heading { position: absolute; z-index: 3; top: 18px; left: 18px; padding: 7px 9px; border: 1px solid rgba(143, 235, 250, 0.18); border-radius: 999px; color: rgba(230, 251, 255, 0.88); background: rgba(18, 45, 53, 0.64); backdrop-filter: blur(8px); font-size: 9px; font-weight: 760; letter-spacing: 0.1em; }
 .landing-xray-patient-loading { position: absolute; inset: 24%; border: 1px solid color-mix(in srgb, var(--showcase-accent) 34%, transparent); border-radius: 50%; }
 .landing-source-glow { transform-origin: 76px 260px; animation: landing-pulse 2.2s ease-in-out infinite; }
@@ -2217,7 +2218,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .landing-hero h1 { font-size: clamp(3rem, 18vw, 5.2rem); }
   .landing-hero-copy { margin-top: 23px; font-size: 0.98rem; }
   .landing-path { max-width: 330px; margin-inline: auto; }
-  .landing-scroll-cue { bottom: 19px; }
+  .landing-scroll-cue { bottom: 42px; }
   .landing-showcase-sticky { gap: 27px; padding: 74px 2px; }
   .landing-showcase h2 { font-size: clamp(2.4rem, 13vw, 4rem); }
   .landing-showcase-copy > p:not(.landing-showcase-index) { margin-top: 18px; font-size: 0.9rem; }
@@ -2225,6 +2226,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .landing-sequence li { min-height: 62px; }
   .landing-visual-shell { aspect-ratio: 1.08; border-radius: 18px; }
   .landing-visual-caption { right: 10px; bottom: 10px; left: 10px; justify-content: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .landing-source-credit { top: 8px; right: 10px; bottom: auto; left: 10px; padding-block: 5px; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+  .landing-data-3d-label { top: 13%; }
   .landing-module-button { width: 100%; }
   .landing-finale { min-height: 650px; padding-inline: 12px; }
   .landing-finale h2 { font-size: clamp(2.7rem, 15vw, 4.8rem); }

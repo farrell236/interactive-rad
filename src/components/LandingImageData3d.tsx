@@ -1,4 +1,4 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { Edges, Line, useGLTF } from '@react-three/drei'
 import { Suspense, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -223,6 +223,20 @@ function VoxelCubeScene({ volume }: { volume: Int16Array | null }) {
   )
 }
 
+function ResponsiveAnatomyCamera() {
+  const { camera, size } = useThree()
+
+  useEffect(() => {
+    const compact = size.width < 280
+    if (compact) camera.position.set(2.35, 2.2, 4.65)
+    else camera.position.set(3.15, 2.8, 6.4)
+    camera.lookAt(0, compact ? 0.82 : 0.62, 0)
+    camera.updateProjectionMatrix()
+  }, [camera, size.width])
+
+  return null
+}
+
 function AnatomyScene() {
   return (
     <Canvas
@@ -242,6 +256,7 @@ function AnatomyScene() {
       <hemisphereLight args={['#f1fff7', '#1a3328', 1.55]} />
       <directionalLight position={[4, 6, 6]} intensity={2.5} color="#f7fffa" />
       <pointLight position={[-3, 1.8, 4]} intensity={5} distance={12} color="#7ce3a5" />
+      <ResponsiveAnatomyCamera />
       <PatientSpaceGrid />
       <Suspense fallback={null}><CroppedAnatomy /></Suspense>
     </Canvas>

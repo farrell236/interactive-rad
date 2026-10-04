@@ -201,31 +201,30 @@ function CtLandingVisual({ volume }: { volume: Int16Array | null }) {
     <>
       <svg viewBox="0 0 760 520" role="img" aria-label="A CT acquisition plane moving along a sagittal patient while reconstructed axial slices accumulate into a volume">
         <rect x="28" y="76" width="414" height="350" rx="24" fill="#071419" fillOpacity=".3" stroke="#75e5f6" strokeOpacity=".16" />
-
-        <foreignObject x="462" y="76" width="270" height="350">
-          <div className="ct-volume-stack-stage landing-ct-volume-stack-stage" role="img" aria-label={`Accumulated CT volume with ${visibleStackLayers} of ${totalStackLayers} axial slices; current source slice ${currentSlice}`}>
-            <strong className="landing-ct-volume-heading">RECONSTRUCTED VOLUME</strong>
-            <div className="ct-volume-stack landing-ct-volume-stack">
-              {acquiredSliceIndices.map((sliceIndex, index) => (
-                <ClinicalCtVolumeSliceCanvas
-                  key={sliceIndex}
-                  volume={volume}
-                  sliceIndex={sliceIndex}
-                  label={`Accumulated real CT slice ${index + 1} of ${totalStackLayers}; source slice ${sliceIndex}`}
-                  className={index === visibleStackLayers - 1 ? 'is-current' : ''}
-                  style={{ '--stack-offset': index } as CSSProperties}
-                />
-              ))}
-            </div>
-            <div className="ct-volume-stack-axis" aria-hidden="true"><span>Inferior</span><i /><span>Superior</span></div>
-          </div>
-        </foreignObject>
       </svg>
       <div className="landing-ct-scanner-3d" aria-hidden="true">
         <strong className="landing-ct-scanner-heading">ACQUISITION ALONG THE PATIENT</strong>
         <Suspense fallback={<span className="landing-xray-patient-loading" />}>
           <LandingCtScanner3d scanProgress={scanProgress} gantryAngle={gantryAngle} />
         </Suspense>
+      </div>
+      <div className="landing-ct-stack-panel">
+        <div className="ct-volume-stack-stage landing-ct-volume-stack-stage" role="img" aria-label={`Accumulated CT volume with ${visibleStackLayers} of ${totalStackLayers} axial slices; current source slice ${currentSlice}`}>
+          <strong className="landing-ct-volume-heading">RECONSTRUCTED VOLUME</strong>
+          <div className="ct-volume-stack landing-ct-volume-stack">
+            {acquiredSliceIndices.map((sliceIndex, index) => (
+              <ClinicalCtVolumeSliceCanvas
+                key={sliceIndex}
+                volume={volume}
+                sliceIndex={sliceIndex}
+                label={`Accumulated real CT slice ${index + 1} of ${totalStackLayers}; source slice ${sliceIndex}`}
+                className={index === visibleStackLayers - 1 ? 'is-current' : ''}
+                style={{ '--stack-offset': index } as CSSProperties}
+              />
+            ))}
+          </div>
+          <div className="ct-volume-stack-axis" aria-hidden="true"><span>Inferior</span><i /><span>Superior</span></div>
+        </div>
       </div>
       <p className="landing-source-credit">LIDC-IDRI-0001 · CC BY 3.0</p>
     </>
