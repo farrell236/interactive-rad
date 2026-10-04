@@ -297,7 +297,6 @@ function MriLandingVisual() {
         <g className="landing-mri-scanner">
           <ellipse cx="280" cy="257" rx="180" ry="190" fill="none" stroke="#dce4ee" strokeOpacity=".78" strokeWidth="60" />
           <ellipse cx="280" cy="257" rx="138" ry="148" fill="url(#landing-mri-bore)" stroke="#a987ff" strokeOpacity=".4" strokeWidth="5" />
-          <path d="M46 356h300" stroke="#dce4ee" strokeOpacity=".58" strokeWidth="28" strokeLinecap="round" />
         </g>
         <g className="landing-mri-fields" fill="none" stroke="#6bcfff" strokeWidth="2">
           <ellipse cx="280" cy="257" rx="207" ry="105" opacity=".26" />
