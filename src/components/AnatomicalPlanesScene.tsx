@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber'
 import { Billboard, ContactShadows, Line, OrbitControls, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { useInViewport } from '../hooks/useInViewport'
 
 const HEART_NODE_NAMES = new Set(['grp1.017', 'grp1.018', 'grp1.019', 'grp1.020', 'grp1.021'])
 type OrganSystem = 'respiratory' | 'digestive' | 'renal' | 'heart'
@@ -16,11 +17,8 @@ function getOrganSystem(object: THREE.Object3D): OrganSystem {
   return 'digestive'
 }
 
-function TeachingAnatomy() {
+function BodyAnatomy() {
   const bodySource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-body.glb`).scene
-  const skeletonSource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-skeleton.glb`).scene
-  const organsSource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-organs.glb`).scene
-
   const bodyMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: '#76b8cf',
     roughness: 0.34,
@@ -33,6 +31,24 @@ function TeachingAnatomy() {
     depthWrite: false,
     side: THREE.DoubleSide,
   }), [])
+  const body = useMemo(() => {
+    const clone = bodySource.clone(true)
+    clone.traverse((child) => {
+      if (child instanceof THREE.Line) child.visible = false
+      if (!(child instanceof THREE.Mesh)) return
+      child.material = bodyMaterial
+      child.castShadow = true
+      child.receiveShadow = true
+      child.renderOrder = 2
+    })
+    return clone
+  }, [bodyMaterial, bodySource])
+  useEffect(() => () => bodyMaterial.dispose(), [bodyMaterial])
+  return <primitive object={body} />
+}
+
+function SkeletonAnatomy() {
+  const skeletonSource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-skeleton.glb`).scene
   const skeletonMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: '#eadfca',
     roughness: 0.5,
@@ -41,6 +57,23 @@ function TeachingAnatomy() {
     opacity: 0.92,
     depthWrite: false,
   }), [])
+  const skeleton = useMemo(() => {
+    const clone = skeletonSource.clone(true)
+    clone.traverse((child) => {
+      if (child instanceof THREE.Line) child.visible = false
+      if (!(child instanceof THREE.Mesh)) return
+      child.material = skeletonMaterial
+      child.castShadow = true
+      child.renderOrder = 4
+    })
+    return clone
+  }, [skeletonMaterial, skeletonSource])
+  useEffect(() => () => skeletonMaterial.dispose(), [skeletonMaterial])
+  return <primitive object={skeleton} />
+}
+
+function OrgansAnatomy() {
+  const organsSource = useGLTF(`${import.meta.env.BASE_URL}models/anatomy-organs.glb`).scene
   const organMaterials = useMemo<Record<OrganSystem, THREE.MeshPhysicalMaterial>>(() => {
     const makeMaterial = (color: string, opacity: number) => new THREE.MeshPhysicalMaterial({
       color,
@@ -61,29 +94,6 @@ function TeachingAnatomy() {
     }
   }, [])
 
-  const body = useMemo(() => {
-    const clone = bodySource.clone(true)
-    clone.traverse((child) => {
-      if (child instanceof THREE.Line) child.visible = false
-      if (!(child instanceof THREE.Mesh)) return
-      child.material = bodyMaterial
-      child.castShadow = true
-      child.receiveShadow = true
-      child.renderOrder = 2
-    })
-    return clone
-  }, [bodyMaterial, bodySource])
-  const skeleton = useMemo(() => {
-    const clone = skeletonSource.clone(true)
-    clone.traverse((child) => {
-      if (child instanceof THREE.Line) child.visible = false
-      if (!(child instanceof THREE.Mesh)) return
-      child.material = skeletonMaterial
-      child.castShadow = true
-      child.renderOrder = 4
-    })
-    return clone
-  }, [skeletonMaterial, skeletonSource])
   const organs = useMemo(() => {
     const clone = organsSource.clone(true)
     clone.traverse((child) => {
@@ -96,15 +106,33 @@ function TeachingAnatomy() {
     return clone
   }, [organMaterials, organsSource])
 
-  useEffect(() => () => bodyMaterial.dispose(), [bodyMaterial])
-  useEffect(() => () => skeletonMaterial.dispose(), [skeletonMaterial])
   useEffect(() => () => Object.values(organMaterials).forEach((material) => material.dispose()), [organMaterials])
+  return <primitive object={organs} />
+}
+
+function TeachingAnatomy() {
+  const [stage, setStage] = useState(1)
+
+  useEffect(() => {
+    const schedule = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(() => callback({ didTimeout: false, timeRemaining: () => 8 }), 80))
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout
+    const handle = schedule(() => setStage(2), { timeout: 350 })
+    return () => cancel(handle)
+  }, [])
+
+  useEffect(() => {
+    if (stage !== 2) return undefined
+    const schedule = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(() => callback({ didTimeout: false, timeRemaining: () => 8 }), 80))
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout
+    const handle = schedule(() => setStage(3), { timeout: 350 })
+    return () => cancel(handle)
+  }, [stage])
 
   return (
     <group position={[0, -2.01, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={2.55}>
-      <primitive object={body} />
-      <primitive object={organs} />
-      <primitive object={skeleton} />
+      <Suspense fallback={null}><BodyAnatomy /></Suspense>
+      {stage >= 2 && <Suspense fallback={null}><SkeletonAnatomy /></Suspense>}
+      {stage >= 3 && <Suspense fallback={null}><OrgansAnatomy /></Suspense>}
     </group>
   )
 }
@@ -224,9 +252,11 @@ function SceneContents({ convention }: { convention: CoordinateConvention }) {
 
 export default function AnatomicalPlanesScene() {
   const [convention, setConvention] = useState<CoordinateConvention>('LPS')
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const shouldRender = useInViewport(viewportRef, { rootMargin: '400px', threshold: 0.01, once: true, initial: false })
 
   return (
-    <div className="anatomical-planes-viewport" role="region" aria-label={`Interactive three-dimensional anatomical model intersected by axial, coronal, and sagittal planes, with patient orientation labelled in ${convention} coordinates. Drag to orbit the model.`}>
+    <div ref={viewportRef} className="anatomical-planes-viewport" role="region" aria-label={`Interactive three-dimensional anatomical model intersected by axial, coronal, and sagittal planes, with patient orientation labelled in ${convention} coordinates. Drag to orbit the model.`}>
       <div className="anatomical-planes-legend" aria-hidden="true">
         <span className="is-axial"><i />Axial</span>
         <span className="is-coronal"><i />Coronal</span>
@@ -237,7 +267,7 @@ export default function AnatomicalPlanesScene() {
       </div>
       <span className="sr-only">{convention === 'LPS' ? 'LPS orientation: left is positive X, posterior is positive Y, and superior is positive Z.' : 'RAS orientation: right is positive X, anterior is positive Y, and superior is positive Z.'}</span>
       <span className="anatomical-planes-instruction" aria-hidden="true">Drag to orbit</span>
-      <Canvas
+      {shouldRender && <Canvas
         dpr={[1, 1.55]}
         camera={{ position: [4.7, 1.8, 6.5], fov: 34, near: 0.1, far: 50 }}
         shadows
@@ -252,7 +282,7 @@ export default function AnatomicalPlanesScene() {
         aria-hidden="true"
       >
         <SceneContents convention={convention} />
-      </Canvas>
+      </Canvas>}
     </div>
   )
 }

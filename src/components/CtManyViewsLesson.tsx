@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import { ctRangeProgressStyle } from '../lib/rangeProgress'
+import { useDocumentVisible, useInViewport } from '../hooks/useInViewport'
 import CtVolumeAcquisition from './CtVolumeAcquisition'
 
 const GRID_SIZE = 72
@@ -90,63 +91,6 @@ function forwardProject(image: Float32Array, angle: number) {
 
   for (let index = 0; index < projection.length; index += 1) projection[index] /= GRID_SIZE
   return projection
-}
-
-function rampFilter(projection: Float32Array) {
-  const filtered = new Float32Array(DETECTOR_COUNT)
-
-  for (let index = 0; index < DETECTOR_COUNT; index += 1) {
-    let value = projection[index] * 0.25
-    for (let offset = 1; offset < DETECTOR_COUNT; offset += 2) {
-      const coefficient = -1 / (Math.PI * Math.PI * offset * offset)
-      if (index - offset >= 0) value += projection[index - offset] * coefficient
-      if (index + offset < DETECTOR_COUNT) value += projection[index + offset] * coefficient
-    }
-    filtered[index] = value
-  }
-
-  return filtered
-}
-
-function reconstruct(viewCount: number, acquiredViews = viewCount) {
-  const reconstruction = new Float32Array(GRID_SIZE * GRID_SIZE)
-  const projections = Array.from({ length: acquiredViews }, (_, view) => {
-    const angle = (view / viewCount) * Math.PI
-    return { angle, projection: rampFilter(forwardProject(SHEPP_LOGAN_PHANTOM, angle)) }
-  })
-
-  for (let row = 0; row < GRID_SIZE; row += 1) {
-    const y = ((row + 0.5) / GRID_SIZE) * 2 - 1
-    for (let column = 0; column < GRID_SIZE; column += 1) {
-      const x = ((column + 0.5) / GRID_SIZE) * 2 - 1
-      let sum = 0
-
-      for (const { angle, projection } of projections) {
-        const detectorPosition = detectorCoordinate(x, y, angle)
-        const detectorIndex = ((detectorPosition + ROOT_TWO) / (ROOT_TWO * 2)) * (DETECTOR_COUNT - 1)
-        const lower = Math.floor(detectorIndex)
-        const fraction = detectorIndex - lower
-        if (lower >= 0 && lower + 1 < DETECTOR_COUNT) {
-          sum += (projection[lower] * (1 - fraction)) + (projection[lower + 1] * fraction)
-        }
-      }
-
-      reconstruction[(row * GRID_SIZE) + column] = sum / acquiredViews
-    }
-  }
-
-  return reconstruction
-}
-
-function createSinogram(viewCount: number) {
-  const sinogram = new Float32Array(viewCount * DETECTOR_COUNT)
-
-  for (let view = 0; view < viewCount; view += 1) {
-    const projection = forwardProject(SHEPP_LOGAN_PHANTOM, (view / viewCount) * Math.PI)
-    sinogram.set(projection, view * DETECTOR_COUNT)
-  }
-
-  return sinogram
 }
 
 function positiveDisplayMaximum(values: Float32Array) {
@@ -305,23 +249,48 @@ function AmbiguousInterior({ reversed, label }: { reversed: boolean; label: stri
 }
 
 export default function CtManyViewsLesson() {
+  const reconstructionRef = useRef<HTMLElement>(null)
   const [viewCount, setViewCount] = useState(MAX_VIEWS)
   const [activeView, setActiveView] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
+  const reconstructionNearViewport = useInViewport(reconstructionRef, { rootMargin: '800px', threshold: 0.01, once: true, initial: false })
+  const reconstructionInViewport = useInViewport(reconstructionRef, { threshold: 0.02, initial: false })
+  const documentVisible = useDocumentVisible()
   const acquiredViews = activeView + 1
   const angle = Math.round((activeView / viewCount) * 180)
   const projection = useMemo(() => forwardProject(SHEPP_LOGAN_PHANTOM, (angle / 180) * Math.PI), [angle])
-  const sinogram = useMemo(() => createSinogram(viewCount), [viewCount])
+  const [workerResult, setWorkerResult] = useState<{ viewCount: number; sinogram: Float32Array; reconstructions: Float32Array } | null>(null)
+  const emptySinogram = useMemo(() => new Float32Array(MAX_VIEWS * DETECTOR_COUNT), [])
+  const emptyReconstruction = useMemo(() => new Float32Array(GRID_SIZE * GRID_SIZE), [])
+  const sinogram = workerResult?.viewCount === viewCount ? workerResult.sinogram : emptySinogram.subarray(0, viewCount * DETECTOR_COUNT)
   const projectionMaximum = useMemo(() => Math.max(...sinogram, 0.001), [sinogram])
-  const reconstruction = useMemo(() => reconstruct(viewCount, acquiredViews), [acquiredViews, viewCount])
+  const reconstruction = useMemo(() => {
+    if (workerResult?.viewCount !== viewCount) return emptyReconstruction
+    const start = (acquiredViews - 1) * GRID_SIZE * GRID_SIZE
+    return workerResult.reconstructions.subarray(start, start + (GRID_SIZE * GRID_SIZE))
+  }, [acquiredViews, emptyReconstruction, viewCount, workerResult])
   const angularStep = 180 / viewCount
 
   useEffect(() => {
-    if (!isPlaying) return
+    if (!reconstructionNearViewport || typeof Worker === 'undefined') return undefined
+    const worker = new Worker(new URL('../workers/ctManyViewsWorker.ts', import.meta.url), { type: 'module' })
+    let active = true
+    worker.onmessage = (event: MessageEvent<{ viewCount: number; sinogram: Float32Array; reconstructions: Float32Array }>) => {
+      if (active) setWorkerResult(event.data)
+    }
+    worker.postMessage({ viewCount })
+    return () => {
+      active = false
+      worker.terminate()
+    }
+  }, [reconstructionNearViewport, viewCount])
+
+  useEffect(() => {
+    if (!isPlaying || !reconstructionInViewport || !documentVisible) return
     const delay = activeView === viewCount - 1 ? 900 : 130
     const timer = window.setTimeout(() => setActiveView((current) => current === viewCount - 1 ? 0 : current + 1), delay)
     return () => window.clearTimeout(timer)
-  }, [activeView, isPlaying, viewCount])
+  }, [activeView, documentVisible, isPlaying, reconstructionInViewport, viewCount])
 
   const changeViewCount = (nextViewCount: number) => {
     setViewCount(nextViewCount)
@@ -331,7 +300,7 @@ export default function CtManyViewsLesson() {
   return (
     <div className="ct-many-views-built">
       <CtVolumeAcquisition />
-      <section className="ct-many-views-demo" aria-labelledby="ct-slice-reconstruction-title">
+      <section ref={reconstructionRef} className="ct-many-views-demo" aria-labelledby="ct-slice-reconstruction-title">
         <header>
           <div>
             <span>Slice reconstruction</span>

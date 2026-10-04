@@ -5,25 +5,34 @@ import * as THREE from 'three'
 import { mriVolumeSliceUrl } from '../lib/mriVolume'
 
 const slicePositions = Array.from({ length: 31 }, (_, index) => -60 + index * 5)
-const sliceTextureUrls = slicePositions.map(mriVolumeSliceUrl)
 const contextTextureIndexes = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30]
+const contextTextureUrls = contextTextureIndexes.map((index) => mriVolumeSliceUrl(slicePositions[index]))
 
 function BrainSlicePlanes({ thicknessMm, slicePositionMm }: { thicknessMm: number; slicePositionMm: number }) {
-  const sourceTextures = useTexture(sliceTextureUrls)
-  const texture = useMemo(() => {
-    return sourceTextures.map((sourceTexture) => {
+  const contextSourceTextures = useTexture(contextTextureUrls)
+  const selectedTextureIndex = Math.round((slicePositionMm + 60) / 5)
+  const selectedSourceTexture = useTexture(mriVolumeSliceUrl(slicePositions[selectedTextureIndex]))
+  const contextTextures = useMemo(() => {
+    return contextSourceTextures.map((sourceTexture) => {
       const clone = sourceTexture.clone()
       clone.colorSpace = THREE.SRGBColorSpace
       clone.anisotropy = 8
       clone.needsUpdate = true
       return clone
     })
-  }, [sourceTextures])
+  }, [contextSourceTextures])
+  const selectedTexture = useMemo(() => {
+    const clone = selectedSourceTexture.clone()
+    clone.colorSpace = THREE.SRGBColorSpace
+    clone.anisotropy = 8
+    clone.needsUpdate = true
+    return clone
+  }, [selectedSourceTexture])
   const slabHeight = THREE.MathUtils.clamp(thicknessMm * 0.025, 0.012, 0.32)
   const slabCenterY = (slicePositionMm - 15) / 75 * 0.82
-  const selectedTextureIndex = Math.round((slicePositionMm + 60) / 5)
 
-  useEffect(() => () => texture.forEach((item) => item.dispose()), [texture])
+  useEffect(() => () => contextTextures.forEach((item) => item.dispose()), [contextTextures])
+  useEffect(() => () => selectedTexture.dispose(), [selectedTexture])
 
   return (
     <group rotation={[0, -0.08, 0]}>
@@ -32,13 +41,13 @@ function BrainSlicePlanes({ thicknessMm, slicePositionMm }: { thicknessMm: numbe
         <meshBasicMaterial color="#8c7be8" transparent opacity={0.035} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {contextTextureIndexes.map((textureIndex) => {
+      {contextTextureIndexes.map((textureIndex, contextIndex) => {
         const positionMm = slicePositions[textureIndex]
         const y = (positionMm - 15) / 75 * 0.82
         return <mesh key={textureIndex} position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.22, 1, 1]} renderOrder={textureIndex}>
           <circleGeometry args={[1, 96]} />
           <meshBasicMaterial
-            map={texture[textureIndex]}
+            map={contextTextures[contextIndex]}
             color="#b9c4e8"
             transparent
             opacity={0.14}
@@ -52,7 +61,7 @@ function BrainSlicePlanes({ thicknessMm, slicePositionMm }: { thicknessMm: numbe
 
       <mesh position={[0, slabCenterY, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.22, 1, 1]} renderOrder={40}>
         <circleGeometry args={[1, 96]} />
-        <meshBasicMaterial map={texture[selectedTextureIndex]} color="#ffffff" transparent opacity={0.98} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+        <meshBasicMaterial map={selectedTexture} color="#ffffff" transparent opacity={0.98} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
       </mesh>
 
       <mesh position={[0, slabCenterY, 0]}>

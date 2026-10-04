@@ -4,6 +4,7 @@ import { ArrowRight, ChevronDown } from 'lucide-react'
 import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
 import ctVolumeUrl from '../assets/ct/lidc-idri-0001-chest-192x192x133-hu16le.bin?url'
 import ctVolumeMetadata from '../assets/ct/lidc-idri-0001-chest-volume.json'
+import { useCtSliceImageDataUrl } from '../lib/ctSliceImage'
 import type { Modality } from '../types'
 
 const LandingXrayPatient3d = lazy(() => import('./LandingXrayPatient3d'))
@@ -11,6 +12,7 @@ const LandingCtScanner3d = lazy(() => import('./LandingCtScanner3d'))
 const LandingImageData3d = lazy(() => import('./LandingImageData3d'))
 const landingXrayUrl = `${import.meta.env.BASE_URL}assets/landing/normal-pa-chest-xray.jpg`
 const landingMriUrl = `${import.meta.env.BASE_URL}assets/mri/cie-template-t2.png`
+const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
 type LandingPageProps = {
   onActiveChange: (modality: Modality | null) => void
@@ -94,46 +96,27 @@ function ClinicalCtCanvas({ pixels, center, width, label, className = '', style 
   return <canvas ref={canvasRef} className={`landing-clinical-canvas${className ? ` ${className}` : ''}`} style={style} width="512" height="512" role="img" aria-label={label} />
 }
 
-function ClinicalCtVolumeSliceCanvas({ volume, sliceIndex, label, className = '', style }: { volume: Int16Array | null; sliceIndex: number; label: string; className?: string; style?: CSSProperties }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+function ClinicalCtVolumeSliceImage({ volume, sliceIndex, label, className = '', style }: { volume: Int16Array | null; sliceIndex: number; label: string; className?: string; style?: CSSProperties }) {
   const { width, height, depth } = ctVolumeMetadata
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const context = canvas?.getContext('2d')
-    if (!canvas || !context) return
-
-    const image = context.createImageData(width, height)
-    const pixelsPerSlice = width * height
-    const boundedSlice = Math.max(0, Math.min(depth - 1, sliceIndex))
-    const sourceStart = boundedSlice * pixelsPerSlice
-    const windowCenter = -500
-    const windowWidth = 1500
-    const windowLow = windowCenter - (windowWidth / 2)
-
-    for (let pixel = 0; pixel < pixelsPerSlice; pixel += 1) {
-      const hu = volume?.[sourceStart + pixel] ?? -1024
-      const normalized = Math.max(0, Math.min(1, (hu - windowLow) / windowWidth))
-      const gray = Math.round(normalized * 255)
-      const output = pixel * 4
-      image.data[output] = Math.round(gray * 0.93)
-      image.data[output + 1] = Math.round(gray * 0.98)
-      image.data[output + 2] = gray
-      image.data[output + 3] = 255
-    }
-
-    context.putImageData(image, 0, 0)
-  }, [depth, height, sliceIndex, volume, width])
+  const src = useCtSliceImageDataUrl(volume, {
+    width,
+    height,
+    depth,
+    sliceIndex,
+    center: -500,
+    windowWidth: 1500,
+    tint: [0.93, 0.98, 1],
+  })
 
   return (
-    <canvas
-      ref={canvasRef}
+    <img
+      src={src || transparentPixel}
       className={`landing-clinical-canvas${className ? ` ${className}` : ''}`}
       style={style}
       width={width}
       height={height}
       role="img"
-      aria-label={label}
+      alt={label}
     />
   )
 }
@@ -169,26 +152,31 @@ function XrayLandingVisual() {
   )
 }
 
-function CtLandingVisual({ volume }: { volume: Int16Array | null }) {
+function CtLandingVisual({ volume, active }: { volume: Int16Array | null; active: boolean }) {
   const [scanProgress, setScanProgress] = useState(0)
 
   useEffect(() => {
+    if (!active) return undefined
     const cycleDuration = 7000
     const acquisitionDuration = 5600
     let animationFrame = 0
     let cycleStart = performance.now()
+    let lastCommittedAt = 0
 
     const update = (now: number) => {
       const elapsed = now - cycleStart
       if (elapsed >= cycleDuration) cycleStart = now - (elapsed % cycleDuration)
       const cycleElapsed = (now - cycleStart) % cycleDuration
-      setScanProgress(Math.min(1, cycleElapsed / acquisitionDuration))
+      if (now - lastCommittedAt >= 1000 / 30) {
+        lastCommittedAt = now
+        setScanProgress(Math.min(1, cycleElapsed / acquisitionDuration))
+      }
       animationFrame = window.requestAnimationFrame(update)
     }
 
     animationFrame = window.requestAnimationFrame(update)
     return () => window.cancelAnimationFrame(animationFrame)
-  }, [])
+  }, [active])
 
   const [firstSuperiorSlice, lastInferiorSlice] = ctVolumeMetadata.teachingRangeIndices
   const totalStackLayers = lastInferiorSlice - firstSuperiorSlice + 1
@@ -213,7 +201,7 @@ function CtLandingVisual({ volume }: { volume: Int16Array | null }) {
           <strong className="landing-ct-volume-heading">RECONSTRUCTED VOLUME</strong>
           <div className="ct-volume-stack landing-ct-volume-stack">
             {acquiredSliceIndices.map((sliceIndex, index) => (
-              <ClinicalCtVolumeSliceCanvas
+              <ClinicalCtVolumeSliceImage
                 key={sliceIndex}
                 volume={volume}
                 sliceIndex={sliceIndex}
@@ -231,10 +219,19 @@ function CtLandingVisual({ volume }: { volume: Int16Array | null }) {
   )
 }
 
-function WindowingLandingVisual({ pixels }: { pixels: Int16Array | null }) {
+function WindowingLandingVisual({ pixels, active }: { pixels: Int16Array | null; active: boolean }) {
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg || typeof svg.pauseAnimations !== 'function' || typeof svg.unpauseAnimations !== 'function') return
+    if (active) svg.unpauseAnimations()
+    else svg.pauseAnimations()
+  }, [active])
+
   return (
     <>
-      <svg viewBox="0 0 760 520" role="img" aria-label="The same real CT slice displayed with three window settings">
+      <svg ref={svgRef} viewBox="0 0 760 520" role="img" aria-label="The same real CT slice displayed with three window settings">
         <defs><linearGradient id="landing-window-ramp"><stop stopColor="#050607" /><stop offset="1" stopColor="#fff" /></linearGradient></defs>
         {[
           { x: 92, center: -500, width: 1500, name: 'Lung', detail: 'W 1500 · C −500' },
@@ -285,10 +282,19 @@ function WindowingLandingVisual({ pixels }: { pixels: Int16Array | null }) {
   )
 }
 
-function MriLandingVisual() {
+function MriLandingVisual({ active }: { active: boolean }) {
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg || typeof svg.pauseAnimations !== 'function' || typeof svg.unpauseAnimations !== 'function') return
+    if (active) svg.unpauseAnimations()
+    else svg.pauseAnimations()
+  }, [active])
+
   return (
     <>
-      <svg viewBox="0 0 760 520" role="img" aria-label="MRI field, excited spins, receive signal, and a real reconstructed MR image">
+      <svg ref={svgRef} viewBox="0 0 760 520" role="img" aria-label="MRI field, excited spins, receive signal, and a real reconstructed MR image">
         <defs>
           <radialGradient id="landing-mri-bore"><stop stopColor="#09121d" /><stop offset=".67" stopColor="#172135" /><stop offset="1" stopColor="#566176" /></radialGradient>
           <filter id="landing-mri-glow"><feGaussianBlur stdDeviation="9" /></filter>
@@ -356,21 +362,30 @@ function DataLandingVisual({ volume }: { volume: Int16Array | null }) {
   )
 }
 
-function LandingVisual({ modality, ctPixels, ctVolume }: { modality: Modality; ctPixels: Int16Array | null; ctVolume: Int16Array | null }) {
+function LandingVisual({ modality, ctPixels, ctVolume, active }: { modality: Modality; ctPixels: Int16Array | null; ctVolume: Int16Array | null; active: boolean }) {
   if (modality === 'xray') return <XrayLandingVisual />
-  if (modality === 'ct') return <CtLandingVisual volume={ctVolume} />
-  if (modality === 'windowing') return <WindowingLandingVisual pixels={ctPixels} />
-  if (modality === 'mri') return <MriLandingVisual />
+  if (modality === 'ct') return <CtLandingVisual volume={ctVolume} active={active} />
+  if (modality === 'windowing') return <WindowingLandingVisual pixels={ctPixels} active={active} />
+  if (modality === 'mri') return <MriLandingVisual active={active} />
   return <DataLandingVisual volume={ctVolume} />
 }
 
 export default function LandingPage({ onActiveChange, onOpenModule }: LandingPageProps) {
   const sectionRefs = useRef<Array<HTMLElement | null>>([])
   const activeRef = useRef<Modality | null>(null)
+  const [focusedModality, setFocusedModality] = useState<Modality | null>(null)
+  const [loadedModalities, setLoadedModalities] = useState<Set<Modality>>(() => (
+    typeof window !== 'undefined' && typeof window.IntersectionObserver !== 'function'
+      ? new Set(showcases.map((showcase) => showcase.id))
+      : new Set()
+  ))
   const [ctPixels, setCtPixels] = useState<Int16Array | null>(null)
   const [ctVolume, setCtVolume] = useState<Int16Array | null>(null)
+  const windowingLoaded = loadedModalities.has('windowing')
+  const volumeNeeded = loadedModalities.has('ct') || loadedModalities.has('image-data')
 
   useEffect(() => {
+    if (!windowingLoaded) return undefined
     const controller = new AbortController()
     fetch(ctSliceUrl, { signal: controller.signal })
       .then((response) => {
@@ -382,9 +397,10 @@ export default function LandingPage({ onActiveChange, onOpenModule }: LandingPag
         if (!(error instanceof DOMException && error.name === 'AbortError')) console.error(error)
       })
     return () => controller.abort()
-  }, [])
+  }, [windowingLoaded])
 
   useEffect(() => {
+    if (!volumeNeeded) return undefined
     const controller = new AbortController()
     fetch(ctVolumeUrl, { signal: controller.signal })
       .then((response) => {
@@ -396,6 +412,24 @@ export default function LandingPage({ onActiveChange, onOpenModule }: LandingPag
         if (!(error instanceof DOMException && error.name === 'AbortError')) console.error(error)
       })
     return () => controller.abort()
+  }, [volumeNeeded])
+
+  useEffect(() => {
+    if (typeof window.IntersectionObserver !== 'function') return undefined
+
+    const observer = new window.IntersectionObserver((entries) => {
+      const nearby = entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target.getAttribute('data-modality') as Modality)
+      if (nearby.length === 0) return
+      setLoadedModalities((current) => {
+        if (nearby.every((modality) => current.has(modality))) return current
+        const next = new Set(current)
+        nearby.forEach((modality) => next.add(modality))
+        return next
+      })
+    }, { rootMargin: '0px', threshold: 0.01 })
+
+    sectionRefs.current.forEach((section) => { if (section) observer.observe(section) })
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
@@ -433,6 +467,7 @@ export default function LandingPage({ onActiveChange, onOpenModule }: LandingPag
 
       if (activeRef.current !== nextActive) {
         activeRef.current = nextActive
+        setFocusedModality(nextActive)
         onActiveChange(nextActive)
       }
     }
@@ -480,7 +515,7 @@ export default function LandingPage({ onActiveChange, onOpenModule }: LandingPag
               ref={(node) => { sectionRefs.current[index] = node }}
               key={showcase.id}
               id={`landing-${showcase.id}`}
-              className={`landing-showcase landing-showcase-${showcase.id}`}
+              className={`landing-showcase landing-showcase-${showcase.id}${focusedModality === showcase.id ? ' is-focused' : ''}`}
               style={style}
               data-modality={showcase.id}
             >
@@ -499,7 +534,7 @@ export default function LandingPage({ onActiveChange, onOpenModule }: LandingPag
                 </div>
                 <div className="landing-visual-shell">
                   <div className="landing-visual-grid" aria-hidden="true" />
-                  <LandingVisual modality={showcase.id} ctPixels={ctPixels} ctVolume={ctVolume} />
+                  {loadedModalities.has(showcase.id) && <LandingVisual modality={showcase.id} ctPixels={ctPixels} ctVolume={ctVolume} active={focusedModality === showcase.id} />}
                   <div className="landing-visual-caption"><span />{showcase.sequence.join(' · ')}</div>
                 </div>
               </div>

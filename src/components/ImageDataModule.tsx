@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ComponentType, CSSProperties, KeyboardEvent, PointerEvent, SVGProps } from 'react'
 import { Binary, Braces, Database, ExternalLink, FileStack, Move3d, Scan, Waypoints } from 'lucide-react'
+import { useDocumentVisible, useInViewport } from '../hooks/useInViewport'
 import AnatomicalPlanesScene from './AnatomicalPlanesScene'
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
@@ -590,13 +591,17 @@ function OriginAsset() {
 }
 
 function DirectionAsset() {
+  const assetRef = useRef<HTMLElement>(null)
   const [angle, setAngle] = useState(30)
   const [flipI, setFlipI] = useState(false)
   const [animationPlaying, setAnimationPlaying] = useState(true)
   const animationPhase = useRef(Math.asin(30 / 35))
+  const inViewport = useInViewport(assetRef, { threshold: 0.02 })
+  const documentVisible = useDocumentVisible()
+  const renderActive = inViewport && documentVisible
 
   useEffect(() => {
-    if (!animationPlaying) return
+    if (!animationPlaying || !renderActive) return
     let frame = 0
     let previousTime: number | undefined
     const tick = (time: number) => {
@@ -609,7 +614,7 @@ function DirectionAsset() {
     }
     frame = window.requestAnimationFrame(tick)
     return () => window.cancelAnimationFrame(frame)
-  }, [animationPlaying])
+  }, [animationPlaying, renderActive])
 
   const selectAngle = (nextAngle: number) => {
     setAnimationPlaying(false)
@@ -658,7 +663,7 @@ function DirectionAsset() {
   })
 
   return (
-    <section className="image-data-asset glass-panel" aria-labelledby="direction-asset-title">
+    <section ref={assetRef} className="image-data-asset glass-panel" aria-labelledby="direction-asset-title">
       <AssetHeader id="direction-asset-title" eyebrow="Core concept" title="Direction tells each image axis where to point" description="The array still uses i, j, and k; the direction matrix relates those axes to physical X, Y, and Z." />
       <div className="image-data-chapter-teaching">
         <section>

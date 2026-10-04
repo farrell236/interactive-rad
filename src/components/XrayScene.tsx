@@ -1,13 +1,9 @@
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, Line, MeshReflectorMaterial, OrbitControls, RoundedBox, useGLTF } from '@react-three/drei'
-import { Pathtracer, usePathtracer } from '@react-three/gpu-pathtracer'
-import { Bloom, DepthOfField, EffectComposer, N8AO, SMAA } from '@react-three/postprocessing'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import type { ComponentRef, RefObject } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import * as THREE from 'three'
-import { DenoiseMaterial } from 'three-gpu-pathtracer'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
-import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js'
 import { getProjectionGeometry, getScenePatientCenterX, getSceneSidGeometry } from '../simulation/xray'
 import type { CameraPreset, ExposurePhase, XraySettings } from '../types'
 import type { RtBackend } from '../rendering/rtBackend'
@@ -20,8 +16,8 @@ const CAMERA_POSITIONS: Record<CameraPreset, [number, number, number]> = {
   Detector: [4.15, 1.35, 7.2],
 }
 
-const RT_MIN_SAMPLES = 8
-const RT_MAX_SAMPLES = 256
+const HighQualityEffects = lazy(() => import('./XrayHighQualityEffects'))
+const RayTracingBackend = lazy(() => import('./XrayRayTracingBackend'))
 
 function setRendererExposure(renderer: THREE.WebGLRenderer, exposure: number) {
   renderer.toneMappingExposure = exposure
@@ -1094,135 +1090,11 @@ function AcquisitionGeometry({ settings, phase, rayTracing }: { settings: XraySe
   )
 }
 
-const FOCUS_BY_CAMERA: Record<CameraPreset, { distance: number; range: number }> = {
-  Room: { distance: 12.5, range: 7 },
-  Beam: { distance: 9.4, range: 5 },
-  Patient: { distance: 6.2, range: 3.8 },
-  Detector: { distance: 8.2, range: 4.8 },
-}
-
-function HighQualityEffects({ cameraPreset }: { cameraPreset: CameraPreset }) {
-  const focus = FOCUS_BY_CAMERA[cameraPreset]
-  return (
-    <EffectComposer multisampling={0} resolutionScale={0.9}>
-      <N8AO halfRes={false} quality="high" aoRadius={0.42} intensity={1.05} distanceFalloff={0.85} denoiseRadius={5} />
-      <Bloom mipmapBlur intensity={0.28} luminanceThreshold={0.82} luminanceSmoothing={0.24} radius={0.72} />
-      <DepthOfField worldFocusDistance={focus.distance} worldFocusRange={focus.range} bokehScale={0.62} resolutionScale={0.65} />
-      <SMAA />
-    </EffectComposer>
-  )
-}
-
-function PathTracingSynchronizer({ geometryVersion, materialVersion, statusRef, backend }: { geometryVersion: string; materialVersion: string; statusRef: RefObject<HTMLDivElement | null>; backend: RtBackend }) {
-  const { pathtracer, update } = usePathtracer()
-  const initialGeometry = useRef(true)
-  const previousCamera = useRef(new THREE.Matrix4())
-  const nextStatusUpdate = useRef(0)
-
-  useEffect(() => {
-    if (initialGeometry.current) {
-      initialGeometry.current = false
-      return
-    }
-    const frame = window.requestAnimationFrame(update)
-    return () => window.cancelAnimationFrame(frame)
-  }, [geometryVersion, update])
-
-  useEffect(() => {
-    pathtracer.updateMaterials()
-    pathtracer.reset()
-  }, [materialVersion, pathtracer])
-
-  useFrame(({ camera, clock }) => {
-    camera.updateMatrixWorld()
-    if (!previousCamera.current.equals(camera.matrixWorld)) {
-      previousCamera.current.copy(camera.matrixWorld)
-      pathtracer.updateCamera()
-    }
-    if (statusRef.current && clock.elapsedTime >= nextStatusUpdate.current) {
-      const samples = Math.floor(pathtracer.samples)
-      const backendLabel = backend === 'webgpu' ? 'WebGPU RT' : 'WebGL RT'
-      statusRef.current.textContent = samples < RT_MIN_SAMPLES
-        ? `${backendLabel} · warming · ${samples}/${RT_MIN_SAMPLES} spp`
-        : samples >= RT_MAX_SAMPLES
-          ? `${backendLabel} · ready · ${samples} spp`
-          : `${backendLabel} · resolving · ${samples} spp`
-      nextStatusUpdate.current = clock.elapsedTime + 0.25
-    }
-  }, 0)
-
-  return null
-}
-
-function WebGlRayTracingRenderer({ settings, phase, cameraPreset, statusRef }: { settings: XraySettings; phase: ExposurePhase; cameraPreset: CameraPreset; statusRef: RefObject<HTMLDivElement | null> }) {
-  const tracer = useRef<ComponentRef<typeof Pathtracer>>(null)
-  const geometryVersion = `${settings.projection}:${settings.rotation}:${settings.sid}:${settings.collimation}:${settings.thickness}:${cameraPreset}`
-  const materialVersion = `${phase}:${settings.kvp}:${settings.mas}`
-
-  useEffect(() => {
-    const pathtracer = tracer.current
-    if (!pathtracer) return
-    pathtracer.multipleImportanceSampling = true
-    pathtracer.transmissiveBounces = 3
-    pathtracer.filterGlossyFactor = 1.25
-
-    const denoiseMaterial = new DenoiseMaterial({
-      sigma: 1.25,
-      kSigma: 1,
-      threshold: 10,
-    })
-    denoiseMaterial.transparent = true
-    denoiseMaterial.blending = THREE.NormalBlending
-    const denoiseQuad = new FullScreenQuad(denoiseMaterial)
-    const defaultCanvasRenderer = pathtracer.renderToCanvasCallback
-
-    pathtracer.renderToCanvasCallback = (target, renderer, interpolationQuad) => {
-      const previousAutoClear = renderer.autoClear
-      if (pathtracer.scene && pathtracer.camera) pathtracer.rasterizeSceneCallback(pathtracer.scene, pathtracer.camera)
-      renderer.autoClear = false
-      denoiseMaterial.map = target.texture
-      denoiseMaterial.opacity = Math.min(interpolationQuad.material.opacity, 0.3)
-      denoiseQuad.render(renderer)
-      renderer.autoClear = previousAutoClear
-    }
-
-    return () => {
-      pathtracer.renderToCanvasCallback = defaultCanvasRenderer
-      denoiseQuad.dispose()
-      denoiseMaterial.dispose()
-      pathtracer.dispose()
-    }
-  }, [])
-
-  return (
-    <Pathtracer
-      ref={tracer}
-      samples={RT_MAX_SAMPLES}
-      minSamples={RT_MIN_SAMPLES}
-      bounces={4}
-      tiles={[1, 1]}
-      resolutionFactor={0.48}
-      renderDelay={120}
-      fadeDuration={1800}
-      dynamicLowRes={false}
-      rasterizeScene
-    >
-      <PathTracingSynchronizer geometryVersion={geometryVersion} materialVersion={materialVersion} statusRef={statusRef} backend="webgl2" />
-    </Pathtracer>
-  )
-}
-
-function RayTracingBackend({ backend, settings, phase, cameraPreset, statusRef }: { backend: RtBackend; settings: XraySettings; phase: ExposurePhase; cameraPreset: CameraPreset; statusRef: RefObject<HTMLDivElement | null> }) {
-  // Backend selection lives above the scene. Until the WebGPU implementation
-  // reaches feature parity, the selector can only resolve to the stable tracer.
-  if (backend !== 'webgl2') return null
-  return <WebGlRayTracingRenderer settings={settings} phase={phase} cameraPreset={cameraPreset} statusRef={statusRef} />
-}
-
-export function XrayScene({ settings, phase, cameraPreset, renderMode, rtBackend, rtStatusRef }: { settings: XraySettings; phase: ExposurePhase; cameraPreset: CameraPreset; renderMode: 'standard' | 'hq' | 'rt'; rtBackend: RtBackend | null; rtStatusRef: RefObject<HTMLDivElement | null> }) {
+export function XrayScene({ settings, phase, cameraPreset, renderMode, rtBackend, rtStatusRef, renderActive = true }: { settings: XraySettings; phase: ExposurePhase; cameraPreset: CameraPreset; renderMode: 'standard' | 'hq' | 'rt'; rtBackend: RtBackend | null; rtStatusRef: RefObject<HTMLDivElement | null>; renderActive?: boolean }) {
   const highQuality = renderMode === 'hq'
   const rayTracing = renderMode === 'rt'
   const [rayTracerMounted, setRayTracerMounted] = useState(false)
+  const [completedRayTraceVersion, setCompletedRayTraceVersion] = useState('')
   const { sourceX, detectorFaceX } = getSceneSidGeometry(settings.sid)
   const patientCenterX = getScenePatientCenterX(settings)
   const systemCenterX = (sourceX + detectorFaceX) / 2
@@ -1232,6 +1104,10 @@ export function XrayScene({ settings, phase, cameraPreset, renderMode, rtBackend
       ? detectorFaceX
       : systemCenterX
   const cameraTargetY = cameraPreset === 'Room' ? 2.7 : settings.projection === 'Lateral' && cameraPreset === 'Patient' ? 0.84 : 0.62
+  const rtGeometryVersion = `${settings.projection}:${settings.rotation}:${settings.sid}:${settings.collimation}:${settings.thickness}:${cameraPreset}`
+  const rtMaterialVersion = `${phase}:${settings.kvp}:${settings.mas}`
+  const rayTraceVersion = `${rtGeometryVersion}:${rtMaterialVersion}`
+  const rayTracingComplete = completedRayTraceVersion === rayTraceVersion
 
   useEffect(() => {
     const timer = window.setTimeout(() => setRayTracerMounted(rayTracing), rayTracing ? 90 : 0)
@@ -1243,7 +1119,7 @@ export function XrayScene({ settings, phase, cameraPreset, renderMode, rtBackend
       dpr={[1, rayTracing ? 1.35 : highQuality ? 1.8 : 1.35]}
       camera={{ position: CAMERA_POSITIONS.Room, fov: 43, near: 0.1, far: 100 }}
       shadows
-      frameloop={rayTracing ? 'always' : 'demand'}
+      frameloop={rayTracing && renderActive && !rayTracingComplete ? 'always' : 'demand'}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping
@@ -1276,8 +1152,18 @@ export function XrayScene({ settings, phase, cameraPreset, renderMode, rtBackend
       <RendererTuning rayTracing={rayTracing} />
       <CameraRig preset={cameraPreset} lateral={settings.projection === 'Lateral'} targetX={cameraTargetX} />
       <OrbitControls makeDefault target={[cameraTargetX, cameraTargetY, 0]} enablePan={false} minDistance={4} maxDistance={16} minPolarAngle={0.42} maxPolarAngle={1.55} />
-      {highQuality && <HighQualityEffects cameraPreset={cameraPreset} />}
-      {rayTracing && rayTracerMounted && rtBackend && <RayTracingBackend backend={rtBackend} settings={settings} phase={phase} cameraPreset={cameraPreset} statusRef={rtStatusRef} />}
+      {highQuality && <Suspense fallback={null}><HighQualityEffects cameraPreset={cameraPreset} /></Suspense>}
+      {rayTracing && rayTracerMounted && rtBackend && (
+        <Suspense fallback={null}>
+          <RayTracingBackend
+            backend={rtBackend}
+            geometryVersion={rtGeometryVersion}
+            materialVersion={rtMaterialVersion}
+            statusRef={rtStatusRef}
+            onComplete={() => setCompletedRayTraceVersion(rayTraceVersion)}
+          />
+        </Suspense>
+      )}
     </Canvas>
   )
 }

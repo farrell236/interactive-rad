@@ -3,6 +3,8 @@ import type { CSSProperties } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import volumeUrl from '../assets/ct/lidc-idri-0001-chest-192x192x133-hu16le.bin?url'
 import volumeMetadata from '../assets/ct/lidc-idri-0001-chest-volume.json'
+import { useCtSliceImageDataUrl } from '../lib/ctSliceImage'
+import { useDocumentVisible, useInViewport } from '../hooks/useInViewport'
 import { ctRangeProgressStyle } from '../lib/rangeProgress'
 import CtScannerScene from './CtScannerScene'
 
@@ -10,6 +12,7 @@ const WINDOW_CENTER = -500
 const WINDOW_WIDTH = 1500
 const BASE_ROTATIONS = 9
 const LOOP_END_PAUSE_MS = 450
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
 type SliceCanvasProps = {
   volume: Int16Array | null
@@ -75,6 +78,21 @@ function SliceCanvas({ volume, width, height, depth, sliceIndex, averageDepth, l
   )
 }
 
+function StackSliceImage({ volume, width, height, depth, sliceIndex, averageDepth, className, style }: SliceCanvasProps) {
+  const src = useCtSliceImageDataUrl(volume, {
+    width,
+    height,
+    depth,
+    sliceIndex,
+    averageDepth,
+    center: WINDOW_CENTER,
+    windowWidth: WINDOW_WIDTH,
+    tint: [0.93, 0.98, 1],
+  })
+
+  return <img src={src || TRANSPARENT_PIXEL} width={width} height={height} alt="" aria-hidden="true" className={className} style={style} />
+}
+
 function stackSliceIndices(firstSlice: number, currentSlice: number, sliceStep: number) {
   const availablePlanes = Math.max(1, Math.floor((currentSlice - firstSlice) / sliceStep) + 1)
   return Array.from({ length: availablePlanes }, (_, index) => firstSlice + (index * sliceStep))
@@ -91,6 +109,9 @@ export default function CtVolumeAcquisition() {
   const [pitch, setPitch] = useState(1)
   const [sliceThickness, setSliceThickness] = useState(volumeMetadata.sliceSpacingMm)
   const progressRef = useRef(progress)
+  const nearViewport = useInViewport(experienceRef, { rootMargin: '800px', threshold: 0.01, once: true, initial: false })
+  const inViewport = useInViewport(experienceRef, { threshold: 0.16 })
+  const documentVisible = useDocumentVisible()
 
   const pixelsPerSlice = volumeMetadata.width * volumeMetadata.height
   const loadedDepth = volume ? Math.min(volumeMetadata.depth, Math.floor(volume.length / pixelsPerSlice)) : volumeMetadata.depth
@@ -117,6 +138,7 @@ export default function CtVolumeAcquisition() {
   const stackIndices = useMemo(() => stackSliceIndices(firstScanSlice, currentSlice, sliceStep), [currentSlice, firstScanSlice, sliceStep])
 
   useEffect(() => {
+    if (!nearViewport) return undefined
     const controller = new AbortController()
 
     fetch(volumeUrl, { signal: controller.signal })
@@ -131,32 +153,27 @@ export default function CtVolumeAcquisition() {
       })
 
     return () => controller.abort()
-  }, [])
+  }, [nearViewport])
 
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
 
   useEffect(() => {
-    const element = experienceRef.current
-    if (!element || typeof window.IntersectionObserver !== 'function') return
-
-    const observer = new window.IntersectionObserver((entries) => {
-      if (!entries[0]?.isIntersecting || hasAutoStartedRef.current) return
+    const visible = inViewport && documentVisible
+    if (visible && !hasAutoStartedRef.current) {
       hasAutoStartedRef.current = true
       progressRef.current = 0
       setProgress(0)
-      setIsPlaying(true)
-    }, { threshold: 0.16 })
-
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
+    }
+    if (hasAutoStartedRef.current) setIsPlaying(visible)
+  }, [documentVisible, inViewport])
 
   useEffect(() => {
     if (!isPlaying || typeof window.requestAnimationFrame !== 'function') return
     let frame = 0
     let previous = performance.now()
+    let lastCommittedAt = 0
     let loopCompletedAt: number | null = null
     const duration = Math.max(1.8, rotations * rotationTime)
 
@@ -180,7 +197,10 @@ export default function CtVolumeAcquisition() {
       previous = time
       const next = Math.min(1, progressRef.current + (elapsed / duration))
       progressRef.current = next
-      setProgress(next)
+      if (time - lastCommittedAt >= 1000 / 30 || next >= 1) {
+        lastCommittedAt = time
+        setProgress(next)
+      }
       if (next >= 1) {
         loopCompletedAt = time
         frame = window.requestAnimationFrame(animate)
@@ -286,20 +306,32 @@ export default function CtVolumeAcquisition() {
             <div className="ct-volume-stack-stage" role="img" aria-label={`Growing CT volume with ${reconstructedSlices} of ${totalReconstructedSlices} displayed slices acquired`}>
               <div className="ct-volume-stack">
                 {stackIndices.map((sliceIndex, layer) => (
-                  <SliceCanvas
-                    key={`${sliceIndex}-${sliceStep}`}
-                    volume={volume}
-                    width={volumeMetadata.width}
-                    height={volumeMetadata.height}
-                    depth={loadedDepth}
-                    sliceIndex={sliceIndex}
-                    averageDepth={sliceStep}
-                    decorative
-                    className={sliceIndex === currentReconstructionSlice ? 'is-current' : ''}
-                    style={{
-                      '--stack-offset': layer * stackLayerInterval,
-                    } as CSSProperties}
-                  />
+                  sliceIndex === currentReconstructionSlice ? (
+                    <SliceCanvas
+                      key={`${sliceIndex}-${sliceStep}`}
+                      volume={volume}
+                      width={volumeMetadata.width}
+                      height={volumeMetadata.height}
+                      depth={loadedDepth}
+                      sliceIndex={sliceIndex}
+                      averageDepth={sliceStep}
+                      decorative
+                      className="is-current"
+                      style={{ '--stack-offset': layer * stackLayerInterval } as CSSProperties}
+                    />
+                  ) : (
+                    <StackSliceImage
+                      key={`${sliceIndex}-${sliceStep}`}
+                      volume={volume}
+                      width={volumeMetadata.width}
+                      height={volumeMetadata.height}
+                      depth={loadedDepth}
+                      sliceIndex={sliceIndex}
+                      averageDepth={sliceStep}
+                      decorative
+                      style={{ '--stack-offset': layer * stackLayerInterval } as CSSProperties}
+                    />
+                  )
                 ))}
               </div>
               <div className="ct-volume-stack-axis" aria-hidden="true"><span>Inferior</span><i /><span>Superior</span></div>

@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react'
 import { MriScannerField3d } from './MriScannerField3d'
 import { MriSpinEnsemble3d } from './MriSpinEnsemble3d'
 import { getMriClockSeconds, getMriPulseCyclePhase, isMriRfActive, MRI_READOUT_END, MRI_RF_END } from './mriPulseCycle'
+import { useDocumentVisible, useInViewport } from '../hooks/useInViewport'
 
 type SignalStageId = 'hydrogen' | 'random' | 'align' | 'cycle'
 
@@ -47,8 +48,13 @@ function useCyclePhase(active: boolean, cycleStartedAt: number) {
     if (!active) return undefined
 
     let frame = 0
+    let lastCommittedAt = 0
     const update = () => {
-      setPhase(getMriPulseCyclePhase(cycleStartedAt))
+      const now = performance.now()
+      if (document.visibilityState !== 'hidden' && now - lastCommittedAt >= 1000 / 30) {
+        lastCommittedAt = now
+        setPhase(getMriPulseCyclePhase(cycleStartedAt))
+      }
       frame = window.requestAnimationFrame(update)
     }
     update()
@@ -58,15 +64,14 @@ function useCyclePhase(active: boolean, cycleStartedAt: number) {
   return active ? phase : 0
 }
 
-function ScannerState({ stage, cycleStartedAt }: { stage: SignalStageId; cycleStartedAt: number }) {
+function ScannerState({ stage, cycleStartedAt, cyclePhase, renderActive }: { stage: SignalStageId; cycleStartedAt: number; cyclePhase: number; renderActive: boolean }) {
   const fieldActive = stage === 'align' || stage === 'cycle'
-  const cyclePhase = useCyclePhase(stage === 'cycle', cycleStartedAt)
   const rfActive = stage === 'cycle' && isMriRfActive(cyclePhase)
   return (
     <section className={`mri-sequence-scanner is-${stage}`} aria-label="MRI scanner field state">
       <header><span>Scanner fields</span><small>{fieldActive ? 'B₀ active' : stage === 'random' ? 'Conceptual state before B₀' : 'Nucleus before the field model'}</small></header>
       <div className={`mri-sequence-scanner-visual${fieldActive ? ' is-b0-active' : ''}${rfActive ? ' is-rf-active' : ''}`}>
-        <MriScannerField3d fieldActive={fieldActive} pulseActive={stage === 'cycle'} cycleStartedAt={cycleStartedAt} />
+        <MriScannerField3d fieldActive={fieldActive} pulseActive={stage === 'cycle'} cycleStartedAt={cycleStartedAt} renderActive={renderActive} />
         <div className="mri-field-key" aria-hidden="true"><span className="is-b0">B₀</span><span className="is-rf">RF · B₁</span></div>
       </div>
       <p>{stage === 'hydrogen' ? 'Hydrogen supplies the measurable nuclei.' : stage === 'random' ? 'The moments have no preferred direction.' : stage === 'align' ? 'The main magnet establishes equilibrium.' : 'B₀ remains active while transmission and reception alternate.'}</p>
@@ -85,8 +90,7 @@ function buildFidPath() {
 
 const fidPath = buildFidPath()
 
-function DetectorReadout({ stage, cycleStartedAt }: { stage: SignalStageId; cycleStartedAt: number }) {
-  const cyclePhase = useCyclePhase(stage === 'cycle', cycleStartedAt)
+function DetectorReadout({ stage, cyclePhase }: { stage: SignalStageId; cyclePhase: number }) {
   const rfActive = stage === 'cycle' && isMriRfActive(cyclePhase)
   const recording = stage === 'cycle' && cyclePhase >= MRI_RF_END && cyclePhase < MRI_READOUT_END
   const waiting = stage === 'cycle' && !rfActive && !recording
@@ -116,15 +120,20 @@ function DetectorReadout({ stage, cycleStartedAt }: { stage: SignalStageId; cycl
   )
 }
 
-function SignalSequence({ stage, cycleStartedAt }: { stage: SignalStageId; cycleStartedAt: number }) {
-  return <div className={`mri-sequence-stage is-${stage}`}><ScannerState stage={stage} cycleStartedAt={cycleStartedAt} /><MriSpinEnsemble3d stage={stage} cycleStartedAt={cycleStartedAt} /><DetectorReadout stage={stage} cycleStartedAt={cycleStartedAt} /></div>
+function SignalSequence({ stage, cycleStartedAt, cyclePhase, renderActive }: { stage: SignalStageId; cycleStartedAt: number; cyclePhase: number; renderActive: boolean }) {
+  return <div className={`mri-sequence-stage is-${stage}`}><ScannerState stage={stage} cycleStartedAt={cycleStartedAt} cyclePhase={cyclePhase} renderActive={renderActive} /><MriSpinEnsemble3d stage={stage} cycleStartedAt={cycleStartedAt} cyclePhase={cyclePhase} renderActive={renderActive} /><DetectorReadout stage={stage} cyclePhase={cyclePhase} /></div>
 }
 
 export function MriSignalSequenceLesson() {
   const [stageIndex, setStageIndex] = useState(0)
   const [cycleStartedAt, setCycleStartedAt] = useState(getMriClockSeconds)
+  const sequenceRef = useRef<HTMLElement>(null)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   const stage = signalStages[stageIndex] ?? signalStages[0]
+  const inViewport = useInViewport(sequenceRef, { threshold: 0.02 })
+  const documentVisible = useDocumentVisible()
+  const renderActive = inViewport && documentVisible
+  const cyclePhase = useCyclePhase(stage.id === 'cycle' && renderActive, cycleStartedAt)
 
   const selectStage = (nextIndex: number, focus = false) => {
     if (signalStages[nextIndex]?.id === 'cycle') setCycleStartedAt(getMriClockSeconds())
@@ -144,7 +153,7 @@ export function MriSignalSequenceLesson() {
   }
 
   return (
-    <section className="mri-signal-cycle" aria-labelledby="mri-signal-cycle-title">
+    <section ref={sequenceRef} className="mri-signal-cycle" aria-labelledby="mri-signal-cycle-title">
       <header><div><span>Core concept</span><h4 id="mri-signal-cycle-title">Follow the MR signal</h4><p>Hydrogen in the patient supplies magnetic moments. Use the synchronized scanner, spin-ensemble, and voltage views to follow how <strong>B₀</strong> creates a small <strong>net magnetization</strong>, an <strong>RF pulse</strong> produces transverse coherence, and <strong>receive coils</strong> record the decaying response as complex voltage while the system recovers. Repeating the experiment with <strong>spatial encoding</strong> fills <strong>k-space</strong>; a <strong>Fourier transform</strong> reconstructs the image. The first three tabs build this model conceptually; <strong>B₀</strong> remains continuously active during an actual examination.</p></div></header>
       <div className="mri-signal-tabs" role="tablist" aria-label="MRI signal sequence">
         {signalStages.map((item, index) => (
@@ -154,7 +163,7 @@ export function MriSignalSequenceLesson() {
         ))}
       </div>
       <div id="mri-signal-sequence-panel" role="tabpanel" aria-labelledby={`mri-signal-tab-${stage.id}`}>
-        <SignalSequence stage={stage.id} cycleStartedAt={cycleStartedAt} />
+        <SignalSequence stage={stage.id} cycleStartedAt={cycleStartedAt} cyclePhase={cyclePhase} renderActive={renderActive} />
         <div className="mri-sequence-caption" aria-live="polite"><span>{String(stageIndex + 1).padStart(2, '0')}</span><div><strong>{stage.title}</strong><p>{stage.copy}</p></div></div>
       </div>
       <footer className="mri-primary-asset-credit">

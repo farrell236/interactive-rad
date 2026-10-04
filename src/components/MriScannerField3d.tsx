@@ -208,12 +208,13 @@ function Scene({ fieldActive, pulseActive, cycleStartedAt }: { fieldActive: bool
   )
 }
 
-export function MriScannerField3d({ fieldActive, pulseActive = false, cycleStartedAt }: { fieldActive: boolean; pulseActive?: boolean; cycleStartedAt: number }) {
+export function MriScannerField3d({ fieldActive, pulseActive = false, cycleStartedAt, renderActive = true }: { fieldActive: boolean; pulseActive?: boolean; cycleStartedAt: number; renderActive?: boolean }) {
   return (
     <Canvas
       dpr={[1, 1.5]}
       camera={{ position: [3.77, 4.85, 3.18], fov: 32, near: 0.05, far: 30 }}
       shadows
+      frameloop={renderActive ? 'always' : 'demand'}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       aria-hidden="true"
     >

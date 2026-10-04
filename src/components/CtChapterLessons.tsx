@@ -5,7 +5,6 @@ import { OrbitControls, OrthographicCamera, useGLTF } from '@react-three/drei'
 import { Lock, LockOpen, Pause, Play, RotateCcw } from 'lucide-react'
 import * as THREE from 'three'
 import ctSliceUrl from '../assets/ct/lidc-idri-0001-i060-hu16le.bin?url'
-import { getCtProjectionModel, simulateCtProjectionNoise } from '../lib/ctProjectionNoise'
 import type { CtKernel } from '../lib/ctProjectionNoise'
 import { ctRangeProgressStyle } from '../lib/rangeProgress'
 
@@ -234,7 +233,6 @@ function ConeBeamIntersectionScene() {
   )
 }
 
-useGLTF.preload(CONE_BEAM_MODEL_URL)
 
 export function CtScannerGeometryLesson() {
   const [mode, setMode] = useState<'axial' | 'helical'>('helical')
@@ -715,14 +713,10 @@ function useProtocolCtPixels() {
   return { pixels, loadError }
 }
 
-function ProtocolImage({ mas, pitch, thickness, kernel, label }: { mas: number; pitch: number; thickness: number; kernel: Kernel; label: string }) {
+type ProtocolSimulation = { hu: Float32Array; size: number; incidentPhotons: number }
+
+function ProtocolImage({ simulation, loadError, label }: { simulation: ProtocolSimulation | null; loadError: boolean; label: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { pixels, loadError } = useProtocolCtPixels()
-  const simulation = useMemo(() => {
-    if (!pixels) return null
-    const model = getCtProjectionModel(pixels)
-    return { ...simulateCtProjectionNoise(model, mas, pitch, thickness, kernel), size: model.imageSize }
-  }, [kernel, mas, pitch, pixels, thickness])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -756,12 +750,53 @@ export function CtProtocolLesson() {
   const [pitch, setPitch] = useState(1)
   const [thickness, setThickness] = useState(2.5)
   const [kernel, setKernel] = useState<Kernel>('standard')
+  const { pixels, loadError } = useProtocolCtPixels()
+  const workerRef = useRef<Worker | null>(null)
+  const requestIdRef = useRef(0)
+  const [workerReady, setWorkerReady] = useState(false)
+  const [protocolSimulations, setProtocolSimulations] = useState<Record<string, ProtocolSimulation>>({})
   const kernelNoise = { smooth: 0.72, standard: 1, sharp: 1.42 }[kernel]
   const kernelDetail = { smooth: 0.76, standard: 1, sharp: 1.22 }[kernel]
   const noiseIndex = clamp(36 * Math.sqrt(120 / mas) * Math.sqrt(2.5 / thickness) * kernelNoise, 8, 98)
   const detailIndex = clamp(52 * Math.sqrt(2.5 / thickness) * kernelDetail, 20, 98)
   const relativeOutput = clamp((mas / 120) / pitch * 100, 18, 250)
   const incidentPhotons = Math.round(clamp(65536 * (mas / 120) * (1 / pitch) * (thickness / 2.5), 2048, 1048576))
+
+  useEffect(() => {
+    if (!pixels || typeof Worker === 'undefined') return undefined
+    const worker = new Worker(new URL('../workers/ctProtocolWorker.ts', import.meta.url), { type: 'module' })
+    workerRef.current = worker
+    worker.onmessage = (event: MessageEvent<{ type: 'ready' } | { type: 'result'; requestId: number; results: Array<ProtocolSimulation & { id: string }> }>) => {
+      if (event.data.type === 'ready') {
+        setWorkerReady(true)
+        return
+      }
+      if (event.data.requestId !== requestIdRef.current) return
+      setProtocolSimulations(Object.fromEntries(event.data.results.map((result) => [result.id, result])))
+    }
+    const copy = pixels.slice()
+    worker.postMessage({ type: 'init', pixels: copy }, [copy.buffer])
+    return () => {
+      workerRef.current = null
+      worker.terminate()
+    }
+  }, [pixels])
+
+  useEffect(() => {
+    if (!workerReady || !workerRef.current) return undefined
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    const timer = window.setTimeout(() => workerRef.current?.postMessage({
+      type: 'simulate',
+      requestId,
+      configs: [
+        { id: 'current', mas, pitch, thickness, kernel },
+        { id: 'smooth', mas: 120, pitch: 1, thickness: 2.5, kernel: 'smooth' },
+        { id: 'sharp', mas: 120, pitch: 1, thickness: 2.5, kernel: 'sharp' },
+      ],
+    }), 70)
+    return () => window.clearTimeout(timer)
+  }, [kernel, mas, pitch, thickness, workerReady])
 
   return (
     <div className="ct-built-lesson ct-protocol-lesson">
@@ -775,7 +810,7 @@ export function CtProtocolLesson() {
             <div><span className="ct-control-label">Reconstruction kernel</span><div className="ct-segmented" aria-label="Reconstruction kernel">{(['smooth', 'standard', 'sharp'] as const).map((value) => <button key={value} type="button" aria-pressed={kernel === value} onClick={() => setKernel(value)}>{value[0].toUpperCase() + value.slice(1)}</button>)}</div></div>
           </div>
           <div className="ct-protocol-preview">
-            <ProtocolImage mas={mas} pitch={pitch} thickness={thickness} kernel={kernel} label={`Poisson-noisy reconstruction of a real LIDC-IDRI chest slice with ${mas} mAs, pitch ${pitch.toFixed(1)}, ${thickness} millimeter slices, and ${kernel} kernel`} />
+            <ProtocolImage simulation={protocolSimulations.current ?? null} loadError={loadError} label={`Poisson-noisy reconstruction of a real LIDC-IDRI chest slice with ${mas} mAs, pitch ${pitch.toFixed(1)}, ${thickness} millimeter slices, and ${kernel} kernel`} />
             <div className="ct-protocol-pipeline" role="group" aria-label="Noise simulation pipeline"><span>HU → μ</span><b>→</b><span>sinogram</span><b>→</b><span>Poisson counts</span><b>→</b><span>−ln(I / I₀)</span><b>→</b><span>FBP</span></div>
             <span>real LIDC-IDRI anatomy · W 1500 · C −500</span>
           </div>
@@ -791,9 +826,9 @@ export function CtProtocolLesson() {
       <section className="ct-built-card">
         <LessonHeader eyebrow="Reconstruction choice" title="Smooth and sharp kernels" copy="Both previews use the same real anatomy, Poisson-sampled projection data, and display window. Only the reconstruction response changes." />
         <div className="ct-kernel-comparison">
-          <figure><ProtocolImage mas={120} pitch={1} thickness={2.5} kernel="smooth" label="Smooth-kernel reconstruction of the LIDC-IDRI chest slice" /><figcaption><strong>Smooth</strong><span>Lower noise; softer edges and fine texture.</span></figcaption></figure>
+          <figure><ProtocolImage simulation={protocolSimulations.smooth ?? null} loadError={loadError} label="Smooth-kernel reconstruction of the LIDC-IDRI chest slice" /><figcaption><strong>Smooth</strong><span>Lower noise; softer edges and fine texture.</span></figcaption></figure>
           <div className="ct-edge-profile" aria-hidden="true"><span>edge response</span><svg viewBox="0 0 180 90"><path className="is-smooth" d="M 8 72 C 62 72 70 18 124 18 L 172 18" /><path className="is-sharp" d="M 8 72 L 88 72 L 92 12 L 97 22 L 172 22" /></svg></div>
-          <figure><ProtocolImage mas={120} pitch={1} thickness={2.5} kernel="sharp" label="Sharp-kernel reconstruction of the LIDC-IDRI chest slice" /><figcaption><strong>Sharp</strong><span>Stronger edges; more prominent noise and texture.</span></figcaption></figure>
+          <figure><ProtocolImage simulation={protocolSimulations.sharp ?? null} loadError={loadError} label="Sharp-kernel reconstruction of the LIDC-IDRI chest slice" /><figcaption><strong>Sharp</strong><span>Stronger edges; more prominent noise and texture.</span></figcaption></figure>
         </div>
       </section>
 

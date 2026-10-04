@@ -360,8 +360,3 @@ export default function CtScannerScene({ scanProgress = 0, gantryAngle = 0 }: Ct
     </section>
   )
 }
-
-Object.values(ROOM_MODELS).forEach((path) => useGLTF.preload(modelUrl(path)))
-useGLTF.preload(modelUrl('models/anatomy-body.glb'))
-useGLTF.preload(modelUrl('models/anatomy-skeleton.glb'))
-useGLTF.preload(modelUrl('models/anatomy-organs.glb'))

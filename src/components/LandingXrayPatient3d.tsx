@@ -106,7 +106,3 @@ export default function LandingXrayPatient3d() {
     </Canvas>
   )
 }
-
-useGLTF.preload(`${import.meta.env.BASE_URL}models/anatomy-body.glb`)
-useGLTF.preload(`${import.meta.env.BASE_URL}models/anatomy-skeleton.glb`)
-useGLTF.preload(`${import.meta.env.BASE_URL}models/anatomy-organs.glb`)

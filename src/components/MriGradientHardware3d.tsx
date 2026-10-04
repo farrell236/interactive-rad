@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, RoundedBox, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { useInViewport } from '../hooks/useInViewport'
 
 type HardwareView = 'all' | 'magnet' | 'rf' | 'receive' | 'x' | 'y' | 'z'
 
@@ -252,16 +253,20 @@ const gradientLabels: Record<HardwareView, string> = {
 
 export function MriGradientHardware3d() {
   const [selected, setSelected] = useState<HardwareView>('all')
+  const hardwareRef = useRef<HTMLDivElement>(null)
+  const shouldRender = useInViewport(hardwareRef, { rootMargin: '900px', threshold: 0.01, once: true, initial: false })
 
   return (
-    <div className="mri-gradient-hardware">
+    <div ref={hardwareRef} className="mri-gradient-hardware">
       <div className="mri-gradient-switch" role="group" aria-label="MRI scanner hardware layer">
         {(['all', 'magnet', 'rf', 'receive', 'x', 'y', 'z'] as const).map((layer) => <button key={layer} type="button" aria-pressed={selected === layer} onClick={() => setSelected(layer)}>{layer === 'all' ? 'All' : layer === 'magnet' ? 'Magnet' : layer === 'rf' ? 'Tx RF' : layer === 'receive' ? 'Rx' : `G${layer}`}</button>)}
       </div>
       <div className="mri-gradient-canvas" role="img" aria-label="Interactive three-dimensional MRI cutaway showing the main magnet, radiofrequency coil, gradient coils, patient, and table">
-        <Canvas dpr={[1, 1.5]} camera={{ position: [5.6, 3.75, 6.45], fov: 35, near: 0.05, far: 30 }} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} aria-hidden="true">
-          <GradientScene selected={selected} />
-        </Canvas>
+        {shouldRender && (
+          <Canvas dpr={[1, 1.5]} camera={{ position: [5.6, 3.75, 6.45], fov: 35, near: 0.05, far: 30 }} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} aria-hidden="true">
+            <GradientScene selected={selected} />
+          </Canvas>
+        )}
         <div className="mri-gradient-legend" aria-hidden="true"><span className="is-magnet">Main magnet</span><span className="is-rf">Tx RF</span><span className="is-receive">Rx array</span><span className="is-x">Gx</span><span className="is-y">Gy</span><span className="is-z">Gz</span></div>
         <small>Drag to orbit · Scroll to zoom</small>
       </div>
@@ -269,7 +274,3 @@ export function MriGradientHardware3d() {
     </div>
   )
 }
-
-useGLTF.preload(anatomyUrl('anatomy-body.glb'))
-useGLTF.preload(anatomyUrl('anatomy-skeleton.glb'))
-useGLTF.preload(anatomyUrl('anatomy-organs.glb'))

@@ -90,6 +90,7 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .glass-panel { border: 1px solid var(--separator-soft); background: var(--surface); box-shadow: var(--panel-shadow); }
 
 .app-header { position: sticky; z-index: 30; top: 14px; display: grid; grid-template-columns: minmax(250px, auto) minmax(460px, 1fr) auto; align-items: center; gap: 20px; margin-bottom: 24px; padding: 9px 10px; border-radius: 13px; background: var(--material); box-shadow: var(--bar-shadow); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
+.app-frame:not(.is-home) .app-header { position: relative; top: auto; }
 .brand-block { display: flex; align-items: center; gap: 10px; min-width: 0; padding-left: 4px; }
 .brand-home-button { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; border-radius: 9px; color: inherit; background: transparent; text-align: left; }
 .brand-home-button:hover .brand-title { color: var(--accent); }
@@ -216,6 +217,7 @@ h1, h2, h3, p { margin-top: 0; }
 .landing-mri-dipole { transform-origin: 0 0; }
 .landing-mri-rf { transform-origin: 280px 257px; animation: landing-rf 3.2s ease-out infinite; }
 .landing-mri-signal-trace { stroke-dasharray: 310; animation: landing-signal 3.2s linear infinite; }
+.landing-showcase:not(.is-focused) :is(.landing-source-glow, .landing-data-arrow, .landing-ct-ring-halo, .landing-mri-fields, .landing-mri-rf, .landing-mri-signal-trace) { animation-play-state: paused; }
 .landing-data-slice { width: 100%; height: 100%; overflow: hidden; border-radius: 8px; background: #050708; }
 .landing-data-slice .landing-clinical-canvas { width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; object-fit: cover; }
 .landing-data-cube-face { border-radius: 0; filter: saturate(0.78) brightness(0.86); }
@@ -1535,9 +1537,9 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-volume-stack-stage { position: relative; display: grid; place-items: center; min-height: 354px; overflow: hidden; border-radius: 10px; background-color: #071014; background-image: linear-gradient(rgba(101,220,244,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(101,220,244,0.06) 1px, transparent 1px), radial-gradient(circle at 50% 36%, rgba(66,155,172,0.14), transparent 62%); background-size: 22px 22px, 22px 22px, auto; perspective: 900px; }
 .ct-volume-stack { position: relative; width: min(55%, 260px); aspect-ratio: 1; transform: translate3d(7%, 19%, 0); transform-style: preserve-3d; }
 .ct-volume-stack::before { position: absolute; right: 0; bottom: -12px; left: 0; z-index: -1; width: 100%; height: 100%; border: 1px solid rgba(84,218,243,0.34); background: rgba(32,93,106,0.16); box-shadow: 0 0 32px rgba(77,222,247,0.14); content: ''; transform: rotateX(62deg) rotateZ(-37deg); }
-.ct-volume-stack canvas { position: absolute; right: 0; bottom: calc(var(--stack-offset) * 1.05px); left: 0; display: block; width: 100%; height: 100%; border: 1px solid rgba(149,232,247,0.58); opacity: 0.28; box-shadow: 0 0 8px rgba(61,216,243,0.12); mix-blend-mode: screen; transform: rotateX(62deg) rotateZ(-37deg); transform-origin: center; transform-style: preserve-3d; }
-.ct-volume-stack canvas.is-current,
-.ct-volume-stack canvas:last-child { z-index: 2; border-color: rgba(120,235,255,0.92); opacity: 1; box-shadow: 0 0 0 1px rgba(120,235,255,0.24), 0 0 28px rgba(54,220,249,0.32); mix-blend-mode: normal; }
+.ct-volume-stack :is(canvas, img) { position: absolute; right: 0; bottom: calc(var(--stack-offset) * 1.05px); left: 0; display: block; width: 100%; height: 100%; border: 1px solid rgba(149,232,247,0.58); opacity: 0.28; box-shadow: 0 0 8px rgba(61,216,243,0.12); mix-blend-mode: screen; transform: rotateX(62deg) rotateZ(-37deg); transform-origin: center; transform-style: preserve-3d; }
+.ct-volume-stack :is(canvas, img).is-current,
+.ct-volume-stack :is(canvas, img):last-child { z-index: 2; border-color: rgba(120,235,255,0.92); opacity: 1; box-shadow: 0 0 0 1px rgba(120,235,255,0.24), 0 0 28px rgba(54,220,249,0.32); mix-blend-mode: normal; }
 .ct-volume-stack-axis { position: absolute; top: 50%; right: 22px; display: grid; grid-template-rows: auto 54px auto; gap: 8px; justify-items: center; color: rgba(220,247,251,0.55); font-size: 0.55rem; font-weight: 620; transform: translateY(-50%); }
 .ct-volume-stack-axis i { position: relative; width: 1px; height: 54px; background: rgba(122,226,245,0.55); }
 .ct-volume-stack-axis i::after { position: absolute; top: 0; left: 50%; width: 0; height: 0; border-right: 4px solid transparent; border-bottom: 7px solid rgba(122,226,245,0.7); border-left: 4px solid transparent; content: ''; transform: translate(-50%, -80%); }
@@ -3208,8 +3210,17 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-weighting-tabs { width: 100%; }
   .mri-custom-lab-grid > .mri-relaxation-plot,
   .mri-custom-output { padding-inline: 7px; }
+  .mri-custom-lab-grid > *,
+  .mri-custom-output > header,
+  .mri-custom-output-body,
+  .mri-intensity-scale { min-width: 0; max-width: 100%; }
+  .mri-custom-lab-grid .mri-relaxation-plot figcaption { display: grid; align-content: start; gap: 2px; }
+  .mri-custom-lab-grid .mri-relaxation-plot figcaption strong,
+  .mri-custom-lab-grid .mri-relaxation-plot figcaption span,
+  .mri-custom-output > header span { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
   .mri-custom-output > header { display: grid; justify-items: start; }
   .mri-intensity-scale { width: 100%; }
+  .mri-intensity-scale button { min-width: 0; overflow-wrap: anywhere; }
   .mri-custom-output-body { grid-template-columns: minmax(0, 1fr) 28px; gap: 4px; }
   .mri-flip-angle-control.is-vertical strong { font-size: 0.48rem; }
   .mri-flip-angle-control.is-vertical output { font-size: 0.51rem; }

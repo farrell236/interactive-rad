@@ -271,5 +271,3 @@ export default function LandingImageData3d({ volume }: { volume: Int16Array | nu
     </div>
   )
 }
-
-Object.values(MODEL_PATHS).forEach((path) => useGLTF.preload(path))

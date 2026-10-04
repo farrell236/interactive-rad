@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { getMriPulseCyclePhase, isMriRfActive, MRI_PULSE_CYCLE_SECONDS, MRI_RF_END, MRI_RF_START } from './mriPulseCycle'
 
@@ -328,20 +328,10 @@ function SpinField({ stage, cycleStartedAt, reducedMotion }: { stage: SignalStag
   )
 }
 
-export function MriSpinEnsemble3d({ stage, cycleStartedAt }: { stage: SignalStageId; cycleStartedAt: number }) {
+export function MriSpinEnsemble3d({ stage, cycleStartedAt, cyclePhase, renderActive }: { stage: SignalStageId; cycleStartedAt: number; cyclePhase: number; renderActive: boolean }) {
   const fieldVisible = stage === 'align' || stage === 'cycle'
-  const [rfVisible, setRfVisible] = useState(false)
   const reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  useEffect(() => {
-    if (stage !== 'cycle' || reducedMotion) return undefined
-    let frame = 0
-    const update = () => {
-      setRfVisible(isMriRfActive(getMriPulseCyclePhase(cycleStartedAt)))
-      frame = window.requestAnimationFrame(update)
-    }
-    update()
-    return () => window.cancelAnimationFrame(frame)
-  }, [cycleStartedAt, reducedMotion, stage])
+  const rfVisible = stage === 'cycle' && isMriRfActive(cyclePhase)
   const caption = stage === 'hydrogen'
     ? 'One hydrogen nucleus'
     : stage === 'random'
@@ -354,7 +344,7 @@ export function MriSpinEnsemble3d({ stage, cycleStartedAt }: { stage: SignalStag
     <figure className={`mri-spin-ensemble is-${stage}`}>
       <figcaption><span>Hydrogen ensemble</span><small>{caption}</small></figcaption>
       <div className="mri-spin-ensemble-canvas" role="img" aria-label={`Three-dimensional hydrogen magnetic-moment ensemble during the ${stage} stage`}>
-        <Canvas camera={{ position: [0, 0, 12], fov: 36, near: 0.1, far: 40 }} dpr={[1, 1.5]} frameloop={reducedMotion ? 'demand' : 'always'} gl={{ alpha: true, antialias: true }}>
+        <Canvas camera={{ position: [0, 0, 12], fov: 36, near: 0.1, far: 40 }} dpr={[1, 1.5]} frameloop={reducedMotion || !renderActive ? 'demand' : 'always'} gl={{ alpha: true, antialias: true }}>
           <SpinField stage={stage} cycleStartedAt={cycleStartedAt} reducedMotion={reducedMotion} />
         </Canvas>
         <div className="mri-spin-3d-key" aria-hidden="true">

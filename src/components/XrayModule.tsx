@@ -5,6 +5,7 @@ import { DetectorImage } from './DetectorImage'
 import { XrayScene } from './XrayScene'
 import { describeRtSelection, detectRtCapabilities, detectWebGl2Support, selectRtBackend } from '../rendering/rtBackend'
 import { DEFAULT_XRAY_SETTINGS, deriveXrayState, getProjectionGeometry } from '../simulation/xray'
+import { useDocumentVisible, useInViewport } from '../hooks/useInViewport'
 import type { CameraPreset, ExposurePhase, Projection, XraySettings } from '../types'
 import type { RtBackendSelection } from '../rendering/rtBackend'
 
@@ -49,8 +50,11 @@ export default function XrayModule() {
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('Beam')
   const [renderMode, setRenderMode] = useState<RenderMode>('hq')
   const timers = useRef<number[]>([])
+  const sceneRef = useRef<HTMLElement>(null)
   const rtStatusRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
+  const sceneInViewport = useInViewport(sceneRef, { threshold: 0.02 })
+  const documentVisible = useDocumentVisible()
   const rtSelection = useRtBackendSelection()
   const rayTracingSupported = rtSelection.backend !== null
   const rtDescription = describeRtSelection(rtSelection)
@@ -84,7 +88,7 @@ export default function XrayModule() {
         <div className="geometry-readout" aria-label="Live geometry"><div><span>SID</span><strong>{settings.sid} cm</strong></div><div><span>OID</span><strong>{derived.odd.toFixed(1)} cm</strong></div><div><span>Mag.</span><strong>{derived.magnification.toFixed(2)}×</strong></div></div>
       </header>
       <div className="visual-workbench">
-        <section className="scene-shell glass-panel" aria-label="Interactive 3D X-ray acquisition scene">
+        <section ref={sceneRef} className="scene-shell glass-panel" aria-label="Interactive 3D X-ray acquisition scene">
           <p className="sr-only">A three-dimensional educational scene showing an X-ray source, a standing patient, a cone beam, and a flat-panel detector. Use the camera preset buttons or drag to orbit the scene.</p>
           <div className="scene-topbar">
             <div className="scene-badge"><span aria-hidden="true" /> {projectionGeometry.label} · {projectionGeometry.beamPath}</div>
@@ -96,7 +100,7 @@ export default function XrayModule() {
               <div className="camera-presets" aria-label="Camera view">{cameraPresets.map((preset) => <button key={preset} type="button" aria-pressed={cameraPreset === preset} onClick={() => setCameraPreset(preset)}>{preset}</button>)}</div>
             </div>
           </div>
-          <XrayScene settings={settings} phase={phase} cameraPreset={cameraPreset} renderMode={renderMode} rtBackend={rtSelection.backend} rtStatusRef={rtStatusRef} />
+          <XrayScene settings={settings} phase={phase} cameraPreset={cameraPreset} renderMode={renderMode} rtBackend={rtSelection.backend} rtStatusRef={rtStatusRef} renderActive={sceneInViewport && documentVisible} />
           {renderMode === 'rt' && rtSelection.backend && <div ref={rtStatusRef} className="rt-status" data-backend={rtSelection.backend} aria-live="polite">{rtSelection.backend === 'webgpu' ? 'WebGPU RT' : 'WebGL RT'} · warming</div>}
           <div className="scene-instruction"><MousePointer2 aria-hidden="true" /> Drag to orbit · Scroll to zoom</div>
           <div className={`exposure-vignette${phase === 'emitting' ? ' is-emitting' : ''}`} aria-hidden="true" />
