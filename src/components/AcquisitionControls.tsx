@@ -149,7 +149,7 @@ const PARAMETER_CONFIGS: ParameterConfig[] = [
   { id: 'mas', label: 'Tube current-time', setting: 'mas', min: 0.5, max: 10, step: 0.5, unit: ' mAs' },
   { id: 'sid', label: 'Source-image distance', setting: 'sid', min: 100, max: 200, step: 1, unit: ' cm' },
   { id: 'rotation', label: 'Patient rotation', setting: 'rotation', min: -45, max: 45, step: 1, unit: '°' },
-  { id: 'collimation', label: 'Detector field size', setting: 'collimation', min: 35, max: 100, step: 1, unit: '%' },
+  { id: 'collimation', label: 'Beam collimation', setting: 'collimation', min: 35, max: 100, step: 1, unit: '%' },
   { id: 'thickness', label: 'Patient thickness', setting: 'thickness', min: 16, max: 38, step: 1, unit: ' cm' },
 ]
 

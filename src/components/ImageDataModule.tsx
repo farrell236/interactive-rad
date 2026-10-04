@@ -134,10 +134,10 @@ function FormatsAsset() {
         <table aria-label="Medical image format comparison">
           <thead><tr><th>Format</th><th>Packaging</th><th>Header / metadata</th><th>Voxel payload</th><th>Common use</th></tr></thead>
           <tbody>
-            <tr><th>DICOM</th><td>Study → series → instances; an image instance may contain one or multiple frames</td><td>Rich tag dataset covering patient, study, series, acquisition, modality, geometry, value transforms, and display information</td><td>Commonly 8- or 16-bit integer samples; signed or unsigned; native or compressed. Floating-point elements also exist.</td><td>Clinical acquisition, exchange, and PACS (clinical image archives)</td></tr>
-            <tr><th>NIfTI</th><td><code>.nii</code>, compressed <code>.nii.gz</code>, or paired <code>.hdr</code> + <code>.img</code></td><td>Compact header containing dimensions, datatype, spacing, units, scaling, intent, and qform/sform transforms</td><td>One declared datatype across the array; integer, floating-point, complex, or RGB values with optional slope/intercept scaling</td><td>Research volumes, especially neuroimaging</td></tr>
-            <tr><th>NRRD</th><td>Attached <code>.nrrd</code>, or <code>.nhdr</code> plus separate data</td><td>Human-readable header containing dimensions, axis sizes, type, encoding, units, axis meanings, origin, and directions</td><td>Integer, floating-point, or opaque block data; raw, text, or compressed encoding with explicit byte order</td><td>Scientific imaging, segmentation, and interchange</td></tr>
-            <tr><th>MetaImage</th><td>Commonly a single <code>.mha</code>, or an <code>.mhd</code> header referencing external image data</td><td>Key/value header containing dimensions, element type, spacing, origin, transform, byte order, compression, and data location</td><td>One declared <code>ElementType</code>; commonly embedded or external binary data with explicit byte order</td><td>ITK-based processing and simple volume interchange</td></tr>
+            <tr><th>DICOM</th><td data-label="Packaging">Study → series → instances; an image instance may contain one or multiple frames</td><td data-label="Header / metadata">Rich tag dataset covering patient, study, series, acquisition, modality, geometry, value transforms, and display information</td><td data-label="Voxel payload">Commonly 8- or 16-bit integer samples; signed or unsigned; native or compressed. Floating-point elements also exist.</td><td data-label="Common use">Clinical acquisition, exchange, and PACS (clinical image archives)</td></tr>
+            <tr><th>NIfTI</th><td data-label="Packaging"><code>.nii</code>, compressed <code>.nii.gz</code>, or paired <code>.hdr</code> + <code>.img</code></td><td data-label="Header / metadata">Compact header containing dimensions, datatype, spacing, units, scaling, intent, and qform/sform transforms</td><td data-label="Voxel payload">One declared datatype across the array; integer, floating-point, complex, or RGB values with optional slope/intercept scaling</td><td data-label="Common use">Research volumes, especially neuroimaging</td></tr>
+            <tr><th>NRRD</th><td data-label="Packaging">Attached <code>.nrrd</code>, or <code>.nhdr</code> plus separate data</td><td data-label="Header / metadata">Human-readable header containing dimensions, axis sizes, type, encoding, units, axis meanings, origin, and directions</td><td data-label="Voxel payload">Integer, floating-point, or opaque block data; raw, text, or compressed encoding with explicit byte order</td><td data-label="Common use">Scientific imaging, segmentation, and interchange</td></tr>
+            <tr><th>MetaImage</th><td data-label="Packaging">Commonly a single <code>.mha</code>, or an <code>.mhd</code> header referencing external image data</td><td data-label="Header / metadata">Key/value header containing dimensions, element type, spacing, origin, transform, byte order, compression, and data location</td><td data-label="Voxel payload">One declared <code>ElementType</code>; commonly embedded or external binary data with explicit byte order</td><td data-label="Common use">ITK-based processing and simple volume interchange</td></tr>
           </tbody>
         </table>
       </div>
@@ -253,6 +253,19 @@ function ContentsAsset() {
           <p>Together, these fields map an array index to a physical point <code>(x, y, z)</code>, commonly measured in millimetres. The same stored array can therefore be positioned, oriented, or scaled differently by changing its geometry—without rewriting its voxel values.</p>
         </section>
       </div>
+      <section className="image-data-series-assembly" aria-labelledby="dicom-series-assembly-title">
+        <header>
+          <div><small>DICOM ingestion checkpoint</small><h5 id="dicom-series-assembly-title">Assemble a volume from frame geometry</h5></div>
+          <span>Do not sort by filename</span>
+        </header>
+        <p>DICOM may store one frame per instance or many frames in one instance. Before creating a regular <code>D × H × W</code> array, use the recorded patient-space geometry to place and validate every frame.</p>
+        <ol>
+          <li><strong>Group.</strong><span>Select the intended series and derivation, then keep the relevant Frame of Reference and acquisition context together.</span></li>
+          <li><strong>Place and order.</strong><span>Use Image Orientation (Patient) for the in-plane axes and Image Position (Patient) for each frame’s physical origin; order frames along the plane normal rather than by filename or Instance Number.</span></li>
+          <li><strong>Validate.</strong><span>Check rows, columns, pixel spacing, orientation, value transforms, and adjacent physical distances for missing, duplicate, tilted, or irregularly spaced frames.</span></li>
+          <li><strong>Resample explicitly.</strong><span>Only create a uniform volume when the geometry supports it. If a new grid is required, record the target geometry, interpolation, and transform instead of silently rewriting metadata.</span></li>
+        </ol>
+      </section>
       <figure className="image-data-container-figure">
         <div className="image-data-header-block">
           <header><div><strong>Header</strong><small>Metadata</small></div><span>Read first</span></header>
@@ -752,6 +765,7 @@ function GeometryTransformAnimation() {
   const [stage, setStage] = useState(0)
   const [playing, setPlaying] = useState(true)
   const [resetting, setResetting] = useState(false)
+  const stageTabs = useRef<Array<HTMLButtonElement | null>>([])
   const finalStage = geometryAnimationStages.length - 1
   const current = geometryAnimationStages[stage]
   const stationX = [110, 305, 500, 695, 890]
@@ -788,6 +802,18 @@ function GeometryTransformAnimation() {
     setStage(nextStage)
   }
 
+  const selectStageFromKeyboard = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let next: number
+    if (event.key === 'ArrowRight') next = (index + 1) % geometryAnimationStages.length
+    else if (event.key === 'ArrowLeft') next = (index - 1 + geometryAnimationStages.length) % geometryAnimationStages.length
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = geometryAnimationStages.length - 1
+    else return
+    event.preventDefault()
+    selectStage(next)
+    stageTabs.current[next]?.focus()
+  }
+
   const playbackLabel = playing ? 'Pause animation' : 'Continue animation'
 
   return (
@@ -796,7 +822,7 @@ function GeometryTransformAnimation() {
         <div><small>Animated transform</small><h5 id="geometry-conveyor-title">One grid, five stages</h5></div>
         <button type="button" onClick={handlePlayback}>{playbackLabel}</button>
       </header>
-      <div className={`geometry-conveyor-viewport is-stage-${stage}${playing ? ' is-playing' : ' is-paused'}${resetting ? ' is-resetting' : ''}`}>
+      <div id="geometry-conveyor-panel" role="tabpanel" aria-labelledby={`geometry-stage-tab-${stage}`} className={`geometry-conveyor-viewport is-stage-${stage}${playing ? ' is-playing' : ' is-paused'}${resetting ? ' is-resetting' : ''}`}>
         <svg viewBox="0 0 1000 320" role="img" aria-label={`Geometry animation stage ${stage + 1}: ${current.action}`}>
           <defs>
             <linearGradient id="geometry-voxel-front" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#aeefff" stopOpacity="0.7" /><stop offset="1" stopColor="#50bedb" stopOpacity="0.25" /></linearGradient>
@@ -876,7 +902,7 @@ function GeometryTransformAnimation() {
       </div>
       <div className="geometry-conveyor-steps" role="tablist" aria-label="Geometry animation stages">
         {geometryAnimationStages.map((item, index) => (
-          <button key={item.title} type="button" role="tab" aria-selected={index === stage} className={`${index === stage ? 'is-current' : ''}${index < stage ? ' is-complete' : ''}`} onClick={() => selectStage(index)}>
+          <button ref={(element) => { stageTabs.current[index] = element }} key={item.title} id={`geometry-stage-tab-${index}`} type="button" role="tab" aria-controls="geometry-conveyor-panel" aria-selected={index === stage} tabIndex={index === stage ? 0 : -1} className={`${index === stage ? 'is-current' : ''}${index < stage ? ' is-complete' : ''}`} onKeyDown={(event) => selectStageFromKeyboard(event, index)} onClick={() => selectStage(index)}>
             <span>{index + 1}</span><strong>{item.title}</strong><code>{item.formula}</code>
           </button>
         ))}
@@ -986,7 +1012,7 @@ function ChapterAsset({ chapter }: { chapter: ImageDataChapter }) {
 
 function LearningPoints({ chapter }: { chapter: ImageDataChapter }) {
   return (
-    <section className="image-data-key-points" aria-label={`${chapter.title} learning points`}>
+    <section className="image-data-key-points lesson-takeaways glass-panel" aria-label={`${chapter.title} learning points`}>
       <p>Keep from this chapter</p>
       <ol>{chapter.learningPoints.map((point) => <li key={point}>{point}</li>)}</ol>
     </section>
@@ -996,6 +1022,7 @@ function LearningPoints({ chapter }: { chapter: ImageDataChapter }) {
 function ImageDataModule() {
   const [activeChapter, setActiveChapter] = useState(0)
   const chapter = chapters[activeChapter] ?? chapters[0]
+  const ChapterIcon = chapter.icon
 
   return (
     <article className="image-data-module">
@@ -1013,7 +1040,7 @@ function ImageDataModule() {
 
       <div className="image-data-workspace">
         <label className="image-data-chapter-picker" htmlFor="image-data-chapter-select">
-          <span><small>Chapter</small><strong>{activeChapter + 1} of {chapters.length}</strong></span>
+          <span><small>Chapter</small><strong>{chapter.title}</strong></span>
           <select id="image-data-chapter-select" aria-label="Select image data chapter" value={activeChapter} onChange={(event) => setActiveChapter(Number(event.target.value))}>
             {chapters.map((item, index) => <option key={item.id} value={index}>{index + 1}. {item.navigationLabel}</option>)}
           </select>
@@ -1032,15 +1059,16 @@ function ImageDataModule() {
         </nav>
 
         <section className="image-data-lesson" aria-labelledby="image-data-lesson-title">
-          <div className="image-data-lesson-copy"><div><h3 id="image-data-lesson-title">{chapter.title}</h3><p>{chapter.summary}</p></div></div>
+          <header className="image-data-lesson-copy"><div><span><ChapterIcon aria-hidden="true" /> Chapter {activeChapter + 1}</span><h3 id="image-data-lesson-title">{chapter.title}</h3><p>{chapter.summary}</p></div></header>
           <ChapterAsset chapter={chapter} />
           <LearningPoints chapter={chapter} />
         </section>
       </div>
 
-      <footer className="image-data-sources">
+      <footer className="image-data-sources module-reference-strip">
         <span><Scan aria-hidden="true" /> Reference material</span>
         <a href="https://simpleitk.readthedocs.io/en/master/fundamentalConcepts.html" target="_blank" rel="noreferrer">SimpleITK concepts <ExternalLink /></a>
+        <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.2.html" target="_blank" rel="noreferrer">DICOM image plane <ExternalLink /></a>
         <a href="https://slicer.readthedocs.io/en/latest/user_guide/coordinate_systems.html" target="_blank" rel="noreferrer">3D Slicer coordinates <ExternalLink /></a>
         <a href="https://nifti.nimh.nih.gov/nifti-1/" target="_blank" rel="noreferrer">NIfTI-1 specification <ExternalLink /></a>
         <a href="https://teem.sourceforge.net/nrrd/format.html" target="_blank" rel="noreferrer">NRRD specification <ExternalLink /></a>

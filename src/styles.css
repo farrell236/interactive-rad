@@ -28,6 +28,13 @@
   --shadow: rgba(0, 0, 0, 0.34);
   --panel-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
   --bar-shadow: 0 10px 34px rgba(0, 0, 0, 0.26);
+  --type-caption: 0.62rem;
+  --type-meta: 0.68rem;
+  --type-control: 0.7rem;
+  --type-body: 0.79rem;
+  --type-card-title: 1.05rem;
+  --control-height-compact: 36px;
+  --control-height-standard: 44px;
   color-scheme: dark;
 }
 
@@ -420,6 +427,9 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ml-pipeline-options strong { font-size: 0.7rem; font-weight: 650; }
 .ml-pipeline-options small { color: var(--window-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.55rem; white-space: nowrap; }
 .ml-pipeline-options p { margin: 0; color: var(--text-faint); font-size: 0.61rem; line-height: 1.4; }
+.ml-shape-note { margin: -2px 0 13px; padding: 9px 11px; border-left: 3px solid color-mix(in srgb, var(--window-accent) 65%, var(--separator)); color: var(--text-faint); background: color-mix(in srgb, var(--window-accent) 5%, var(--surface-secondary)); font-size: 0.66rem; line-height: 1.45; }
+.ml-shape-note strong { color: var(--text-soft); }
+.ml-shape-note code { color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.94em; }
 .ml-input-preview { display: grid; grid-template-columns: minmax(190px, 0.9fr) minmax(180px, 1.1fr); align-items: center; gap: 17px; min-height: 210px; margin-bottom: 16px; padding: 15px; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); }
 .ml-input-preview > div:last-child { display: grid; gap: 6px; }
 .ml-input-preview > div:last-child small { color: var(--text-faint); font-size: 0.59rem; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -524,6 +534,18 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .image-data-contents-teaching p, .image-data-chapter-teaching p { margin: 0; color: var(--text-soft); font-size: 0.82rem; line-height: 1.6; text-wrap: pretty; }
 .image-data-contents-teaching p + p, .image-data-chapter-teaching p + p { margin-top: 9px; }
 .image-data-contents-teaching code, .image-data-chapter-teaching code { padding: 1px 3px; border: 1px solid var(--separator-soft); border-radius: 4px; color: var(--text); background: var(--surface-secondary); font-size: 0.82em; white-space: nowrap; }
+.image-data-series-assembly { margin: -2px 0 21px; padding: 14px 15px; border: 1px solid color-mix(in srgb, var(--data-accent) 24%, var(--separator-soft)); border-radius: 10px; background: color-mix(in srgb, var(--data-accent) 5%, var(--surface-secondary)); }
+.image-data-series-assembly header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 7px; }
+.image-data-series-assembly header small { display: block; margin-bottom: 4px; color: var(--data-accent); font-size: 0.59rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.image-data-series-assembly h5 { margin: 0; font-size: 0.86rem; font-weight: 680; }
+.image-data-series-assembly header > span { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; color: var(--data-accent); background: color-mix(in srgb, var(--data-accent) 10%, var(--surface)); font-size: 0.58rem; font-weight: 680; letter-spacing: 0.04em; text-transform: uppercase; }
+.image-data-series-assembly > p { max-width: 980px; margin: 0 0 11px; color: var(--text-soft); font-size: 0.74rem; line-height: 1.5; }
+.image-data-series-assembly code { color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+.image-data-series-assembly ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: dicom-ingestion; }
+.image-data-series-assembly li { position: relative; min-width: 0; padding: 9px 10px 9px 32px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); font-size: 0.66rem; line-height: 1.42; counter-increment: dicom-ingestion; }
+.image-data-series-assembly li::before { position: absolute; top: 9px; left: 4px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: var(--data-accent); background: var(--surface); font-size: 0.56rem; font-weight: 700; content: counter(dicom-ingestion); }
+.image-data-series-assembly li strong, .image-data-series-assembly li span { display: block; }
+.image-data-series-assembly li strong { margin-bottom: 3px; color: var(--text-soft); font-weight: 680; }
 .image-data-format-introduction { margin-bottom: 21px; padding: 3px 2px 20px; border-bottom: 1px solid var(--separator-soft); }
 .image-data-format-introduction small { display: block; margin-bottom: 5px; color: var(--data-accent); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .image-data-format-introduction h4 { margin: 0 0 9px; font-size: 1.15rem; font-weight: 680; letter-spacing: -0.025em; }
@@ -1249,7 +1271,6 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .ct-learning-chapters > p { margin: 6px 9px 9px; color: var(--text-faint); font-size: 0.67rem; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; }
 .ct-learning-chapters > button { display: grid; grid-template-columns: 26px 16px minmax(0, 1fr); gap: 8px; align-items: center; width: 100%; min-height: 50px; padding: 7px 8px; border: 0; border-radius: 8px; color: var(--text-faint); background: transparent; text-align: left; transition: color 140ms ease, background 140ms ease; }
 .ct-learning-chapters > button:hover:not(:disabled) { color: var(--text); background: var(--surface-secondary); }
-.ct-learning-chapters > button:disabled { cursor: not-allowed; opacity: 0.42; }
 .ct-learning-chapters > button.is-selected { color: var(--text); background: color-mix(in srgb, var(--ct-accent) 11%, var(--surface-secondary)); }
 .ct-learning-chapters > button > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: var(--text-faint); background: var(--surface-secondary); font-size: 0.65rem; font-weight: 650; }
 .ct-learning-chapters > button.is-selected > span { color: var(--text); background: var(--surface-raised); box-shadow: 0 1px 4px var(--shadow); }
@@ -2030,6 +2051,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .image-data-canvas { grid-template-columns: minmax(230px, 0.9fr) minmax(200px, 1.1fr); }
   .image-data-contents-teaching, .image-data-chapter-teaching { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .image-data-contents-teaching > section:last-child, .image-data-chapter-teaching > section:last-child { grid-column: 1 / -1; }
+  .image-data-series-assembly ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .image-data-origin-layout { grid-template-columns: minmax(340px, 1.1fr) minmax(230px, 0.9fr); }
   .image-data-planes-layout { grid-template-columns: minmax(0, 1fr); }
   .image-data-plane-model { min-height: 510px; }
@@ -2175,6 +2197,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .coordinate-spaces-flow > b span { transform: rotate(90deg); }
   .image-data-key-points ol { grid-template-columns: 1fr; }
   .image-data-key-points li { min-height: 0; }
+  .image-data-series-assembly header { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .image-data-series-assembly ol { grid-template-columns: 1fr; }
   .image-data-stage-toolbar { align-items: stretch; flex-direction: column; }
   .image-data-format-switch { width: 100%; }
   .image-data-format-switch button { flex: 1; min-height: 38px; }
@@ -3176,11 +3200,11 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .mri-advanced-lab > header > div:first-child,
 .mri-advanced-reference > header > div:first-child { min-width: 0; }
 .mri-advanced-lab > header span,
-.mri-advanced-reference > header span { display: block; margin-bottom: 5px; color: var(--ct-accent); font-size: 0.58rem; font-weight: 730; letter-spacing: 0.065em; text-transform: uppercase; }
+.mri-advanced-reference > header span { display: block; margin-bottom: 5px; color: var(--ct-accent); font-size: 0.65rem; font-weight: 730; letter-spacing: 0.065em; text-transform: uppercase; }
 .mri-advanced-lab > header h4,
-.mri-advanced-reference > header h4 { margin: 0 0 5px; color: var(--text); font-size: 0.98rem; line-height: 1.25; }
+.mri-advanced-reference > header h4 { margin: 0 0 5px; color: var(--text); font-size: 1rem; line-height: 1.25; }
 .mri-advanced-lab > header p,
-.mri-advanced-reference > header p { max-width: 780px; margin: 0; color: var(--text-soft); font-size: 0.68rem; line-height: 1.5; }
+.mri-advanced-reference > header p { max-width: 780px; margin: 0; color: var(--text-soft); font-size: 0.75rem; line-height: 1.5; }
 
 .mri-sequence-family { flex: 0 0 min(240px, 28%); padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--ct-accent) 24%, var(--separator-soft)); border-radius: 8px; background: color-mix(in srgb, var(--ct-accent) 7%, var(--surface-secondary)); text-align: right; }
 .mri-sequence-lab > header p,
@@ -3262,68 +3286,142 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 
 .mri-artifact-severity { display: grid; flex: 0 0 min(310px, 31%); gap: 7px; padding: 4px 0; }
 .mri-advanced-lab > header .mri-artifact-severity > span { display: flex; align-items: baseline; justify-content: space-between; margin: 0 !important; letter-spacing: normal !important; text-transform: none !important; }
-.mri-artifact-severity strong { color: var(--text-soft); font-size: 0.61rem; }
-.mri-artifact-severity output { color: var(--ct-accent); font-size: 0.63rem; font-weight: 720; }
-.mri-artifact-severity input { width: 100%; }
-.mri-artifact-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-block: 1px solid var(--separator-soft); background: var(--surface-secondary); }
-.mri-artifact-tabs button { min-width: 0; min-height: 48px; padding: 8px 9px; border: 0; color: var(--text-faint); background: transparent; font: inherit; font-size: 0.6rem; font-weight: 680; line-height: 1.2; cursor: pointer; }
-.mri-artifact-tabs button + button { border-left: 1px solid var(--separator-soft); }
+.mri-artifact-severity strong { color: var(--text-soft); font-size: 0.68rem; }
+.mri-artifact-severity output { color: var(--ct-accent); font-size: 0.7rem; font-weight: 720; }
+.mri-artifact-severity input { width: 100%; min-height: 44px; }
+.mri-artifact-severity > small { color: var(--text-faint); font-size: 0.68rem; font-weight: 500; line-height: 1.4; }
+.mri-artifact-tabs { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 1px; border-block: 1px solid var(--separator-soft); background: var(--separator-soft); }
+.mri-artifact-tabs button { min-width: 0; min-height: 48px; padding: 8px 9px; border: 0; color: var(--text-faint); background: var(--surface-secondary); font: inherit; font-size: 0.68rem; font-weight: 680; line-height: 1.2; cursor: pointer; }
 .mri-artifact-tabs button:hover { color: var(--text); }
 .mri-artifact-tabs button[aria-selected='true'] { color: var(--text); background: var(--surface-raised); box-shadow: inset 0 -3px var(--ct-accent); }
 .mri-artifact-stage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 335px; background: #06080b; }
 .mri-artifact-stage figure { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; margin: 0; }
 .mri-artifact-stage figure + figure { border-left: 1px solid color-mix(in srgb, var(--separator) 55%, transparent); }
 .mri-artifact-stage figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 11px 14px; background: color-mix(in srgb, #111823 94%, transparent); }
-.mri-artifact-stage figcaption strong { color: #eef3f8; font-size: 0.65rem; }
-.mri-artifact-stage figcaption span { color: #8fa0b1; font-size: 0.53rem; }
+.mri-artifact-stage figcaption strong { color: #eef3f8; font-size: 0.68rem; }
+.mri-artifact-stage figcaption span { color: #a8b7c5; font-size: 0.65rem; }
 .mri-artifact-stage figure > div { display: grid; min-height: 0; place-items: center; padding: 14px; }
 .mri-artifact-stage canvas,
 .mri-artifact-stage img { display: block; width: min(100%, 260px); height: auto; image-rendering: auto; }
 .mri-artifact-stage .is-difference { background: radial-gradient(circle, rgba(123, 94, 191, 0.13), transparent 69%); }
+.mri-artifact-stage .mri-artifact-render { position: relative; }
+.mri-artifact-direction { position: absolute; z-index: 2; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border: 1px solid rgba(121, 216, 240, 0.34); border-radius: 999px; color: #d8f7ff; background: rgba(8, 18, 25, 0.82); font-size: 0.62rem; font-weight: 700; line-height: 1; text-transform: uppercase; backdrop-filter: blur(4px); }
+.mri-artifact-direction svg { width: 12px; height: 12px; color: #7bdcf5; }
+.mri-artifact-direction.is-phase { top: 50%; right: 8px; flex-direction: column; transform: translateY(-50%); }
+.mri-artifact-direction.is-phase span { writing-mode: vertical-rl; transform: rotate(180deg); }
+.mri-artifact-direction.is-phase svg { transform: rotate(90deg); }
+.mri-artifact-direction.is-readout { top: 8px; left: 50%; transform: translateX(-50%); }
+.mri-chemical-shift-key { position: absolute; bottom: 8px; left: 50%; z-index: 2; display: grid; grid-template-columns: auto 14px auto; align-items: center; gap: 4px; padding: 4px 6px; border: 1px solid rgba(255,255,255,0.22); border-radius: 5px; background: rgba(8, 12, 18, 0.78); transform: translateX(-50%); backdrop-filter: blur(4px); }
+.mri-chemical-shift-key span { padding: 3px 5px; border-radius: 3px; color: #071018; font-size: 0.62rem; font-weight: 760; text-transform: uppercase; }
+.mri-chemical-shift-key .is-water { grid-column: 1; background: #7bdcf5; }
+.mri-chemical-shift-key .is-fat { grid-column: 3; background: #f5b45e; }
+.mri-chemical-shift-key svg { grid-column: 2; grid-row: 1; width: 13px; color: #f2f5f8; }
 .mri-artifact-explanation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); }
 .mri-artifact-explanation article { display: grid; align-content: start; gap: 4px; padding: 13px 16px; }
 .mri-artifact-explanation article + article { border-left: 1px solid var(--separator-soft); }
 .mri-artifact-explanation span { display: block; margin: 0; }
-.mri-artifact-explanation p { margin: 0; }
-.mri-artifact-explanation small { color: var(--text-faint); font-size: 0.54rem; line-height: 1.4; }
-.mri-artifact-caveat { display: flex; align-items: start; gap: 8px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); background: var(--surface-secondary); font-size: 0.56rem; line-height: 1.4; }
+.mri-artifact-explanation span { color: var(--ct-accent); font-size: 0.66rem; font-weight: 720; }
+.mri-artifact-explanation p { margin: 0; color: var(--text-soft); font-size: 0.72rem; line-height: 1.45; }
+.mri-artifact-explanation small { color: var(--text-faint); font-size: 0.68rem; line-height: 1.42; }
+.mri-artifact-caveat { display: flex; align-items: start; gap: 8px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); background: var(--surface-secondary); font-size: 0.68rem; line-height: 1.42; }
 .mri-artifact-caveat svg { flex: 0 0 14px; width: 14px; color: var(--amber); }
-.mri-quality-triad { display: grid; grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr) 26px minmax(0, 1fr); align-items: stretch; border-top: 1px solid var(--separator-soft); }
-.mri-quality-triad article { display: grid; gap: 5px; padding: 14px 16px; }
-.mri-quality-triad > svg { align-self: center; justify-self: center; width: 15px; color: var(--ct-accent); }
-.mri-quality-triad strong { color: var(--text); font-size: 0.65rem; }
-.mri-quality-triad p { margin: 0; color: var(--text-soft); font-size: 0.59rem; line-height: 1.45; }
-.mri-quality-triad small { color: var(--text-faint); font-size: 0.53rem; line-height: 1.4; }
+.mri-quality-budget { border-top: 1px solid var(--separator-soft); }
+.mri-quality-baseline { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 5px 14px; padding: 11px 14px; background: color-mix(in srgb, var(--ct-accent) 5%, var(--surface)); }
+.mri-quality-baseline strong { color: var(--text); font-size: 0.7rem; }
+.mri-quality-baseline span { color: var(--ct-accent); font-size: 0.68rem; font-weight: 690; }
+.mri-quality-baseline small { grid-column: 1 / -1; color: var(--text-faint); font-size: 0.68rem; line-height: 1.42; }
+.mri-quality-demo { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr); min-height: 370px; border-top: 1px solid var(--separator-soft); background: var(--surface-secondary); }
+.mri-quality-images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; background: #06080b; }
+.mri-quality-images figure { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; margin: 0; }
+.mri-quality-images figure + figure { border-left: 1px solid rgba(255,255,255,0.12); }
+.mri-quality-images figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 9px; min-height: 42px; padding: 11px 13px; background: #111823; }
+.mri-quality-images figcaption strong { color: #eef3f8; font-size: 0.68rem; }
+.mri-quality-images figcaption span { color: #a8b7c5; font-size: 0.65rem; }
+.mri-quality-images figure > div { display: grid; min-height: 0; place-items: center; padding: 15px; background: radial-gradient(circle, #17212d 0, #06080b 72%); }
+.mri-quality-images canvas,
+.mri-quality-images img { display: block; width: min(100%, 270px); aspect-ratio: 1; object-fit: contain; }
+.mri-quality-panel { display: grid; align-content: start; grid-template-rows: auto auto minmax(0, 1fr); min-width: 0; border-left: 1px solid var(--separator-soft); background: var(--surface); }
+.mri-quality-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 15px; }
+.mri-quality-panel-heading > div { display: grid; gap: 2px; }
+.mri-quality-panel-heading strong { color: var(--text); font-size: 0.72rem; }
+.mri-quality-panel-heading span { color: var(--text-faint); font-size: 0.68rem; }
+.mri-quality-panel-heading button { flex: 0 0 auto; min-height: 44px; padding: 7px 10px; border: 1px solid var(--separator); border-radius: 6px; color: var(--text-soft); background: var(--surface-secondary); font: inherit; font-size: 0.68rem; font-weight: 680; cursor: pointer; }
+.mri-quality-panel-heading button:hover { color: var(--text); border-color: color-mix(in srgb, var(--ct-accent) 45%, var(--separator)); }
+.mri-quality-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-block: 1px solid var(--separator-soft); background: var(--surface-secondary); }
+.mri-quality-tabs button { min-width: 0; min-height: 44px; padding: 8px 6px; border: 0; color: var(--text-faint); background: transparent; font: inherit; font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+.mri-quality-tabs button + button { border-left: 1px solid var(--separator-soft); }
+.mri-quality-tabs button[aria-selected='true'] { color: var(--text); background: var(--surface); box-shadow: inset 0 -3px var(--ct-accent); }
+.mri-quality-mode { display: grid; align-content: start; gap: 12px; padding: 15px; }
+.mri-quality-mode > p { margin: 0; color: var(--text-soft); font-size: 0.72rem; line-height: 1.48; }
+.mri-quality-mode > small { color: var(--text-faint); font-size: 0.68rem; line-height: 1.45; }
+.mri-quality-mode > small strong { color: var(--text); }
+.mri-quality-mode-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.mri-quality-mode-controls.is-single { grid-template-columns: minmax(0, 1fr); }
+.mri-quality-control { display: grid; gap: 8px; min-width: 0; }
+.mri-quality-control > span { display: flex; align-items: baseline; justify-content: space-between; gap: 7px; }
+.mri-quality-control strong { color: var(--text-soft); font-size: 0.68rem; }
+.mri-quality-control output { color: var(--ct-accent); font-size: 0.68rem; font-weight: 720; white-space: nowrap; }
+.mri-quality-control input { width: 100%; min-height: 44px; }
+.mri-quality-inline-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 2px 10px; padding: 9px 10px; border: 1px solid color-mix(in srgb, var(--ct-accent) 22%, var(--separator-soft)); border-radius: 7px; background: color-mix(in srgb, var(--ct-accent) 5%, var(--surface-secondary)); }
+.mri-quality-inline-result span { color: var(--text-soft); font-size: 0.68rem; font-weight: 680; }
+.mri-quality-inline-result strong { color: var(--ct-accent); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.mri-quality-inline-result small { grid-column: 1 / -1; color: var(--text-faint); font-size: 0.66rem; line-height: 1.4; }
+.mri-quality-failure-toggle { display: flex; align-items: start; min-height: 44px; gap: 9px; padding: 9px 10px; border: 1px solid var(--separator-soft); border-radius: 7px; background: var(--surface-secondary); cursor: pointer; }
+.mri-quality-failure-toggle:has(input:disabled) { cursor: default; opacity: 0.64; }
+.mri-quality-failure-toggle input { flex: 0 0 auto; width: 14px; height: 14px; margin: 1px 0 0; accent-color: var(--ct-accent); }
+.mri-quality-failure-toggle span { display: grid; gap: 2px; }
+.mri-quality-failure-toggle strong { color: var(--text); font-size: 0.68rem; }
+.mri-quality-failure-toggle small { color: var(--text-faint); font-size: 0.66rem; line-height: 1.38; }
+.mri-quality-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); }
+.mri-quality-metrics article { display: grid; align-content: start; gap: 5px; min-width: 0; padding: 14px 16px; }
+.mri-quality-metrics article + article { border-left: 1px solid var(--separator-soft); }
+.mri-quality-metrics span { color: var(--ct-accent); font-size: 0.65rem; font-weight: 720; letter-spacing: 0.045em; text-transform: uppercase; }
+.mri-quality-metrics strong { color: var(--text); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.mri-quality-metrics small { color: var(--text-faint); font-size: 0.68rem; line-height: 1.42; }
+.mri-quality-metrics sub { font-size: 0.72em; }
+.mri-quality-distinction { margin: 0; padding: 10px 16px; border-top: 1px solid var(--separator-soft); color: var(--text-soft); background: color-mix(in srgb, var(--ct-accent) 5%, var(--surface)); font-size: 0.7rem; line-height: 1.45; }
+.mri-quality-distinction strong { margin-right: 5px; color: var(--text); }
+.mri-quality-model-note { display: flex; align-items: start; gap: 8px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); background: var(--surface-secondary); font-size: 0.68rem; line-height: 1.42; }
+.mri-quality-model-note svg { flex: 0 0 14px; width: 14px; color: var(--amber); }
 .mri-artifact-reference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); background: var(--surface-secondary); }
 .mri-artifact-reference-grid article { display: grid; gap: 4px; padding: 12px 15px; }
 .mri-artifact-reference-grid article:nth-child(3n + 2),
 .mri-artifact-reference-grid article:nth-child(3n + 3) { border-left: 1px solid var(--separator-soft); }
 .mri-artifact-reference-grid article:nth-child(n + 4) { border-top: 1px solid var(--separator-soft); }
-.mri-artifact-reference-grid strong { color: var(--text); font-size: 0.61rem; }
-.mri-artifact-reference-grid span { color: var(--ct-accent); font-size: 0.52rem; font-weight: 660; }
-.mri-artifact-reference-grid p { margin: 0; color: var(--text-faint); font-size: 0.54rem; line-height: 1.38; }
+.mri-artifact-reference-grid article:last-child:nth-child(3n + 1) { grid-column: 1 / -1; }
+.mri-artifact-reference-grid strong { color: var(--text); font-size: 0.7rem; }
+.mri-artifact-reference-grid span { color: var(--ct-accent); font-size: 0.66rem; font-weight: 660; }
+.mri-artifact-reference-grid p { margin: 0; color: var(--text-faint); font-size: 0.68rem; line-height: 1.4; }
+.mri-artifact-reference-grid small { color: var(--text-soft); font-size: 0.66rem; line-height: 1.4; }
+.mri-artifact-reference-grid small b { color: var(--text); }
+.mri-image-load-error { display: grid; width: min(100%, 260px); aspect-ratio: 1; place-items: center; padding: 16px; border: 1px dashed rgba(255,255,255,0.24); color: #c7d0d9; background: #0d131b; font-size: 0.68rem; text-align: center; }
+.mri-artifact-references .mri-advanced-reference > footer { font-size: 0.66rem; line-height: 1.4; }
 
-.mri-ml-integrity { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--ct-accent) 24%, var(--separator-soft)); border-radius: 8px; background: color-mix(in srgb, var(--ct-accent) 7%, var(--surface-secondary)); }
+.mri-ml-integrity { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--ct-accent) 24%, var(--separator-soft)); border-radius: 8px; background: color-mix(in srgb, var(--ct-accent) 7%, var(--surface-secondary)); }
 .mri-ml-integrity svg { width: 18px; color: var(--ct-accent); }
 .mri-ml-integrity span { margin: 0 !important; letter-spacing: normal !important; text-transform: none !important; }
-.mri-ml-integrity small { display: block; color: var(--text-faint); font-size: 0.51rem; }
-.mri-ml-integrity strong { color: var(--text); font-size: 0.59rem; }
-.mri-ml-pipeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--separator-soft); background: var(--surface-secondary); }
-.mri-ml-pipeline > div { display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; min-width: 0; }
+.mri-ml-integrity small { display: block; color: var(--text-faint); font-size: 0.62rem; }
+.mri-ml-integrity strong { color: var(--text); font-size: 0.7rem; }
+.mri-ml-pipeline { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-block: 1px solid var(--separator-soft); background: var(--surface-secondary); }
+.mri-ml-pipeline > div { display: grid; grid-template-columns: minmax(0, 1fr) 18px; align-items: center; min-width: 0; }
 .mri-ml-pipeline > div:last-child { grid-template-columns: minmax(0, 1fr); }
-.mri-ml-pipeline > div > svg { width: 13px; color: var(--ct-accent); }
-.mri-ml-pipeline button { display: grid; gap: 3px; min-width: 0; min-height: 57px; padding: 9px 12px; border: 0; color: var(--text-faint); background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.mri-ml-pipeline > div > svg { width: 12px; color: var(--ct-accent); }
+.mri-ml-pipeline button { display: grid; align-content: center; gap: 4px; min-width: 0; min-height: 66px; padding: 9px 10px; border: 0; color: var(--text-faint); background: transparent; font: inherit; text-align: left; cursor: pointer; }
 .mri-ml-pipeline button:hover { color: var(--text); }
 .mri-ml-pipeline button[aria-selected='true'] { color: var(--text); background: var(--surface-raised); box-shadow: inset 0 -3px var(--ct-accent); }
-.mri-ml-pipeline small { color: var(--ct-accent); font-size: 0.49rem; font-weight: 720; }
-.mri-ml-pipeline strong { font-size: 0.62rem; }
-.mri-ml-stage { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr); min-height: 370px; background: var(--surface-secondary); }
-.mri-ml-stage > figure { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; margin: 0; padding: 15px 17px 17px; background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ct-accent) 7%, var(--surface)), var(--surface-secondary) 72%); }
+.mri-ml-pipeline small { color: var(--ct-accent); font-size: 0.56rem; font-weight: 720; }
+.mri-ml-pipeline strong { font-size: 0.7rem; line-height: 1.2; }
+.mri-ml-stage { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.78fr); min-height: 420px; background: var(--surface-secondary); }
+.mri-ml-stage[hidden] { display: none; }
+.mri-ml-stage > figure { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; margin: 0; padding: 16px 18px 18px; background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ct-accent) 7%, var(--surface)), var(--surface-secondary) 72%); }
 .mri-ml-stage figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.mri-ml-stage figcaption strong { color: var(--text); font-size: 0.67rem; }
-.mri-ml-stage figcaption span { color: var(--ct-accent); font-size: 0.55rem; font-weight: 670; }
+.mri-ml-stage figcaption strong { color: var(--text); font-size: 0.75rem; }
+.mri-ml-stage figcaption span { color: var(--ct-accent); font-size: 0.68rem; font-weight: 670; text-align: right; }
 .mri-ml-stage > aside { display: grid; align-content: start; gap: 5px; padding: 18px; border-left: 1px solid var(--separator-soft); background: color-mix(in srgb, var(--surface) 69%, var(--surface-secondary)); }
-.mri-ml-stage > aside > p { margin-bottom: 7px; }
+.mri-ml-stage > aside > span { font-size: 0.68rem; }
+.mri-ml-stage > aside > p { margin-bottom: 7px; font-size: 0.75rem; }
+.mri-ml-stage dt { font-size: 0.66rem; }
+.mri-ml-stage dd { font-size: 0.72rem; }
 .mri-ml-array { position: relative; display: grid; align-self: center; justify-self: center; width: min(76%, 390px); aspect-ratio: 1.65; place-items: center; perspective: 500px; }
 .mri-ml-array i { position: absolute; inset: 18% 13%; border: 1px solid color-mix(in srgb, var(--ct-accent) 62%, var(--separator)); background: linear-gradient(135deg, color-mix(in srgb, var(--ct-accent) 22%, transparent), color-mix(in srgb, var(--violet) 12%, var(--surface))); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.13); transform: translate(calc(var(--layer, 0) * 10px), calc(var(--layer, 0) * -10px)); }
 .mri-ml-array i:nth-child(1) { --layer: -1.5; }
@@ -3331,41 +3429,82 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 .mri-ml-array i:nth-child(3) { --layer: 0.5; }
 .mri-ml-array i:nth-child(4) { --layer: 1.5; }
 .mri-ml-array b { z-index: 2; color: var(--text); font-family: Georgia, 'Times New Roman', serif; font-size: 1rem; font-weight: 500; }
-.mri-ml-array small { position: absolute; bottom: 9%; z-index: 2; color: var(--text-faint); font-size: 0.57rem; }
+.mri-ml-array small { position: absolute; bottom: 9%; z-index: 2; color: var(--text-faint); font-size: 0.68rem; }
 .mri-ml-reconstruction { display: grid; align-self: center; grid-template-columns: minmax(150px, 0.8fr) 36px minmax(160px, 0.7fr); align-items: center; gap: 16px; }
 .mri-ml-reconstruction > svg { color: var(--ct-accent); }
 .mri-ml-reconstruction .mri-ml-array { width: 100%; }
-.mri-ml-reconstruction img { display: block; width: min(100%, 245px); justify-self: center; border: 1px solid var(--separator); background: #000; }
+.mri-ml-reconstruction > img,
+.mri-ml-reconstruction > .mri-image-load-error { display: block; width: min(100%, 245px); justify-self: center; border: 1px solid var(--separator); background: #000; }
 .mri-ml-series-list { display: grid; align-self: center; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px 6%; }
-.mri-ml-series-list span { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border: 1px solid var(--separator-soft); border-radius: 7px; color: var(--text-soft); background: var(--surface); font-size: 0.62rem; font-weight: 680; }
+.mri-ml-series-list span { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border: 1px solid var(--separator-soft); border-radius: 7px; color: var(--text-soft); background: var(--surface); font-size: 0.72rem; font-weight: 680; }
 .mri-ml-series-list span.is-selected { border-color: color-mix(in srgb, var(--ct-accent) 58%, var(--separator)); color: var(--text); box-shadow: inset 3px 0 var(--ct-accent); }
-.mri-ml-series-list small { color: var(--text-faint); font-size: 0.5rem; font-weight: 620; }
+.mri-ml-series-list small { color: var(--text-faint); font-size: 0.64rem; font-weight: 620; }
 .mri-ml-series-list .is-selected small { color: var(--ct-accent); }
-.mri-ml-tensor-builder { display: grid; align-self: center; grid-template-columns: minmax(120px, 0.5fr) minmax(220px, 1fr); gap: 22px; align-items: center; padding: 15px 7%; }
+.mri-ml-conversion { display: grid; align-self: center; grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr); align-items: center; gap: 13px; padding: 16px 6%; }
+.mri-ml-conversion article { display: grid; gap: 7px; min-height: 145px; align-content: center; padding: 18px; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface); text-align: center; }
+.mri-ml-conversion article b { color: var(--ct-accent); font-size: 0.7rem; }
+.mri-ml-conversion article strong { color: var(--text); font-size: 0.82rem; }
+.mri-ml-conversion article small { color: var(--text-faint); font-size: 0.68rem; line-height: 1.4; }
+.mri-ml-conversion > svg { color: var(--ct-accent); }
+.mri-ml-conversion > p { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-left: 3px solid var(--ct-accent); color: var(--text-soft); background: color-mix(in srgb, var(--ct-accent) 6%, var(--surface)); font-size: 0.7rem; line-height: 1.45; }
+.mri-ml-conversion > p strong { margin-right: 4px; color: var(--text); }
+.mri-ml-processing { display: grid; align-self: center; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px 2%; }
+.mri-ml-processing article { display: grid; gap: 4px; min-width: 0; padding: 10px; border: 1px solid var(--separator-soft); border-radius: 8px; background: var(--surface); }
+.mri-ml-processing article > div { position: relative; display: grid; aspect-ratio: 1.18; place-items: center; overflow: hidden; background: #000; }
+.mri-ml-processing img,
+.mri-ml-processing .mri-image-load-error { display: block; width: 100%; height: 100%; object-fit: contain; }
+.mri-ml-processing .is-normalized img { filter: contrast(1.18) brightness(1.08); }
+.mri-ml-processing .is-resampled > div { background-image: linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px); background-size: 18px 18px; }
+.mri-ml-processing .is-resampled img { width: 88%; height: 88%; object-fit: cover; image-rendering: auto; }
+.mri-ml-processing article > strong { color: var(--text); font-size: 0.72rem; }
+.mri-ml-processing article > span { color: var(--ct-accent); font-size: 0.66rem; font-weight: 680; }
+.mri-ml-processing article > small { color: var(--text-faint); font-size: 0.66rem; }
+.mri-ml-tensor-workspace { display: grid; align-self: center; gap: 12px; padding: 13px 4%; }
+.mri-ml-layout-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 7px; background: var(--separator-soft); }
+.mri-ml-layout-picker button { min-height: 44px; padding: 8px; border: 0; color: var(--text-soft); background: var(--surface); font: inherit; font-size: 0.68rem; font-weight: 680; cursor: pointer; }
+.mri-ml-layout-picker button[aria-pressed='true'] { color: var(--text); background: color-mix(in srgb, var(--ct-accent) 10%, var(--surface)); box-shadow: inset 0 -3px var(--ct-accent); }
+.mri-ml-tensor-builder { display: grid; grid-template-columns: minmax(105px, 0.42fr) minmax(190px, 1fr) minmax(190px, 1fr); gap: 16px; align-items: center; }
 .mri-ml-channel-picker { display: grid; gap: 7px; }
-.mri-ml-channel-picker button { display: flex; align-items: center; gap: 8px; min-height: 35px; padding: 7px 9px; border: 1px solid var(--separator-soft); border-radius: 6px; color: var(--text-soft); background: var(--surface); font: inherit; font-size: 0.61rem; font-weight: 680; cursor: pointer; }
+.mri-ml-channel-picker button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--separator-soft); border-radius: 6px; color: var(--text-soft); background: var(--surface); font: inherit; font-size: 0.7rem; font-weight: 680; cursor: pointer; }
 .mri-ml-channel-picker button[aria-pressed='true'] { color: var(--text); border-color: color-mix(in srgb, var(--ct-accent) 55%, var(--separator)); }
+.mri-ml-channel-picker button:disabled { cursor: not-allowed; opacity: 0.72; }
 .mri-ml-channel-picker button > span { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid var(--separator); border-radius: 4px; color: var(--ct-accent); }
 .mri-ml-channel-picker svg { width: 13px; }
-.mri-ml-tensor { position: relative; display: grid; min-height: 165px; place-content: center; gap: 8px; padding: 20px; border: 1px solid color-mix(in srgb, var(--ct-accent) 48%, var(--separator)); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ct-accent) 8%, var(--surface)) 0 14px, var(--surface) 14px 28px); box-shadow: 10px -10px 0 color-mix(in srgb, var(--violet) 9%, var(--surface)), 20px -20px 0 color-mix(in srgb, var(--cyan) 7%, var(--surface)); text-align: center; }
-.mri-ml-tensor b { color: var(--ct-accent); font-size: 0.58rem; }
+.mri-ml-tensor,
+.mri-ml-target { position: relative; display: grid; min-height: 175px; place-content: center; gap: 7px; padding: 18px; text-align: center; }
+.mri-ml-tensor { border: 1px solid color-mix(in srgb, var(--ct-accent) 48%, var(--separator)); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ct-accent) 8%, var(--surface)) 0 14px, var(--surface) 14px 28px); box-shadow: 8px -8px 0 color-mix(in srgb, var(--violet) 9%, var(--surface)), 16px -16px 0 color-mix(in srgb, var(--cyan) 7%, var(--surface)); }
+.mri-ml-tensor b { color: var(--ct-accent); font-size: 0.7rem; }
 .mri-ml-tensor strong { color: var(--text); font-family: Georgia, 'Times New Roman', serif; font-size: 1.05rem; font-weight: 500; }
-.mri-ml-tensor small { color: var(--text-faint); font-size: 0.52rem; }
+.mri-ml-tensor span { color: var(--text-soft); font-size: 0.68rem; }
+.mri-ml-tensor small { color: var(--text-faint); font-size: 0.66rem; }
+.mri-ml-target { border: 1px solid color-mix(in srgb, var(--violet) 40%, var(--separator)); background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--violet) 10%, var(--surface)), var(--surface-secondary)); }
+.mri-ml-target small { color: var(--text-faint); font-size: 0.66rem; }
+.mri-ml-target strong { color: var(--text); font-size: 0.76rem; }
+.mri-ml-target b { color: var(--violet); font-family: Georgia, 'Times New Roman', serif; font-size: 0.95rem; font-weight: 500; }
+.mri-ml-target span { color: var(--text-soft); font-size: 0.68rem; line-height: 1.35; }
+.mri-ml-tensor-workspace > p { margin: 0; color: var(--text-soft); font-size: 0.68rem; line-height: 1.4; }
+.mri-ml-tensor-workspace > p strong { color: var(--text); }
 .mri-ml-checks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); }
 .mri-ml-checks article { display: grid; align-content: start; gap: 6px; padding: 14px 15px; }
 .mri-ml-checks article + article { border-left: 1px solid var(--separator-soft); }
 .mri-ml-checks svg { width: 17px; color: var(--ct-accent); }
-.mri-ml-checks strong { color: var(--text); font-size: 0.63rem; }
-.mri-ml-checks p { margin: 0; color: var(--text-soft); font-size: 0.56rem; line-height: 1.45; }
+.mri-ml-checks strong { color: var(--text); font-size: 0.72rem; }
+.mri-ml-checks p { margin: 0; color: var(--text-soft); font-size: 0.68rem; line-height: 1.45; }
+.mri-ml-contract { display: grid; grid-template-columns: 1.2fr repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--separator-soft); background: color-mix(in srgb, var(--ct-accent) 5%, var(--surface)); }
+.mri-ml-contract strong,
+.mri-ml-contract span { display: flex; align-items: center; min-width: 0; padding: 10px 12px; font-size: 0.66rem; line-height: 1.35; }
+.mri-ml-contract strong { color: var(--text); }
+.mri-ml-contract span { border-left: 1px solid var(--separator-soft); color: var(--text-soft); }
 .mri-ml-ledger { display: grid; border-top: 1px solid var(--separator-soft); background: var(--surface-secondary); }
 .mri-ml-ledger > div { display: grid; grid-template-columns: 0.7fr 1.1fr 1.1fr 1.4fr; }
 .mri-ml-ledger > div + div { border-top: 1px solid var(--separator-soft); }
 .mri-ml-ledger span,
-.mri-ml-ledger strong { min-width: 0; padding: 9px 12px; color: var(--text-soft); font-size: 0.56rem; line-height: 1.35; }
+.mri-ml-ledger strong { min-width: 0; padding: 10px 12px; color: var(--text-soft); font-size: 0.66rem; line-height: 1.4; }
 .mri-ml-ledger span + span,
 .mri-ml-ledger strong + span { border-left: 1px solid var(--separator-soft); }
 .mri-ml-ledger strong { color: var(--text); }
-.mri-ml-ledger .is-heading span { color: var(--text-faint); font-size: 0.5rem; font-weight: 720; letter-spacing: 0.045em; text-transform: uppercase; }
+.mri-ml-ledger .is-heading span { color: var(--text-faint); font-size: 0.6rem; font-weight: 720; letter-spacing: 0.045em; text-transform: uppercase; }
+.mri-ml-references .mri-advanced-reference > footer { font-size: 0.66rem; line-height: 1.4; }
 .mri-advanced-reference > footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 15px; border-top: 1px solid var(--separator-soft); color: var(--text-faint); font-size: 0.52rem; }
 .mri-advanced-reference > footer a { display: inline-flex; align-items: center; gap: 5px; color: var(--ct-accent); text-decoration: none; }
 .mri-advanced-reference > footer svg { width: 11px; }
@@ -3379,6 +3518,16 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-ml-checks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mri-ml-checks article:nth-child(3) { border-top: 1px solid var(--separator-soft); border-left: 0; }
   .mri-ml-checks article:nth-child(4) { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-pipeline { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mri-ml-pipeline > div { grid-template-columns: minmax(0, 1fr); }
+  .mri-ml-pipeline > div > svg { display: none; }
+  .mri-ml-pipeline > div:nth-child(n + 4) { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-pipeline > div:nth-child(3n + 2),
+  .mri-ml-pipeline > div:nth-child(3n + 3) { border-left: 1px solid var(--separator-soft); }
+  .mri-ml-contract { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mri-ml-contract strong { grid-column: 1 / -1; }
+  .mri-ml-contract span { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-contract span:nth-of-type(odd) { border-left: 0; }
 }
 
 @media (max-width: 760px) {
@@ -3391,18 +3540,16 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-sequence-plot > p { margin-left: 58px; }
   .mri-sequence-output-grid { grid-template-columns: minmax(0, 1fr); }
   .mri-sequence-output-grid article + article { border-top: 1px solid var(--separator-soft); border-left: 0; }
-  .mri-artifact-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .mri-artifact-tabs button:nth-child(4) { border-left: 0; }
-  .mri-artifact-tabs button:nth-child(n + 4) { border-top: 1px solid var(--separator-soft); }
+  .mri-artifact-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .mri-artifact-stage { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 230px; }
   .mri-artifact-stage figure > div { padding: 7px; }
   .mri-artifact-stage figcaption { display: grid; min-height: 54px; padding-inline: 8px; }
-  .mri-artifact-stage figcaption strong { font-size: 0.59rem; }
-  .mri-artifact-stage figcaption span { font-size: 0.48rem; }
+  .mri-artifact-stage figcaption strong { font-size: 0.68rem; }
+  .mri-artifact-stage figcaption span { font-size: 0.65rem; }
   .mri-artifact-explanation { grid-template-columns: minmax(0, 1fr); }
   .mri-artifact-explanation article + article { border-top: 1px solid var(--separator-soft); border-left: 0; }
-  .mri-quality-triad { grid-template-columns: minmax(0, 1fr); }
-  .mri-quality-triad > svg { transform: rotate(90deg); }
+  .mri-quality-demo { grid-template-columns: minmax(0, 1fr); }
+  .mri-quality-panel { border-top: 1px solid var(--separator-soft); border-left: 0; }
   .mri-artifact-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mri-artifact-reference-grid article:nth-child(3n + 2),
   .mri-artifact-reference-grid article:nth-child(3n + 3) { border-left: 0; }
@@ -3412,12 +3559,16 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-ml-pipeline > div > svg { display: none; }
   .mri-ml-pipeline button { padding-inline: 8px; }
   .mri-ml-stage figcaption { display: grid; gap: 3px; }
-  .mri-ml-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .mri-ml-checks article { padding-inline: 9px; }
-  .mri-ml-checks article:nth-child(3) { border-top: 0; border-left: 1px solid var(--separator-soft); }
-  .mri-ml-checks article:nth-child(4) { border-top: 0; }
-  .mri-ml-ledger { overflow-x: auto; }
-  .mri-ml-ledger > div { min-width: 650px; }
+  .mri-ml-ledger { gap: 10px; padding: 10px; }
+  .mri-ml-ledger .is-heading { display: none; }
+  .mri-ml-ledger > div:not(.is-heading) { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 8px; background: var(--surface); }
+  .mri-ml-ledger > div + div { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-ledger > div > strong { grid-column: 1 / -1; background: color-mix(in srgb, var(--ct-accent) 6%, var(--surface)); }
+  .mri-ml-ledger > div > span { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-ledger > div > span + span,
+  .mri-ml-ledger > div > strong + span { border-left: 0; }
+  .mri-ml-ledger > div > span:nth-of-type(even) { border-left: 1px solid var(--separator-soft); }
+  .mri-ml-ledger > div > span::before { display: block; margin-bottom: 4px; color: var(--ct-accent); content: attr(data-label); font-size: 0.58rem; font-weight: 720; letter-spacing: 0.045em; text-transform: uppercase; }
 }
 
 @media (max-width: 520px) {
@@ -3432,6 +3583,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-sequence-parameters > div { grid-template-columns: minmax(0, 1fr); }
   .mri-sequence-parameters span + span { border-top: 1px solid var(--separator-soft); border-left: 0; }
   .mri-sequence-output-reference > aside { grid-template-columns: minmax(0, 1fr); }
+  .mri-artifact-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mri-artifact-tabs button { font-size: 0.7rem; }
   .mri-artifact-stage { grid-template-columns: minmax(0, 1fr); }
   .mri-artifact-stage figure { min-height: 300px; }
   .mri-artifact-stage figure + figure { border-top: 1px solid rgba(255,255,255,0.12); border-left: 0; }
@@ -3441,20 +3594,175 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .mri-artifact-reference-grid { grid-template-columns: minmax(0, 1fr); }
   .mri-artifact-reference-grid article:nth-child(even) { border-left: 0; }
   .mri-artifact-reference-grid article + article { border-top: 1px solid var(--separator-soft); }
+  .mri-quality-baseline { grid-template-columns: minmax(0, 1fr); }
+  .mri-quality-baseline small { grid-column: auto; }
+  .mri-quality-images figcaption { display: grid; min-height: 55px; padding-inline: 9px; }
+  .mri-quality-images figure > div { padding: 8px; }
+  .mri-quality-mode-controls { grid-template-columns: minmax(0, 1fr); }
+  .mri-quality-panel-heading { align-items: start; }
+  .mri-quality-panel-heading span,
+  .mri-quality-mode > small,
+  .mri-quality-inline-result small,
+  .mri-quality-failure-toggle small,
+  .mri-quality-baseline small,
+  .mri-artifact-explanation small,
+  .mri-artifact-caveat,
+  .mri-artifact-reference-grid p,
+  .mri-artifact-reference-grid small { font-size: 0.68rem; }
+  .mri-quality-metrics { grid-template-columns: minmax(0, 1fr); }
+  .mri-quality-metrics article { padding: 12px 14px; }
+  .mri-quality-metrics article + article { border-top: 1px solid var(--separator-soft); border-left: 0; }
+  .mri-quality-metrics span { font-size: 0.58rem; }
+  .mri-quality-metrics strong { font-size: 0.8rem; }
+  .mri-quality-metrics small { font-size: 0.68rem; line-height: 1.45; }
   .mri-ml-integrity { align-items: start; }
   .mri-ml-pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .mri-ml-pipeline > div:nth-child(3),
-  .mri-ml-pipeline > div:nth-child(4) { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-pipeline > div { border-left: 0; }
+  .mri-ml-pipeline > div:nth-child(n + 3) { border-top: 1px solid var(--separator-soft); }
   .mri-ml-pipeline > div:nth-child(even) { border-left: 1px solid var(--separator-soft); }
+  .mri-ml-pipeline > div:nth-child(3n + 3) { border-left: 0; }
   .mri-ml-stage > figure { min-height: 320px; padding-inline: 10px; }
   .mri-ml-reconstruction { grid-template-columns: minmax(0, 1fr); }
   .mri-ml-reconstruction > svg { justify-self: center; transform: rotate(90deg); }
   .mri-ml-reconstruction .mri-ml-array { width: 76%; }
   .mri-ml-reconstruction img { width: min(72%, 220px); }
   .mri-ml-series-list { grid-template-columns: minmax(0, 1fr); padding-inline: 3%; }
+  .mri-ml-conversion { grid-template-columns: minmax(0, 1fr); }
+  .mri-ml-conversion > svg { justify-self: center; transform: rotate(90deg); }
+  .mri-ml-conversion > p { grid-column: auto; }
+  .mri-ml-processing { grid-template-columns: minmax(0, 1fr); }
+  .mri-ml-processing article { width: min(100%, 290px); justify-self: center; }
   .mri-ml-tensor-builder { grid-template-columns: minmax(0, 1fr); padding-inline: 4%; }
   .mri-ml-checks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mri-ml-checks article:nth-child(3) { border-top: 1px solid var(--separator-soft); border-left: 0; }
   .mri-ml-checks article:nth-child(4) { border-top: 1px solid var(--separator-soft); }
+  .mri-ml-ledger > div:not(.is-heading) { grid-template-columns: minmax(0, 1fr); }
+  .mri-ml-ledger > div > span:nth-of-type(even) { border-left: 0; }
   .mri-advanced-reference > footer { align-items: start; flex-direction: column; }
+}
+
+@media (max-width: 420px) {
+  .mri-ml-checks { grid-template-columns: minmax(0, 1fr); }
+  .mri-ml-checks article + article { border-top: 1px solid var(--separator-soft); border-left: 0; }
+  .mri-ml-contract { grid-template-columns: minmax(0, 1fr); }
+  .mri-ml-contract strong { grid-column: auto; }
+  .mri-ml-contract span { border-left: 0; }
+}
+
+/* Cross-module consistency pass */
+.windowing-chapter-picker { display: none; }
+.windowing-chapter-picker,
+.ct-learning-chapter-picker,
+.image-data-chapter-picker { color: var(--text); }
+.windowing-chapter-picker > span { display: grid; gap: 2px; }
+.windowing-chapter-picker small { color: var(--text-faint); font-size: var(--type-caption); font-weight: 680; letter-spacing: 0.06em; text-transform: uppercase; }
+.windowing-chapter-picker strong { font-size: 0.74rem; font-weight: 650; }
+.windowing-chapter-picker select { min-width: 0; min-height: 40px; padding: 8px 11px; border: 1px solid var(--separator); border-radius: 8px; color: var(--text); background: var(--surface-raised); font: inherit; font-size: 0.78rem; font-weight: 580; }
+
+.image-data-lesson-copy > div > span { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 7px; color: var(--data-accent); font-size: var(--type-caption); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.image-data-lesson-copy > div > span svg { width: 13px; height: 13px; }
+.windowing-lesson-card > p:not(.lesson-number),
+.image-data-asset-header p,
+.mri-encoding-lab > header p,
+.mri-encoding-reference > header p,
+.mri-advanced-lab > header p,
+.mri-advanced-reference > header p,
+.mri-sequence-lab > header p,
+.mri-sequence-output-reference > header p { font-size: var(--type-body); }
+.mri-encoding-lab > header h4,
+.mri-encoding-reference > header h4,
+.mri-advanced-lab > header h4,
+.mri-advanced-reference > header h4 { font-size: var(--type-card-title); }
+.mri-encoding-stage-tabs small { font-size: var(--type-caption); }
+.mri-encoding-stage-tabs strong { font-size: var(--type-control); }
+.image-data-key-points li { font-size: var(--type-meta); }
+
+.lesson-takeaways { --takeaway-accent: var(--accent); margin-top: 14px; padding: 17px; border-radius: 12px; }
+.ct-learning-module .lesson-takeaways { --takeaway-accent: var(--ct-accent); }
+.image-data-module .lesson-takeaways { --takeaway-accent: var(--data-accent); }
+.windowing-module .lesson-takeaways { --takeaway-accent: var(--window-accent); }
+.lesson-takeaways > :is(span, p) { display: block; margin: 0 0 9px; color: var(--takeaway-accent); font-size: var(--type-caption); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.lesson-takeaways ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: lesson-takeaway; }
+.mri-learning-module .lesson-takeaways ol:has(> li:nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.lesson-takeaways li { position: relative; min-height: 72px; padding: 11px 11px 11px 39px; border: 0; border-radius: 8px; color: var(--text-soft); background: var(--surface-secondary); font-size: var(--type-meta); line-height: 1.45; counter-increment: lesson-takeaway; }
+.lesson-takeaways li::before { position: absolute; top: 11px; left: 10px; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; color: var(--takeaway-accent); background: color-mix(in srgb, var(--takeaway-accent) 10%, var(--surface)); font-size: 0.57rem; font-weight: 700; content: counter(lesson-takeaway); }
+
+.module-reference-strip { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 17px; padding: 10px 14px; border: 1px solid var(--separator-soft); border-radius: 10px; color: var(--text-faint); background: var(--surface); box-shadow: var(--panel-shadow); font-size: 0.66rem; }
+.module-reference-strip > span { color: var(--text-soft); font-weight: 650; }
+.module-reference-strip a { display: inline-flex; align-items: center; gap: 4px; color: var(--text-faint); text-decoration: none; }
+.module-reference-strip a:hover,
+.module-reference-strip a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.module-reference-strip svg { width: 11px; height: 11px; }
+
+.hu-scale:focus-visible { border-radius: 6px; outline: 3px solid color-mix(in srgb, var(--window-accent) 55%, transparent); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .windowing-chapter-picker { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; padding: 10px 12px; border: 1px solid var(--separator-soft); border-radius: 10px; background: var(--surface); box-shadow: var(--panel-shadow); }
+  .windowing-chapters { display: none; }
+}
+
+@media (max-width: 680px) {
+  .ct-learning-module input[type='range'],
+  .mri-learning-module input[type='range'],
+  .windowing-module input[type='range'],
+  .image-data-module input[type='range'] { min-height: var(--control-height-standard); }
+
+  .mri-weighting-tabs button,
+  .mri-gradient-switch button,
+  .anatomical-coordinate-toggle button,
+  .image-data-format-switch button,
+  .image-data-coordinate-switch button,
+  .image-data-mini-segment button,
+  .image-data-field-map button,
+  .geometry-conveyor-steps button,
+  .ct-recon-stages button,
+  .ct-segmented button,
+  .ct-many-views-presets button,
+  .window-preset-grid > button { min-height: var(--control-height-standard); }
+
+  .module-reference-strip { align-items: flex-start; justify-content: flex-start; flex-direction: column; }
+  .lesson-takeaways ol { grid-template-columns: minmax(0, 1fr); }
+  .lesson-takeaways li { min-height: 0; }
+  .mri-learning-module .lesson-takeaways ol:has(> li:nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mri-learning-module .lesson-takeaways ol:has(> li:nth-child(4)) li { min-height: 0; padding: 34px 8px 9px; }
+}
+
+@media (max-width: 520px) {
+  .image-data-table-wrap,
+  .ct-table-wrap { overflow: visible; border: 0; border-radius: 0; }
+  .image-data-table-wrap table,
+  .ct-built-table { display: block; min-width: 0; background: transparent; }
+  .image-data-table-wrap thead,
+  .ct-built-table thead { display: none; }
+  .image-data-table-wrap tbody,
+  .ct-built-table tbody { display: grid; gap: 10px; }
+  .image-data-table-wrap tr,
+  .ct-built-table tbody tr { display: grid; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 9px; background: var(--surface-secondary); }
+  .image-data-table-wrap th,
+  .image-data-table-wrap td,
+  .ct-built-table tbody th,
+  .ct-built-table tbody td { display: grid; grid-template-columns: minmax(92px, 0.72fr) minmax(0, 1.28fr); gap: 10px; width: 100%; padding: 10px 12px; border-bottom: 1px solid var(--separator-soft); white-space: normal; }
+  .image-data-table-wrap tbody th,
+  .ct-built-table tbody th { display: block; color: var(--text); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); font-size: 0.72rem; }
+  .image-data-table-wrap tr > :last-child,
+  .ct-built-table tbody tr > :last-child { border-bottom: 0; }
+  .image-data-table-wrap td::before,
+  .ct-built-table td::before { color: var(--text-faint); content: attr(data-label); font-size: 0.57rem; font-weight: 720; letter-spacing: 0.045em; text-transform: uppercase; }
+
+  .geometry-conveyor-steps { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+  .geometry-conveyor-steps button { border-right: 0; border-bottom: 1px solid var(--separator-soft); }
+  .geometry-conveyor-steps button:last-child { border-bottom: 0; }
+  .geometry-conveyor-steps button.is-current { box-shadow: inset 3px 0 var(--data-accent); }
+
+  .hu-scale { scrollbar-color: color-mix(in srgb, var(--window-accent) 70%, transparent) var(--surface-secondary); scrollbar-width: thin; }
+  .hu-scale::after { position: sticky; left: 0; display: block; width: max-content; margin-top: 5px; color: var(--text-faint); content: 'Swipe horizontally to inspect the full HU scale →'; font-size: 0.59rem; }
+}
+
+@media (max-width: 430px) {
+  .ct-learning-chapter-picker,
+  .image-data-chapter-picker,
+  .windowing-chapter-picker { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .ct-learning-chapter-picker select,
+  .image-data-chapter-picker select,
+  .windowing-chapter-picker select { width: 100%; min-height: var(--control-height-standard); }
 }

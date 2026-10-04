@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { ctRangeProgressStyle } from '../lib/rangeProgress'
 
@@ -314,6 +314,20 @@ function T2StarComparison() {
 
 export function MriRelaxationReferences({ tr, te, onTrChange, onTeChange }: RelaxationTimingProps) {
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('predefined')
+  const comparisonTabs = useRef<Array<HTMLButtonElement | null>>([])
+  const comparisonModes: ComparisonMode[] = ['predefined', 'custom']
+
+  const handleComparisonKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    let nextIndex: number
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % comparisonModes.length
+    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + comparisonModes.length) % comparisonModes.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = comparisonModes.length - 1
+    else return
+    event.preventDefault()
+    setComparisonMode(comparisonModes[nextIndex])
+    comparisonTabs.current[nextIndex]?.focus()
+  }
 
   return (
     <div className="mri-relaxation-references">
@@ -327,12 +341,26 @@ export function MriRelaxationReferences({ tr, te, onTrChange, onTeChange }: Rela
               : 'Move TR and TE directly on the recovery and decay curves. T2* mode also enables flip angle. A simplified tissue model updates the relative brightness of white matter, gray matter, and CSF.'}</p>
           </div>
           <div className="mri-weighting-tabs" role="tablist" aria-label="Weighting comparison mode">
-            <button type="button" role="tab" aria-selected={comparisonMode === 'predefined'} onClick={() => setComparisonMode('predefined')}>Predefined</button>
-            <button type="button" role="tab" aria-selected={comparisonMode === 'custom'} onClick={() => setComparisonMode('custom')}>Custom</button>
+            {comparisonModes.map((mode, index) => (
+              <button
+                key={mode}
+                ref={(element) => { comparisonTabs.current[index] = element }}
+                id={`mri-weighting-tab-${mode}`}
+                type="button"
+                role="tab"
+                aria-controls="mri-weighting-panel"
+                aria-selected={comparisonMode === mode}
+                tabIndex={comparisonMode === mode ? 0 : -1}
+                onKeyDown={(event) => handleComparisonKeyDown(event, index)}
+                onClick={() => setComparisonMode(mode)}
+              >
+                {mode === 'predefined' ? 'Predefined' : 'Custom'}
+              </button>
+            ))}
           </div>
         </header>
         {comparisonMode === 'predefined' ? (
-          <div role="tabpanel" aria-label="Predefined weighting comparison">
+          <div id="mri-weighting-panel" role="tabpanel" aria-labelledby="mri-weighting-tab-predefined">
             <div className="mri-weighting-images">
               {imageComparisons.map((item) => (
                 <figure key={item.id}>
@@ -347,7 +375,7 @@ export function MriRelaxationReferences({ tr, te, onTrChange, onTeChange }: Rela
             </footer>
           </div>
         ) : (
-          <div className="mri-custom-weighting" role="tabpanel" aria-label="Custom timing simulation">
+          <div id="mri-weighting-panel" className="mri-custom-weighting" role="tabpanel" aria-labelledby="mri-weighting-tab-custom">
             <MriCustomTimingLab tr={tr} te={te} onTrChange={onTrChange} onTeChange={onTeChange} />
             <footer className="mri-weighting-source">
               <span>Illustrative tissue parameters · no specific field strength or protocol · idealized signal models</span>

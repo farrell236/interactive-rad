@@ -330,14 +330,14 @@ export function CtScannerGeometryLesson() {
         <section className="ct-built-card">
           <LessonHeader eyebrow="Vocabulary" title="Component and role" copy="Read these names as parts of one measurement geometry." />
           <div className="ct-table-wrap"><table className="ct-built-table"><thead><tr><th>Component</th><th>Role</th></tr></thead><tbody>
-            <tr><th>Source</th><td>Produces the X-ray beam from each acquisition angle.</td></tr>
-            <tr><th>Detector array</th><td>Samples transmitted intensity across channels and rows.</td></tr>
-            <tr><th>Gantry</th><td>Maintains and rotates the source–detector geometry.</td></tr>
-            <tr><th>Isocenter</th><td>Defines the rotation axis and nominal reconstruction center.</td></tr>
-            <tr><th>Collimation</th><td>Sets the nominal irradiated beam width along z.</td></tr>
-            <tr><th>Table</th><td>Positions or continuously moves the patient through the beam.</td></tr>
-            <tr><th>Fan / cone beam</th><td>A fan spreads across channels in one plane; multiple rows give it cone-like z extent.</td></tr>
-            <tr><th>Pitch</th><td>Table travel per rotation divided by nominal collimated beam width in helical CT.</td></tr>
+            <tr><th>Source</th><td data-label="Role">Produces the X-ray beam from each acquisition angle.</td></tr>
+            <tr><th>Detector array</th><td data-label="Role">Samples transmitted intensity across channels and rows.</td></tr>
+            <tr><th>Gantry</th><td data-label="Role">Maintains and rotates the source–detector geometry.</td></tr>
+            <tr><th>Isocenter</th><td data-label="Role">Defines the rotation axis and nominal reconstruction center.</td></tr>
+            <tr><th>Collimation</th><td data-label="Role">Sets the nominal irradiated beam width along z.</td></tr>
+            <tr><th>Table</th><td data-label="Role">Positions or continuously moves the patient through the beam.</td></tr>
+            <tr><th>Fan / cone beam</th><td data-label="Role">A fan spreads across channels in one plane; multiple rows give it cone-like z extent.</td></tr>
+            <tr><th>Pitch</th><td data-label="Role">Table travel per rotation divided by nominal collimated beam width in helical CT.</td></tr>
           </tbody></table></div>
         </section>
       </div>
@@ -676,9 +676,9 @@ export function CtReconstructionLesson() {
       <section className="ct-built-card">
         <LessonHeader eyebrow="Reference" title="Reconstruction trade-offs" copy="The algorithm name alone is not enough; implementation and settings determine the final appearance." />
         <div className="ct-table-wrap"><table className="ct-built-table"><thead><tr><th>Method</th><th>Central operation</th><th>Characteristic result</th><th>Computation</th></tr></thead><tbody>
-          <tr><th>Unfiltered backprojection</th><td>Spread each measurement along its ray.</td><td>Strong low-frequency blur.</td><td>Low</td></tr>
-          <tr><th>Filtered backprojection</th><td>Filter projections, then backproject.</td><td>Fast; noise and resolution depend on the filter or kernel.</td><td>Moderate</td></tr>
-          <tr><th>Iterative</th><td>Predict measurements, compare, update.</td><td>Model- and regularization-dependent texture.</td><td>Higher</td></tr>
+          <tr><th>Unfiltered backprojection</th><td data-label="Central operation">Spread each measurement along its ray.</td><td data-label="Characteristic result">Strong low-frequency blur.</td><td data-label="Computation">Low</td></tr>
+          <tr><th>Filtered backprojection</th><td data-label="Central operation">Filter projections, then backproject.</td><td data-label="Characteristic result">Fast; noise and resolution depend on the filter or kernel.</td><td data-label="Computation">Moderate</td></tr>
+          <tr><th>Iterative</th><td data-label="Central operation">Predict measurements, compare, update.</td><td data-label="Characteristic result">Model- and regularization-dependent texture.</td><td data-label="Computation">Higher</td></tr>
         </tbody></table></div>
       </section>
     </div>
@@ -800,11 +800,11 @@ export function CtProtocolLesson() {
       <section className="ct-built-card">
         <LessonHeader eyebrow="Effect table" title="Parameter → visible consequence" copy="Use directions as relationships, not as universal clinical prescriptions." />
         <div className="ct-table-wrap"><table className="ct-built-table"><thead><tr><th>Parameter</th><th>Primary effect</th><th>Common visible change</th><th>Linked trade-off</th></tr></thead><tbody>
-          <tr><th>mAs ↑</th><td>More photons</td><td>Lower quantum noise</td><td>Higher tube output</td></tr>
-          <tr><th>Pitch ↑</th><td>More table travel per rotation</td><td>Less longitudinal overlap</td><td>Coverage and sampling change</td></tr>
-          <tr><th>Slice thickness ↑</th><td>More signal averaged through z</td><td>Lower noise, more partial volume</td><td>Less through-plane detail</td></tr>
-          <tr><th>Sharper kernel</th><td>More high-frequency response</td><td>Sharper edges and noisier texture</td><td>Detail–noise balance</td></tr>
-          <tr><th>Field of view ↓</th><td>Smaller nominal pixel spacing</td><td>Finer sampling grid</td><td>Does not guarantee true resolution</td></tr>
+          <tr><th>mAs ↑</th><td data-label="Primary effect">More photons</td><td data-label="Common visible change">Lower quantum noise</td><td data-label="Linked trade-off">Higher tube output</td></tr>
+          <tr><th>Pitch ↑</th><td data-label="Primary effect">More table travel per rotation</td><td data-label="Common visible change">Less longitudinal overlap</td><td data-label="Linked trade-off">Coverage and sampling change</td></tr>
+          <tr><th>Slice thickness ↑</th><td data-label="Primary effect">More signal averaged through z</td><td data-label="Common visible change">Lower noise, more partial volume</td><td data-label="Linked trade-off">Less through-plane detail</td></tr>
+          <tr><th>Sharper kernel</th><td data-label="Primary effect">More high-frequency response</td><td data-label="Common visible change">Sharper edges and noisier texture</td><td data-label="Linked trade-off">Detail–noise balance</td></tr>
+          <tr><th>Field of view ↓</th><td data-label="Primary effect">Smaller nominal pixel spacing</td><td data-label="Common visible change">Finer sampling grid</td><td data-label="Linked trade-off">Does not guarantee true resolution</td></tr>
         </tbody></table></div>
       </section>
     </div>
@@ -1083,12 +1083,12 @@ export function CtContrastLesson() {
       <section className="ct-built-card" aria-labelledby="ct-phase-reference-title">
         <LessonHeader id="ct-phase-reference-title" eyebrow="Phase and provenance reference" title="Classify by timing and enhancement—not name alone" copy="Representative ranges below orient the learner to a common multiphasic liver examination. Other clinical questions use different targets and phase names." />
         <div className="ct-table-wrap"><table className="ct-built-table ct-contrast-reference-table" aria-label="CT contrast phase reference"><colgroup><col className="is-phase" /><col className="is-timing" /><col className="is-emphasis" /><col className="is-risk" /></colgroup><thead><tr><th>Phase or target</th><th>Representative timing reference</th><th>Enhancement emphasis</th><th>ML ingestion risk</th></tr></thead><tbody>
-          <tr><th>Non-contrast</th><td>Before IV iodine</td><td>Baseline tissue, calcification, blood products, fat</td><td>Misclassified as a poorly enhanced post-contrast series</td></tr>
-          <tr><th>First-pass / angiographic target</th><td>Usually bolus tracked; vessel and examination specific</td><td>Target arterial lumen</td><td>Grouped with late arterial despite different parenchymal enhancement</td></tr>
-          <tr><th>Late arterial</th><td>Illustrative fixed-delay liver example: about 35–45 s from injection start</td><td>Arteries plus developing organ enhancement</td><td>Fixed-delay and triggered acquisitions treated as equivalent</td></tr>
-          <tr><th>Portal venous</th><td>Illustrative abdominal example: about 60–80 s</td><td>Portal veins and more uniform abdominal parenchyma</td><td>Mixed with late venous or single-phase routine abdomen</td></tr>
-          <tr><th>Delayed</th><td>Illustrative liver example: about 3–5 min</td><td>Redistribution, retention, and washout</td><td>“Delayed” or “equilibrium” used without the actual delay or clinical target</td></tr>
-          <tr><th>Organ-specific phases</th><td>Protocol dependent</td><td>Examples include nephrographic and excretory targets</td><td>Forced into generic arterial/venous labels</td></tr>
+          <tr><th>Non-contrast</th><td data-label="Representative timing reference">Before IV iodine</td><td data-label="Enhancement emphasis">Baseline tissue, calcification, blood products, fat</td><td data-label="ML ingestion risk">Misclassified as a poorly enhanced post-contrast series</td></tr>
+          <tr><th>First-pass / angiographic target</th><td data-label="Representative timing reference">Usually bolus tracked; vessel and examination specific</td><td data-label="Enhancement emphasis">Target arterial lumen</td><td data-label="ML ingestion risk">Grouped with late arterial despite different parenchymal enhancement</td></tr>
+          <tr><th>Late arterial</th><td data-label="Representative timing reference">Illustrative fixed-delay liver example: about 35–45 s from injection start</td><td data-label="Enhancement emphasis">Arteries plus developing organ enhancement</td><td data-label="ML ingestion risk">Fixed-delay and triggered acquisitions treated as equivalent</td></tr>
+          <tr><th>Portal venous</th><td data-label="Representative timing reference">Illustrative abdominal example: about 60–80 s</td><td data-label="Enhancement emphasis">Portal veins and more uniform abdominal parenchyma</td><td data-label="ML ingestion risk">Mixed with late venous or single-phase routine abdomen</td></tr>
+          <tr><th>Delayed</th><td data-label="Representative timing reference">Illustrative liver example: about 3–5 min</td><td data-label="Enhancement emphasis">Redistribution, retention, and washout</td><td data-label="ML ingestion risk">“Delayed” or “equilibrium” used without the actual delay or clinical target</td></tr>
+          <tr><th>Organ-specific phases</th><td data-label="Representative timing reference">Protocol dependent</td><td data-label="Enhancement emphasis">Examples include nephrographic and excretory targets</td><td data-label="ML ingestion risk">Forced into generic arterial/venous labels</td></tr>
         </tbody></table></div>
         <div className="ct-contrast-metadata" aria-label="Contrast metadata to preserve">
           <div><strong>Injection</strong><span>agent · iodine concentration · volume · flow rate · duration · saline flush</span></div>

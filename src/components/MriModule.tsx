@@ -265,20 +265,21 @@ const chapters: MriChapter[] = [
           title: 'Voxel size and SNR move together',
           paragraphs: [
             'Reducing voxel dimensions decreases the amount of signal contributing to each reconstructed voxel. Increasing matrix size without changing field of view therefore does not provide free detail.',
-            'Slice thickness, receiver bandwidth, number of averages, coil sensitivity, and field strength also influence visible noise and effective resolution.',
+            'Nominal voxel spacing is not guaranteed effective resolution. Slice profile and point-spread effects blur detail, while thick or anisotropic voxels mix tissues through partial volume; interpolation changes the grid but cannot restore information that was never acquired.',
           ],
         },
         {
           title: 'Artifacts point back to a physical or sampling cause',
           paragraphs: [
-            'Motion changes the object during acquisition and can create ghosting or blur. Insufficient field of view can wrap anatomy across the image. Susceptibility and chemical shift alter local frequency and produce displacement, signal loss, or distortion.',
-            'Truncation can produce Gibbs ringing near sharp boundaries, while spatially varying coil sensitivity can appear as a bias field across otherwise similar tissue.',
+            'Motion changes the object during acquisition and can create ghosting or blur. In EPI, an odd–even readout mismatch instead creates a Nyquist or N/2 ghost displaced by about half a field of view, so not every ghost is motion. Insufficient field of view can wrap anatomy across the image.',
+            'Susceptibility and chemical shift both alter frequency, but their signatures and sensitive encoding directions differ. Type 1 chemical shift displaces fat relative to water along readout; Type 2 is echo-time-dependent cancellation within mixed fat–water voxels.',
+            'Finite k-space truncation—abruptly limiting the sampled spatial-frequency extent—can produce Gibbs ringing near sharp boundaries. Spatially varying transmit or receive sensitivity can instead appear as a bias field. Complex receiver noise becomes non-Gaussian after magnitude formation and may vary spatially after coil combination or acceleration.',
           ],
         },
         {
           title: 'Acceleration changes the reconstruction problem',
           paragraphs: [
-            'Parallel imaging uses differences among coil sensitivities to separate aliased signals. Compressed sensing uses structured undersampling with reconstruction assumptions. Learned reconstruction may add a trained prior to the process.',
+            'Parallel imaging uses differences among coil sensitivities to separate aliased signals. Compressed sensing typically uses incoherent undersampling with a reconstruction that enforces a sparse representation and data consistency. Learned reconstruction may add a trained prior to the process.',
             'These methods can shorten acquisition, but noise amplification, residual aliasing, smoothing, or hallucinated structure may depend on sampling and implementation.',
           ],
         },
@@ -286,11 +287,11 @@ const chapters: MriChapter[] = [
       callout: { title: 'Image quality is task dependent.', body: 'An image can look smoother yet contain less recoverable detail, or look noisy while preserving useful boundaries. Evaluate the acquisition and reconstruction against the downstream task rather than visual polish alone.' },
     },
     assets: [
-      { kind: 'gallery', label: 'Primary interactive', title: 'Artifact cause → image signature', purpose: 'Teach a small set of high-value artifacts through controlled changes to one reference image.', wide: true, lead: true, preview: ['Motion', 'Wrap', 'Susceptibility', 'Bias field'], notes: ['Selectable causes: motion, wraparound, susceptibility, chemical shift, Gibbs ringing, bias field.', 'Pair the image with a small acquisition-space explanation.', 'One concise ML consequence per artifact: shortcut, misregistration, intensity drift, or lost anatomy.'] },
+      { kind: 'gallery', label: 'Primary interactive', title: 'Artifact cause → image signature', purpose: 'Teach a small set of high-value artifacts through controlled changes to one reference image.', wide: true, lead: true, preview: ['Motion', 'EPI N/2 ghost', 'Wrap', 'Susceptibility'], notes: ['Selectable causes: motion, EPI Nyquist ghosting, wraparound, susceptibility, chemical shift, Gibbs ringing, bias field, and noise.', 'Pair the image with a small acquisition-space explanation.', 'One concise ML consequence per artifact: shortcut, misregistration, intensity drift, or lost anatomy.'] },
       { kind: 'comparison', label: 'Trade-off figure', title: 'Resolution ↔ SNR ↔ time', purpose: 'Show why image quality cannot be reduced to one slider.', preview: ['Smaller voxels', 'More signal', 'Shorter scan'], notes: ['Use a triangular relationship with two concrete examples.', 'Keep dose out of MRI terminology.', 'Distinguish acquired resolution from interpolation or display enlargement.'] },
       { kind: 'table', label: 'Reference table', title: 'Artifact → likely cause → ML risk', purpose: 'Provide a practical dataset-screening checklist.', preview: ['Pattern', 'Upstream cause', 'Data risk'], notes: ['Keep only common, visually distinct artifacts.', 'Do not imply one appearance always has one cause.', 'Link correction choices to provenance rather than hiding them.'] },
     ],
-    takeaways: ['Smaller voxels, higher SNR, and shorter scans cannot all be maximized independently.', 'Artifacts carry information about motion, fields, sampling, coils, and reconstruction.', 'Acceleration changes both the acquisition and the assumptions used to recover an image.'],
+    takeaways: ['Smaller voxels, higher SNR, and shorter scans cannot all be maximized independently.', 'Nominal spacing, effective resolution, and partial-volume mixing are different properties.', 'Artifacts and noise carry information about motion, fields, sampling, coils, and reconstruction.', 'Acceleration changes both the acquisition and the assumptions used to recover an image.'],
   },
   {
     id: 'model-input',
@@ -299,46 +300,44 @@ const chapters: MriChapter[] = [
     title: 'What reaches the model',
     summary: 'Trace raw multi-coil measurements into reconstructed series, converted volumes, preprocessing steps, and the tensor used for training.',
     coreTitle: 'The model receives one selected representation of an MR experiment.',
-    coreCopy: 'Raw MRI begins as complex k-space from one or more receive coils. Reconstruction, coil combination, corrections, and image selection produce magnitude or phase series in DICOM. Conversion may group those series into NIfTI volumes, and preprocessing can register, resample, normalize, crop, or mask them before tensor construction.',
+    coreCopy: 'Raw MRI commonly begins as complex readout data from several receive coils. Reconstruction, coil combination, corrections, and image selection produce image series—usually magnitude, with phase, real, or imaginary components available in some workflows. Conversion assembles frames and metadata into analysis volumes; preprocessing may then change intensity, geometry, or both before an input tensor and aligned target reach the model.',
     teaching: {
       layout: 'pipeline',
       kicker: 'Keep the acquisition identity',
-      cues: ['Raw', 'Series', 'Tensor'],
+      cues: ['Raw data', 'Series identity', 'Model input'],
       sections: [
         {
           title: 'Raw data can contain coils, echoes, phases, and repetitions',
           paragraphs: [
-            'The raw array is commonly complex and may include dimensions beyond k-space position: receive coil, echo, time point, diffusion direction, cardiac phase, or repetition. These axes must be identified before reconstruction or learning.',
-            'Coil combination produces a convenient image but removes some information about the separate receiver sensitivities. Magnitude reconstruction also discards the sign and phase relationships present in complex data.',
+            'Raw MRI is commonly complex and may include dimensions beyond k-space position: receive coil, echo, time point, diffusion direction, cardiac phase, or repetition. It may be stored as individual readout acquisitions rather than one dense array, so axes, loop counters, trajectories, and calibration records must be identified before reconstruction or learning.',
+            'Coil combination produces a convenient image but removes the independent receiver channels. Magnitude alone is nonnegative and discards complex phase; phase-sensitive or real-valued reconstruction can retain polarity, while a correctly scaled and aligned real–imaginary or magnitude–phase pair can represent complex data.',
           ],
         },
         {
           title: 'An examination contains several non-interchangeable series',
           paragraphs: [
             'A single examination may include localizers, repeated acquisitions, multiple orientations, pre- and post-contrast series, derived maps, and processed images. Series description alone is not always sufficient to classify them.',
-            'Useful context includes TR, TE, TI, flip angle, field strength, acquisition type, phase-encoding direction, diffusion b-values and directions, image type, geometry, and whether the series is original or derived.',
+            'Useful context includes TR, TE, TI, flip angle, field strength, vendor and scanner model, receive coil, software and reconstruction version, acquisition type, phase-encoding direction, diffusion b-values and directions, image type, geometry, units, and whether the series is original or derived. Missing metadata should remain unknown rather than becoming an inferred default.',
           ],
         },
         {
           title: 'Preprocessing changes the representation seen by the model',
           paragraphs: [
-            'Registration, resampling, bias correction, denoising, skull stripping, cropping, and intensity normalization can make data easier to combine while also changing interpolation, scale, field of view, or visible artifacts.',
-            'Because conventional MRI intensity is relative, normalization is often useful—but it should be fitted and documented with awareness of scanner, protocol, anatomy, pathology, and data leakage.',
+            'Registration, resampling, bias correction, denoising, skull stripping, cropping, and intensity normalization can make data easier to combine while also changing scale, interpolation, field of view, or visible artifacts. Spatial targets must follow the same physical transforms, using label-preserving interpolation for categorical masks.',
+            'Conventional weighted MRI usually has scanner-dependent relative intensity, whereas quantitative maps may carry calibrated units and should not be normalized as arbitrary weighted images unless discarding those units is intentional. Subject-local operations can be computed per case, but cohort-level statistics must be fitted inside each training fold after all visits, repeats, reconstructions, and derivatives have been grouped by pseudonymous subject.',
           ],
         },
       ],
-      callout: { title: 'Split by patient before learning preprocessing statistics.', body: 'Repeated series, derived images, and registered copies can place nearly identical anatomy in several folders. Provenance-aware grouping is necessary to prevent leakage across training, validation, and test sets.' },
+      callout: { title: 'Split by subject before learning preprocessing statistics.', body: 'Keep every visit, repeat, reconstruction, derived map, registered copy, and label for one pseudonymous subject in the same fold. Fit cohort-level preprocessing only on that fold’s training subjects, and consider a site- or scanner-held-out evaluation when deployment shift matters.' },
     },
     assets: [
-      { kind: 'flow', label: 'Pipeline figure', title: 'K-space → reconstruction → series → tensor', purpose: 'Show exactly where representation-changing operations enter the ML pipeline.', wide: true, preview: ['Multi-coil k-space', 'Reconstruct', 'DICOM / NIfTI', 'Model tensor'], notes: ['Use a left-to-right pipeline with a visible provenance record beneath it.', 'Mark where complex data become magnitude/phase and where geometry is applied.', 'Make conversion and preprocessing expandable later; the skeleton should remain readable without interaction.'] },
+      { kind: 'flow', label: 'Pipeline figure', title: 'Raw → reconstruction → series → conversion → preprocessing → tensor + target', purpose: 'Show exactly where representation-changing operations enter the ML pipeline.', wide: true, preview: ['Raw readouts', 'Reconstruct', 'Select series', 'Convert', 'Preprocess', 'Tensor + target'], notes: ['Use a left-to-right pipeline with a visible provenance record beneath it.', 'Mark where complex data become image components, where scaling and geometry are translated, and where interpolation begins.', 'Keep conversion and preprocessing distinct so reorientation is not confused with resampling.'] },
       { kind: 'table', label: 'Inspection table', title: 'Metadata worth preserving', purpose: 'Give engineers a compact checklist for series identity and domain shift.', preview: ['Identity', 'Timing', 'Encoding', 'Geometry'], notes: ['Groups: sequence identity, timing, field/coil, spatial encoding, diffusion, geometry, derivation.', 'Show DICOM-friendly names rather than requiring tag memorization.', 'Explain missing metadata as unknown rather than silently defaulting it.'] },
       { kind: 'comparison', label: 'Processing comparison', title: 'Same acquisition, different model input', purpose: 'Make preprocessing provenance visible instead of treating it as harmless formatting.', preview: ['Original', 'Normalized', 'Resampled'], notes: ['Same slice before and after bias correction, normalization, and resampling.', 'Show a small intensity profile and geometry readout.', 'Label which changes affect values, geometry, or both.'] },
     ],
-    takeaways: ['Raw MRI may be complex, multi-coil, and higher dimensional than the exported image.', 'Series identity depends on acquisition and derivation metadata, not filename or brightness alone.', 'Conversion and preprocessing are part of the data-generating pipeline and must be recorded.'],
+    takeaways: ['Raw MRI may be complex, multi-coil, and higher dimensional than the exported image.', 'Series identity depends on acquisition and derivation metadata, not filename or brightness alone.', 'Conversion and preprocessing can change values, geometry, or both and must be recorded separately.', 'Every tensor needs declared axes, channel presence, aligned target provenance, and a leakage-safe subject split.'],
   },
 ]
-
-const lastAvailableChapterIndex = 4
 
 const assetIcons: Record<MriAssetKind, IconComponent> = {
   demo: Gauge,
@@ -412,15 +411,14 @@ export default function MriModule() {
       <div className="ct-learning-workspace">
         <label className="ct-learning-chapter-picker">
           <span><small>Chapter</small><strong>{chapter.title}</strong></span>
-          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index} disabled={index > lastAvailableChapterIndex}>{index + 1}. {item.label}</option>)}</select>
+          <select aria-label="Select MRI chapter" value={chapterIndex} onChange={(event) => setChapterIndex(Number(event.target.value))}>{chapters.map((item, index) => <option key={item.id} value={index}>{index + 1}. {item.label}</option>)}</select>
         </label>
 
         <nav className="ct-learning-chapters" aria-label="MRI learning chapters">
           <p>Chapters</p>
           {chapters.map((item, index) => {
             const Icon = item.icon
-            const isDisabled = index > lastAvailableChapterIndex
-            return <button key={item.id} type="button" className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} disabled={isDisabled} title={isDisabled ? 'Coming soon' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
+            return <button key={item.id} type="button" className={index === chapterIndex ? 'is-selected' : ''} aria-current={index === chapterIndex ? 'step' : undefined} onClick={() => setChapterIndex(index)}><span>{index + 1}</span><Icon aria-hidden="true" /><b>{item.label}</b></button>
           })}
         </nav>
 
@@ -462,7 +460,7 @@ export default function MriModule() {
                   {supportAssets.length > 0 && <div className="ct-asset-grid">{supportAssets.map((asset) => <MriAssetCard key={asset.title} asset={asset} />)}</div>}
                 </>}
 
-          <section className="ct-chapter-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
+          <section className="ct-chapter-takeaways lesson-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
             <span>Keep from this chapter</span>
             <ol>{chapter.takeaways.map((takeaway) => <li key={takeaway}>{emphasizeVocabulary(takeaway)}</li>)}</ol>
           </section>

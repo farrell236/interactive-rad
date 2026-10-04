@@ -89,7 +89,7 @@ const chapters: CtChapter[] = [
       { kind: 'equation', label: 'Equation figure', title: 'Normalize, divide, then take the log', purpose: 'Give the transform a stable visual home without a long derivation.', formula: 'p = −ln(I / I₀)', notes: ['Annotate every symbol in plain language.', 'Include one short numerical example.', 'Keep photon statistics for the protocol chapter.'] },
       { kind: 'figure', label: 'Data figure', title: 'One view across the detector', purpose: 'Connect individual rays to a one-dimensional projection profile.', notes: ['Horizontal detector channels.', 'Ray bundle through a simple two-object phantom.', 'Profile below uses the same channel positions.'] },
     ],
-    takeaways: ['Raw counts depend on both the incident and transmitted beam.', 'The log transform converts transmission into additive attenuation along a ray.', 'One projection angle contains a full row of detector measurements.'],
+    takeaways: ['Raw counts depend on both the incident and transmitted beam.', 'The log transform converts transmission into additive attenuation along a ray.', 'One projection angle records detector channels × rows; a single-row profile is the simplified in-plane case.'],
   },
   {
     id: 'reconstruction',
@@ -449,7 +449,7 @@ export default function CtModule() {
 
           <CtChapterExperience chapter={chapter} />
 
-          <section className="ct-chapter-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
+          <section className="ct-chapter-takeaways lesson-takeaways glass-panel" aria-label={`${chapter.title} teaching goals`}>
             <span>Keep from this chapter</span>
             <ol>{chapter.takeaways.map((takeaway) => <li key={takeaway}>{chapter.id === 'scanner-geometry' ? emphasizeScannerVocabulary(takeaway) : takeaway}</li>)}</ol>
           </section>

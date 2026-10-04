@@ -1,4 +1,4 @@
-import { Atom, Boxes, MousePointer2, Sparkles } from 'lucide-react'
+import { Atom, Boxes, ExternalLink, MousePointer2, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AcquisitionControls } from './AcquisitionControls'
 import { DetectorImage } from './DetectorImage'
@@ -81,7 +81,7 @@ export default function XrayModule() {
     <article className="xray-module">
       <header className="module-intro">
         <div><p className="section-kicker"><Boxes aria-hidden="true" /> Projection radiography</p><h2>Chest X-ray acquisition</h2><p>Explore how patient positioning, geometry, and exposure shape the projection.</p></div>
-        <div className="geometry-readout" aria-label="Live geometry"><div><span>SID</span><strong>{settings.sid} cm</strong></div><div><span>ODD</span><strong>{derived.odd.toFixed(1)} cm</strong></div><div><span>Mag.</span><strong>{derived.magnification.toFixed(2)}×</strong></div></div>
+        <div className="geometry-readout" aria-label="Live geometry"><div><span>SID</span><strong>{settings.sid} cm</strong></div><div><span>OID</span><strong>{derived.odd.toFixed(1)} cm</strong></div><div><span>Mag.</span><strong>{derived.magnification.toFixed(2)}×</strong></div></div>
       </header>
       <div className="visual-workbench">
         <section className="scene-shell glass-panel" aria-label="Interactive 3D X-ray acquisition scene">
@@ -104,6 +104,20 @@ export default function XrayModule() {
         <DetectorImage settings={settings} phase={phase} captureId={captureId} />
       </div>
       <AcquisitionControls settings={settings} phase={phase} onSettingChange={updateSetting} onProjectionChange={updateProjection} onExpose={takeExposure} />
+      <section className="xray-takeaways lesson-takeaways glass-panel" aria-label="Chest X-ray acquisition learning points">
+        <span>Keep from this lesson</span>
+        <ol>
+          <li>Projection choice changes which anatomy overlaps and how far structures sit from the detector.</li>
+          <li>Geometry controls magnification and coverage; kVp primarily changes beam energy and penetration, while mAs primarily changes photon number and quantum noise.</li>
+          <li>The detector records transmitted X-ray signal; processing produces a projection that represents accumulated attenuation along overlapping paths.</li>
+        </ol>
+      </section>
+      <footer className="xray-sources module-reference-strip">
+        <span>Asset sources</span>
+        <a href="https://3dassets.dev/packs/hospital-wards-and-clinic-operations" target="_blank" rel="noreferrer">Scanner room · CC0 <ExternalLink aria-hidden="true" /></a>
+        <a href="https://blendswap.com/blend/26915" target="_blank" rel="noreferrer">Anatomical model · CC BY-SA <ExternalLink aria-hidden="true" /></a>
+        <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noreferrer">BodyParts3D <ExternalLink aria-hidden="true" /></a>
+      </footer>
       <p className="sr-only" aria-live="polite">{phase === 'captured' ? `Exposure captured using ${settings.projection}, ${settings.kvp} kilovolts peak, ${settings.mas} milliampere-seconds, and ${settings.sid} centimetre SID.` : ''}</p>
     </article>
   )

@@ -13,9 +13,9 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
 const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon: IconComponent }> = [
   { id: 'xray', label: 'X-ray', icon: Aperture },
   { id: 'ct', label: 'CT', icon: ScanLine },
+  { id: 'windowing', label: 'CT Windowing', shortLabel: 'Window', icon: Contrast },
   { id: 'mri', label: 'MRI', icon: Magnet },
   { id: 'image-data', label: 'Image Data', shortLabel: 'Data', icon: Database },
-  { id: 'windowing', label: 'CT Windowing', shortLabel: 'Window', icon: Contrast },
 ]
 
 function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: Modality) => void }) {
@@ -37,8 +37,8 @@ function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: M
   }
 
   return (
-    <nav className="modality-nav" aria-label="Imaging modality">
-      <div className="modality-tabs" role="tablist" aria-label="Imaging modalities">
+    <nav className="modality-nav" aria-label="Imaging learning modules">
+      <div className="modality-tabs" role="tablist" aria-label="Imaging learning modules">
         {modalities.map((modality, index) => {
           const Icon = modality.icon
           const selected = modality.id === active

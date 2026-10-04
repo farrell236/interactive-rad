@@ -42,10 +42,33 @@ const chapters: Array<{ id: ChapterId; label: string; short: string }> = [
   { id: 'ml', label: 'Model input and reproducibility', short: 'For ML' },
 ]
 
+const chapterTakeaways: Record<ChapterId, string[]> = {
+  hu: [
+    'Stored integers require metadata before they can be interpreted as calibrated CT values.',
+    'Hounsfield units describe reconstructed attenuation relative to water.',
+    'Windowing is a display transform applied after calibration; it does not change the source HU.',
+  ],
+  mapping: [
+    'Window center selects the HU neighborhood while window width controls displayed contrast.',
+    'Values outside the selected interval are compressed or clipped by the chosen transfer function.',
+    'The exact mapping must be reproduced whenever windowed pixels become model input.',
+  ],
+  presets: [
+    'Different windows reveal different structures from the same calibrated voxels.',
+    'A preset is a center-and-width convention, not a new reconstruction.',
+    'Preset names are useful shorthand only when their numerical definitions are preserved.',
+  ],
+  ml: [
+    'Calibrated HU, one window, and multi-window channels are different model representations; declare whether the tensor is a slice or volume.',
+    'Training and inference must use the same calibration, clipping, scaling, and channel order.',
+    'A windowed export is a display derivative and cannot recover the original CT values.',
+  ],
+}
+
 const mlPipelines: Array<{ id: MlPipeline; label: string; shape: string; description: string }> = [
-  { id: 'raw', label: 'Calibrated HU', shape: '1 × H × W', description: 'Retain the calibrated numeric range, then normalize it explicitly for the model.' },
-  { id: 'single', label: 'Single window', shape: '1 × H × W', description: 'Apply one task-specific display transform consistently during training and inference.' },
-  { id: 'multi', label: 'Multi-window', shape: '3 × H × W', description: 'Stack complementary lung, soft-tissue, and bone views as separate input channels.' },
+  { id: 'raw', label: 'Calibrated HU', shape: 'slice · 1 × H × W', description: 'Retain the calibrated numeric range, then normalize it explicitly for the model.' },
+  { id: 'single', label: 'Single window', shape: 'slice · 1 × H × W', description: 'Apply one task-specific display transform consistently during training and inference.' },
+  { id: 'multi', label: 'Multi-window', shape: 'slice · 3 × H × W', description: 'Stack complementary lung, soft-tissue, and bone views as separate input channels.' },
 ]
 
 const defaultCurvePoints: CurvePoint[] = [
@@ -444,7 +467,7 @@ function SliderControl({ label, value, min, max, step, unit, onChange }: {
 
 function HuScale({ activeProbe, onSelect }: { activeProbe: Probe; onSelect: (landmark: HuLandmark) => void }) {
   return (
-    <div className="hu-scale" aria-label="Representative Hounsfield unit scale">
+    <div className="hu-scale" role="region" tabIndex={0} aria-label="Representative Hounsfield unit scale">
       <div className="hu-scale-axis">
         <div className="hu-scale-track" aria-hidden="true"><span className="hu-scale-gradient" /></div>
         <svg className="hu-scale-connectors" viewBox="0 0 1000 72" preserveAspectRatio="none" aria-hidden="true">
@@ -560,8 +583,23 @@ export default function WindowingModule() {
         <div className="windowing-progress" aria-label={`Section ${activeChapter + 1} of ${chapters.length}`}><strong>{activeChapter + 1} / {chapters.length}</strong></div>
       </header>
 
+      <label className="windowing-chapter-picker">
+        <span><small>Section</small><strong>{chapters[activeChapter]?.short}</strong></span>
+        <select
+          aria-label="Select CT windowing section"
+          value={chapter}
+          onChange={(event) => {
+            const next = event.target.value as ChapterId
+            setChapter(next)
+            if (next === 'presets') setMappingMode('linear-exact')
+          }}
+        >
+          {chapters.map((item, index) => <option key={item.id} value={item.id}>{index + 1}. {item.short}</option>)}
+        </select>
+      </label>
+
       <nav className="windowing-chapters" aria-label="Windowing learning sections">
-        {chapters.map((item, index) => <button key={item.id} type="button" className={chapter === item.id ? 'is-active' : ''} onClick={() => { setChapter(item.id); if (item.id === 'presets') setMappingMode('linear-exact') }}><span>{index + 1}</span><strong>{item.short}</strong><small>{item.label}</small></button>)}
+        {chapters.map((item, index) => <button key={item.id} type="button" className={chapter === item.id ? 'is-active' : ''} aria-current={chapter === item.id ? 'step' : undefined} onClick={() => { setChapter(item.id); if (item.id === 'presets') setMappingMode('linear-exact') }}><span>{index + 1}</span><strong>{item.short}</strong><small>{item.label}</small></button>)}
       </nav>
 
       <div className="windowing-workbench">
@@ -651,6 +689,7 @@ export default function WindowingModule() {
             <p className="lesson-number">04 · MODEL INPUT</p>
             <h3 id="windowing-ml-title">Display choices become preprocessing choices.</h3>
             <p>A model can consume calibrated HU, one windowed image, or several windows as channels. These representations are not interchangeable, even when they originate from the same CT voxels.</p>
+            <p className="ml-shape-note"><strong>Declare the tensor axes.</strong> The shapes below describe the displayed two-dimensional slice. A three-dimensional volume adds depth: <code>C × D × H × W</code>.</p>
             <div className="ml-pipeline-options" role="group" aria-label="CT model input representation">
               {mlPipelines.map((pipeline) => <button key={pipeline.id} type="button" aria-pressed={mlPipeline === pipeline.id} className={mlPipeline === pipeline.id ? 'is-selected' : ''} onClick={() => setMlPipeline(pipeline.id)}>
                 <span><strong>{pipeline.label}</strong><small>{pipeline.shape}</small></span>
@@ -674,11 +713,17 @@ export default function WindowingModule() {
             <div className="ml-practice-list">
               <p><strong>Record the transform.</strong><span>Keep slope/intercept handling, clipping bounds, scaling, channel order, and output dtype with the experiment.</span></p>
               <p><strong>Match training and inference.</strong><span>A different window or a second accidental rescale changes the input distribution.</span></p>
+              <p><strong>Mask stored padding.</strong><span>DICOM Pixel Padding Value or Range identifies samples outside the native image. Exclude them from histograms, normalization, and model inputs before applying the modality transform.</span></p>
               <p><strong>Know what was exported.</strong><span>A windowed PNG is a display derivative—not a recoverable copy of the original CT values.</span></p>
             </div>
           </>}
         </section>
       </div>
+
+      <section className="windowing-takeaways lesson-takeaways glass-panel" aria-label={`${chapters[activeChapter]?.short} learning points`}>
+        <span>Keep from this section</span>
+        <ol>{chapterTakeaways[chapter].map((point) => <li key={point}>{point}</li>)}</ol>
+      </section>
 
       <section className="windowing-summary" aria-label="Current window mapping">
         <div><SlidersHorizontal aria-hidden="true" /><span><small>Current interval</small><strong>{Math.round(bounds.low)} to {Math.round(bounds.high)} HU</strong></span></div>
@@ -686,10 +731,11 @@ export default function WindowingModule() {
         <div><Activity aria-hidden="true" /><span><small>Selected voxel</small><strong>{probe.hu} HU → {probeGray}</strong></span></div>
       </section>
 
-      <footer className="windowing-sources">
+      <footer className="windowing-sources module-reference-strip">
         <span>Reference material</span>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.html#sect_C.11.1" target="_blank" rel="noreferrer">DICOM Modality LUT</a>
         <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.2.html" target="_blank" rel="noreferrer">DICOM VOI LUT</a>
+        <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.5.html#sect_C.7.5.1.1.2" target="_blank" rel="noreferrer">DICOM Pixel Padding</a>
         <a href="https://www.cancerimagingarchive.net/collection/lidc-idri/" target="_blank" rel="noreferrer">CT image: LIDC-IDRI</a>
         <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>
         <a href="https://doi.org/10.7937/K9/TCIA.2015.LO9QL9SX" target="_blank" rel="noreferrer">Dataset DOI</a>
