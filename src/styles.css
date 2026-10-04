@@ -89,13 +89,16 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .ambient { display: none; }
 .glass-panel { border: 1px solid var(--separator-soft); background: var(--surface); box-shadow: var(--panel-shadow); }
 
-.app-header { position: relative; z-index: 30; display: grid; grid-template-columns: minmax(250px, auto) minmax(460px, 1fr) auto; align-items: center; gap: 20px; margin-bottom: 24px; padding: 9px 10px; border-radius: 13px; background: var(--material); box-shadow: var(--bar-shadow); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
+.app-header { position: sticky; z-index: 30; top: 14px; display: grid; grid-template-columns: minmax(250px, auto) minmax(460px, 1fr) auto; align-items: center; gap: 20px; margin-bottom: 24px; padding: 9px 10px; border-radius: 13px; background: var(--material); box-shadow: var(--bar-shadow); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
 .brand-block { display: flex; align-items: center; gap: 10px; min-width: 0; padding-left: 4px; }
+.brand-home-button { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; border-radius: 9px; color: inherit; background: transparent; text-align: left; }
+.brand-home-button:hover .brand-title { color: var(--accent); }
+.brand-home-button:active { transform: translateY(1px); }
 .brand-mark { display: grid; flex: 0 0 auto; place-items: center; width: 34px; height: 34px; border-radius: 8px; color: white; background: var(--accent); box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 28%, transparent); }
 .brand-mark svg { width: 19px; height: 19px; stroke-width: 2.1; }
-.brand-copy { min-width: 0; }
+.brand-copy { display: block; min-width: 0; }
 h1, h2, h3, p { margin-top: 0; }
-h1 { margin: 0; overflow: hidden; font-size: 0.94rem; font-weight: 650; letter-spacing: -0.016em; text-overflow: ellipsis; white-space: nowrap; }
+.brand-title { display: block; margin: 0; overflow: hidden; font-size: 0.94rem; font-weight: 650; letter-spacing: -0.016em; text-overflow: ellipsis; white-space: nowrap; transition: color 160ms ease; }
 .subtitle { margin: 2px 0 0; overflow: hidden; color: var(--text-faint); font-size: 0.72rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
 .text-size-control { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 9px; background: color-mix(in srgb, var(--surface-secondary) 76%, transparent); }
@@ -113,12 +116,137 @@ h1 { margin: 0; overflow: hidden; font-size: 0.94rem; font-weight: 650; letter-s
 .modality-tab { position: relative; display: flex; align-items: center; justify-content: center; gap: 7px; min-width: 0; min-height: 38px; padding: 7px 10px; overflow: hidden; border: 0; border-radius: 7px; color: var(--text-faint); background: transparent; font-size: 0.78rem; font-weight: 560; transition: color 140ms ease, background 140ms ease, box-shadow 140ms ease; }
 .modality-tab:hover { color: var(--text); }
 .modality-tab svg { flex: 0 0 auto; width: 16px; height: 16px; }
+.modality-tab-xray { --module-accent: #45d7f0; }
+.modality-tab-ct { --module-accent: #30b7d8; }
+.modality-tab-windowing { --module-accent: #f0a24a; }
+.modality-tab-mri { --module-accent: #a987ff; }
+.modality-tab-image-data { --module-accent: #5fcf8b; }
 .modality-tab.is-selected { color: var(--text); background: var(--surface-raised); box-shadow: 0 1px 5px var(--shadow); }
 .selected-indicator { display: none; }
+.is-home .modality-tab.is-selected { color: var(--text); background: color-mix(in srgb, var(--module-accent) 15%, var(--surface-raised)); box-shadow: 0 1px 5px var(--shadow), 0 0 23px color-mix(in srgb, var(--module-accent) 40%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--module-accent) 28%, transparent); }
+.is-home .modality-tab.is-selected svg { color: var(--module-accent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--module-accent) 75%, transparent)); }
+.is-home .modality-tab.is-selected .selected-indicator { display: none; }
 .short-label { display: none; }
 
 .app-content { min-height: 660px; }
+.app-content.is-landing { min-height: 100vh; }
 [role="tabpanel"][hidden] { display: none; }
+
+.landing-page { --landing-edge: clamp(18px, 4vw, 64px); position: relative; margin-top: -92px; overflow: clip; }
+.landing-hero { position: relative; display: grid; min-height: max(720px, 100svh); place-items: center; align-content: center; padding: 150px var(--landing-edge) 92px; overflow: hidden; text-align: center; isolation: isolate; }
+.landing-hero::before { position: absolute; z-index: -3; inset: 8% 8% 4%; border-radius: 50%; content: ""; background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 18%, transparent), transparent 56%); filter: blur(34px); }
+.landing-hero::after { position: absolute; z-index: -2; right: 9%; bottom: 3%; left: 9%; height: 1px; content: ""; background: linear-gradient(90deg, transparent, var(--separator), transparent); }
+.landing-hero-orbit { position: absolute; z-index: -1; top: 50%; left: 50%; width: min(66vw, 760px); aspect-ratio: 1; border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 50%; transform: translate(-50%, -49%) rotateX(68deg); }
+.landing-hero-orbit::before, .landing-hero-orbit::after, .landing-hero-orbit span { position: absolute; border: 1px solid color-mix(in srgb, var(--cyan) 20%, transparent); border-radius: 50%; content: ""; }
+.landing-hero-orbit::before { inset: 12%; }
+.landing-hero-orbit::after { inset: 25%; }
+.landing-hero-orbit span:nth-child(1) { inset: 39%; background: color-mix(in srgb, var(--accent) 20%, transparent); box-shadow: 0 0 80px color-mix(in srgb, var(--accent) 42%, transparent); }
+.landing-hero-orbit span:nth-child(2) { inset: -7%; border-color: color-mix(in srgb, var(--violet) 16%, transparent); animation: landing-orbit-drift 13s linear infinite; }
+.landing-hero-orbit span:nth-child(3) { inset: 5%; border-style: dashed; animation: landing-orbit-drift 17s linear infinite reverse; }
+.landing-overline { margin: 0 0 18px; color: var(--accent); font-size: clamp(0.7rem, 1vw, 0.86rem); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.landing-hero h1 { max-width: 1050px; margin: 0; font-size: clamp(3.35rem, 9.2vw, 8.8rem); font-weight: 720; line-height: 0.88; letter-spacing: -0.075em; text-wrap: balance; }
+.landing-hero-copy { max-width: 760px; margin: 30px auto 0; color: var(--text-soft); font-size: clamp(1.04rem, 1.65vw, 1.42rem); line-height: 1.5; text-wrap: balance; }
+.landing-path { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 13px; margin-top: 28px; color: var(--text-faint); font-size: 0.73rem; font-weight: 660; letter-spacing: 0.04em; text-transform: uppercase; }
+.landing-path b { color: var(--accent); font-weight: 520; }
+.landing-scroll-cue { position: absolute; bottom: 28px; left: 50%; display: grid; justify-items: center; gap: 5px; color: var(--text-faint); font-size: 0.7rem; font-weight: 620; text-decoration: none; transform: translateX(-50%); }
+.landing-scroll-cue svg { width: 19px; height: 19px; color: var(--accent); animation: landing-cue 1.8s ease-in-out infinite; }
+
+.landing-showcases { position: relative; }
+.landing-showcase { --section-opacity: 0.08; --section-scale: 0.965; --section-shift-x: 0px; --section-copy-shift: 0px; position: relative; min-height: 132svh; scroll-margin-top: 105px; }
+.landing-showcase + .landing-showcase::before { position: absolute; top: 0; right: 8%; left: 8%; height: 1px; content: ""; background: linear-gradient(90deg, transparent, var(--separator-soft), transparent); }
+.landing-showcase-sticky { position: sticky; top: 90px; display: grid; grid-template-columns: minmax(300px, 0.78fr) minmax(500px, 1.3fr); gap: clamp(34px, 6vw, 100px); min-height: calc(100svh - 108px); align-items: center; padding: 30px var(--landing-edge) 38px; }
+.landing-showcase-copy { z-index: 2; opacity: var(--section-opacity); transform: translate3d(var(--section-copy-shift), 0, 0); transition: opacity 80ms linear; }
+.landing-showcase-index { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; color: var(--showcase-accent); font-size: 0.72rem; font-weight: 760; letter-spacing: 0.12em; text-transform: uppercase; }
+.landing-showcase-index::after { width: clamp(30px, 5vw, 78px); height: 1px; content: ""; background: color-mix(in srgb, var(--showcase-accent) 66%, transparent); }
+.landing-showcase-index span { color: var(--text-faint); }
+.landing-showcase h2 { max-width: 650px; margin: 0; font-size: clamp(2.4rem, 4.6vw, 4.9rem); font-weight: 710; line-height: 0.98; letter-spacing: -0.058em; text-wrap: balance; }
+.landing-showcase-copy > p:not(.landing-showcase-index) { max-width: 600px; margin: 24px 0 0; color: var(--text-soft); font-size: clamp(0.96rem, 1.3vw, 1.15rem); line-height: 1.6; text-wrap: pretty; }
+.landing-sequence { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; max-width: 620px; margin: 28px 0 0; padding: 0; overflow: hidden; border: 1px solid var(--separator-soft); border-radius: 11px; list-style: none; background: var(--separator-soft); }
+.landing-sequence li { display: grid; gap: 6px; align-content: center; min-height: 72px; padding: 10px 12px; color: var(--text-soft); background: color-mix(in srgb, var(--surface) 90%, transparent); font-size: 0.68rem; font-weight: 630; }
+.landing-sequence li span { color: var(--showcase-accent); font-size: 0.59rem; font-weight: 760; }
+.landing-module-button, .landing-finale button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; margin-top: 28px; padding: 11px 17px; border: 0; border-radius: 999px; color: #071016; background: var(--showcase-accent); box-shadow: 0 8px 26px color-mix(in srgb, var(--showcase-accent) 22%, transparent); font-size: 0.78rem; font-weight: 720; transition: transform 160ms ease, box-shadow 160ms ease; }
+.landing-module-button:hover, .landing-finale button:hover { transform: translateY(-2px); box-shadow: 0 12px 34px color-mix(in srgb, var(--showcase-accent) 34%, transparent); }
+.landing-module-button svg, .landing-finale button svg { width: 16px; height: 16px; }
+
+.landing-visual-shell { position: relative; min-width: 0; aspect-ratio: 1.25; overflow: hidden; border: 1px solid color-mix(in srgb, var(--showcase-accent) 24%, var(--separator-soft)); border-radius: clamp(18px, 2.4vw, 34px); opacity: var(--section-opacity); background: radial-gradient(circle at 46% 45%, color-mix(in srgb, var(--showcase-accent) 12%, transparent), transparent 58%), linear-gradient(145deg, color-mix(in srgb, var(--surface-raised) 86%, var(--showcase-accent)), var(--bg-deep)); box-shadow: 0 34px 90px color-mix(in srgb, var(--showcase-accent) 9%, var(--shadow)); transform: translate3d(var(--section-shift-x), 0, 0) scale(var(--section-scale)); transition: opacity 80ms linear; isolation: isolate; }
+.landing-visual-shell::after { position: absolute; inset: 0; pointer-events: none; content: ""; box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.22); }
+.landing-visual-shell > svg { position: relative; z-index: 1; display: block; width: 100%; height: 100%; }
+.landing-visual-grid { position: absolute; z-index: 0; inset: 0; opacity: 0.25; background-image: linear-gradient(color-mix(in srgb, var(--showcase-accent) 11%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--showcase-accent) 11%, transparent) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(circle, black, transparent 72%); }
+.landing-visual-caption { position: absolute; z-index: 3; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--showcase-accent) 25%, transparent); border-radius: 999px; color: rgba(245, 250, 255, 0.72); background: rgba(10, 12, 16, 0.62); backdrop-filter: blur(14px); font-size: clamp(0.56rem, 0.75vw, 0.68rem); font-weight: 630; }
+.landing-visual-caption span { width: 7px; height: 7px; border-radius: 50%; background: var(--showcase-accent); box-shadow: 0 0 9px var(--showcase-accent); }
+
+.landing-clinical-frame { position: relative; z-index: 1; display: grid; width: 100%; height: 100%; place-items: center; padding: clamp(30px, 5vw, 72px); }
+.landing-clinical-frame img, .landing-clinical-canvas { display: block; width: auto; height: auto; max-width: 82%; max-height: 86%; object-fit: contain; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 5px; background: #000; box-shadow: 0 22px 54px rgba(0, 0, 0, 0.32); }
+.landing-clinical-xray img { max-width: 74%; max-height: 88%; }
+.landing-clinical-ct .landing-clinical-canvas { max-width: 82%; max-height: 86%; }
+.landing-clinical-mri img { max-width: 82%; max-height: 86%; }
+.landing-image-orientation { position: absolute; z-index: 2; top: 50%; right: 10%; left: 10%; display: flex; justify-content: space-between; pointer-events: none; color: var(--showcase-accent); font-size: 0.7rem; font-weight: 760; transform: translateY(-50%); }
+.landing-source-credit { position: absolute; z-index: 4; bottom: 16px; left: 16px; margin: 0; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; color: rgba(245, 250, 255, 0.69); background: rgba(10, 12, 16, 0.62); backdrop-filter: blur(14px); font-size: clamp(0.52rem, 0.69vw, 0.62rem); font-weight: 620; }
+.landing-clinical-scanline { position: absolute; z-index: 2; top: 12%; bottom: 12%; left: 50%; width: min(82%, 570px); border-top: 1px solid rgba(144, 242, 255, 0.9); background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--showcase-accent) 24%, transparent) 48%, color-mix(in srgb, var(--showcase-accent) 7%, transparent) 54%, transparent 100%); box-shadow: 0 -4px 18px color-mix(in srgb, var(--showcase-accent) 44%, transparent); pointer-events: none; transform: translateX(-50%); animation: landing-clinical-scan 4.8s ease-in-out infinite; }
+.landing-window-comparison { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 2.8vw, 34px); padding-inline: clamp(30px, 4vw, 56px); }
+.landing-window-image { display: grid; min-width: 0; justify-items: center; gap: 6px; }
+.landing-window-image .landing-clinical-canvas { width: 100%; height: auto; max-width: 100%; max-height: none; }
+.landing-window-image > span { color: rgba(255, 255, 255, 0.9); font-size: 0.75rem; font-weight: 710; }
+.landing-window-image > small { color: rgba(255, 255, 255, 0.56); font-size: 0.59rem; }
+.landing-showcase-windowing .landing-visual-shell > svg { box-sizing: border-box; padding-inline: clamp(12px, 1.5vw, 22px); }
+.landing-mri-readout { position: absolute; z-index: 3; right: 8%; bottom: 14%; width: min(30%, 210px); padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--showcase-accent) 40%, transparent); border-radius: 12px; background: rgba(8, 9, 15, 0.76); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25); }
+.landing-mri-readout span { color: rgba(255, 255, 255, 0.66); font-size: 0.58rem; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; }
+.landing-mri-readout svg { display: block; width: 100%; height: auto; }
+.landing-mri-readout path { fill: none; stroke: #c7adff; stroke-width: 2.5; stroke-dasharray: 260; animation: landing-signal 3.2s linear infinite; }
+.landing-svg-ct-image { width: 100%; height: 100%; overflow: hidden; background: #020405; }
+.landing-svg-ct-image .landing-clinical-canvas { display: block; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; object-fit: cover; }
+.landing-xray-patient-3d { position: absolute; z-index: 2; top: 13%; bottom: 13%; left: 26%; width: 33%; pointer-events: none; }
+.landing-xray-patient-3d canvas { display: block; width: 100% !important; height: 100% !important; background: transparent !important; }
+.landing-ct-scanner-3d { position: absolute; z-index: 2; top: 14.6%; left: 3.7%; width: 54.5%; height: 67.3%; overflow: hidden; border-radius: 24px; pointer-events: none; background: #20363d; }
+.landing-ct-scanner-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+.landing-ct-scanner-heading { position: absolute; z-index: 3; top: 18px; left: 18px; padding: 7px 9px; border: 1px solid rgba(143, 235, 250, 0.18); border-radius: 999px; color: rgba(230, 251, 255, 0.88); background: rgba(18, 45, 53, 0.64); backdrop-filter: blur(8px); font-size: 9px; font-weight: 760; letter-spacing: 0.1em; }
+.landing-xray-patient-loading { position: absolute; inset: 24%; border: 1px solid color-mix(in srgb, var(--showcase-accent) 34%, transparent); border-radius: 50%; }
+.landing-source-glow { transform-origin: 76px 260px; animation: landing-pulse 2.2s ease-in-out infinite; }
+.landing-data-arrow { stroke-dashoffset: 0; animation: landing-dash 2.4s linear infinite; }
+.landing-ct-stage-label { fill: rgba(213, 244, 250, 0.66); font-size: 10px; font-weight: 760; letter-spacing: 0.1em; }
+.landing-ct-ring-halo { fill: none; stroke: #86eafb; stroke-width: 4; stroke-linecap: round; filter: url(#landing-ct-ring-glow); animation: landing-ct-ring-breathe 1.8s ease-in-out infinite; }
+.landing-ct-scan-plane.is-back .landing-ct-ring-halo { opacity: 0.52; }
+.landing-ct-source-dot { fill: #baf7ff; stroke: #45d7f0; stroke-width: 3; filter: drop-shadow(0 0 7px rgba(69, 215, 240, 0.82)); }
+.ct-volume-stack-stage.landing-ct-volume-stack-stage { width: 100%; height: 100%; min-height: 0; border-radius: 24px; }
+.landing-ct-volume-heading { position: absolute; z-index: 4; top: 27px; left: 20px; color: rgba(213, 244, 250, 0.66); font-size: 10px; font-weight: 760; letter-spacing: 0.1em; }
+.ct-volume-stack.landing-ct-volume-stack { width: 62%; transform: translate3d(-3%, 24%, 0); }
+.landing-ct-volume-stack.ct-volume-stack .landing-clinical-canvas { max-width: none; max-height: none; border-radius: 0; background: #020506; }
+.landing-mri-fields { transform-origin: 280px 257px; animation: landing-field 7s ease-in-out infinite; }
+.landing-mri-dipole { transform-origin: 0 0; }
+.landing-mri-rf { transform-origin: 280px 257px; animation: landing-rf 3.2s ease-out infinite; }
+.landing-mri-signal-trace { stroke-dasharray: 310; animation: landing-signal 3.2s linear infinite; }
+.landing-data-slice { width: 100%; height: 100%; overflow: hidden; border-radius: 8px; background: #050708; }
+.landing-data-slice .landing-clinical-canvas { width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; object-fit: cover; }
+.landing-data-cube-face { border-radius: 0; filter: saturate(0.78) brightness(0.86); }
+.landing-data-stage-label { fill: #9ad9b4; font-size: 11px; font-weight: 760; letter-spacing: 0.12em; }
+.landing-data-flow, .landing-data-flow-head { fill: none; stroke: #8df0b4; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.landing-data-3d { position: absolute; z-index: 1; inset: 0; overflow: hidden; }
+.landing-data-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+.landing-image-data-scenes { position: absolute; inset: 0; display: grid; grid-template-columns: 43% 57%; }
+.landing-image-data-scene { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.landing-data-3d-label { position: absolute; z-index: 3; top: 7%; display: grid; gap: 3px; padding: 7px 9px; border: 1px solid rgba(141, 240, 180, 0.22); border-radius: 10px; background: rgba(13, 47, 31, 0.68); backdrop-filter: blur(8px); pointer-events: none; }
+.landing-data-3d-label.is-cube { left: 7%; }
+.landing-data-3d-label.is-volume { right: 6%; text-align: right; }
+.landing-data-3d-label strong { color: rgba(231, 255, 240, 0.96); font-size: clamp(0.54rem, 0.76vw, 0.68rem); font-weight: 760; letter-spacing: 0.11em; }
+.landing-data-3d-label span { color: rgba(205, 241, 218, 0.82); font-size: clamp(0.48rem, 0.64vw, 0.58rem); font-weight: 620; }
+.landing-data-tensor-card { position: absolute; z-index: 3; right: 6%; bottom: 15%; display: grid; gap: 3px; padding: 9px 12px; border: 1px solid rgba(141, 240, 180, 0.34); border-radius: 12px; color: #e6fff0; background: rgba(12, 35, 25, 0.68); backdrop-filter: blur(10px); pointer-events: none; }
+.landing-data-tensor-card strong { font-size: clamp(0.66rem, 0.9vw, 0.82rem); font-weight: 700; }
+.landing-data-tensor-card span { color: rgba(195, 232, 208, 0.72); font-size: clamp(0.48rem, 0.64vw, 0.58rem); }
+
+.landing-finale { --showcase-accent: var(--accent); display: grid; min-height: min(760px, 86svh); place-items: center; align-content: center; padding: 100px var(--landing-edge); border-top: 1px solid var(--separator-soft); text-align: center; }
+.landing-finale p { margin: 0 0 18px; color: var(--accent); font-size: 0.76rem; font-weight: 720; letter-spacing: 0.11em; text-transform: uppercase; }
+.landing-finale h2 { margin: 0; font-size: clamp(2.8rem, 7.8vw, 7.2rem); line-height: 0.96; letter-spacing: -0.065em; text-wrap: balance; }
+.landing-finale button { margin-top: 34px; color: white; background: var(--accent); }
+
+@keyframes landing-orbit-drift { to { transform: rotate(360deg); } }
+@keyframes landing-cue { 50% { transform: translateY(6px); } }
+@keyframes landing-pulse { 50% { opacity: 0.7; transform: scale(1.16); } }
+@keyframes landing-dash { to { stroke-dashoffset: -52; } }
+@keyframes landing-ct-ring-breathe { 50% { opacity: 0.62; stroke-width: 5.5; } }
+@keyframes landing-field { 50% { opacity: .72; transform: scale(1.025); } }
+@keyframes landing-rf { 0% { opacity: 0; transform: scale(.45); } 24% { opacity: 1; } 64%, 100% { opacity: 0; transform: scale(1.7); } }
+@keyframes landing-signal { from { stroke-dashoffset: 310; } 45%, 100% { stroke-dashoffset: 0; } }
+@keyframes landing-clinical-scan { 0%, 12% { transform: translate(-50%, 0); opacity: 0; } 20% { opacity: 0.8; } 72% { opacity: 0.8; } 84%, 100% { transform: translate(-50%, 76%); opacity: 0; } }
 .xray-module { display: grid; gap: 16px; }
 .module-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; padding: 8px 5px 14px; border-bottom: 1px solid var(--separator-soft); }
 .section-kicker { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--accent); font-size: 0.72rem; font-weight: 650; letter-spacing: 0.04em; }
@@ -1993,6 +2121,8 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 
 @media (max-width: 1180px) {
   .app-header { grid-template-columns: minmax(220px, auto) minmax(420px, 1fr) auto; gap: 12px; }
+  .landing-showcase-sticky { grid-template-columns: minmax(280px, 0.82fr) minmax(430px, 1.18fr); gap: 38px; }
+  .landing-showcase h2 { font-size: clamp(2.35rem, 5vw, 4.5rem); }
   .visual-workbench { grid-template-columns: minmax(0, 1.65fr) minmax(290px, 0.72fr); }
   .sliders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .windowing-workbench { grid-template-columns: minmax(390px, 0.85fr) minmax(430px, 1.15fr); }
@@ -2010,6 +2140,15 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
   .app-frame { width: min(100% - 24px, 780px); }
   .app-header { grid-template-columns: 1fr auto; }
   .modality-nav { grid-column: 1 / -1; grid-row: 2; }
+  .landing-page { margin-top: -138px; }
+  .landing-hero { min-height: max(700px, 100svh); padding-top: 190px; }
+  .landing-hero-orbit { width: min(96vw, 680px); }
+  .landing-showcase { min-height: 0; }
+  .landing-showcase-sticky { position: relative; top: auto; grid-template-columns: minmax(0, 1fr); gap: 34px; min-height: 0; padding: 94px 12px; }
+  .landing-showcase-copy { grid-row: 2; }
+  .landing-visual-shell { grid-row: 1; width: min(100%, 700px); justify-self: center; }
+  .landing-showcase h2 { max-width: 720px; font-size: clamp(2.55rem, 8vw, 4.9rem); }
+  .landing-showcase-copy > p:not(.landing-showcase-index), .landing-sequence { max-width: 720px; }
   .visual-workbench { grid-template-columns: 1fr; }
   .scene-shell { min-height: 520px; }
   .detector-panel { min-height: auto; }
@@ -2067,12 +2206,28 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 
 @media (max-width: 680px) {
   .app-frame { width: calc(100% - 20px); padding-top: 10px; }
-  .app-header { margin-bottom: 18px; border-radius: 11px; }
+  .app-header { top: 10px; margin-bottom: 18px; border-radius: 11px; }
   .subtitle { display: none; }
   .brand-mark { width: 32px; height: 32px; }
   .modality-tabs { gap: 1px; }
   .modality-tab { flex-direction: column; gap: 2px; min-height: 50px; padding: 5px 3px; font-size: 0.68rem; }
   .modality-tab svg { width: 16px; height: 16px; }
+  .landing-page { margin-top: -128px; }
+  .landing-hero { min-height: max(650px, 100svh); padding: 175px 12px 82px; }
+  .landing-hero h1 { font-size: clamp(3rem, 18vw, 5.2rem); }
+  .landing-hero-copy { margin-top: 23px; font-size: 0.98rem; }
+  .landing-path { max-width: 330px; margin-inline: auto; }
+  .landing-scroll-cue { bottom: 19px; }
+  .landing-showcase-sticky { gap: 27px; padding: 74px 2px; }
+  .landing-showcase h2 { font-size: clamp(2.4rem, 13vw, 4rem); }
+  .landing-showcase-copy > p:not(.landing-showcase-index) { margin-top: 18px; font-size: 0.9rem; }
+  .landing-sequence { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 22px; }
+  .landing-sequence li { min-height: 62px; }
+  .landing-visual-shell { aspect-ratio: 1.08; border-radius: 18px; }
+  .landing-visual-caption { right: 10px; bottom: 10px; left: 10px; justify-content: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .landing-module-button { width: 100%; }
+  .landing-finale { min-height: 650px; padding-inline: 12px; }
+  .landing-finale h2 { font-size: clamp(2.7rem, 15vw, 4.8rem); }
   .module-intro { align-items: flex-start; }
   .geometry-readout { display: none; }
   .module-intro h2 { font-size: 1.8rem; }
@@ -2213,7 +2368,7 @@ button.probe-state-control.is-pinned:hover { border-color: rgba(100,210,255,0.6)
 }
 
 @media (max-width: 430px) {
-  .brand-copy h1 { max-width: 190px; font-size: 0.86rem; }
+  .brand-title { max-width: 190px; font-size: 0.86rem; }
   .brand-mark { display: none; }
   .icon-button { width: 36px; height: 36px; }
   .text-size-button { width: 30px; height: 32px; }

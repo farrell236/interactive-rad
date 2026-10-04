@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComponentType, KeyboardEvent, SVGProps } from 'react'
 import { Aperture, Contrast, Database, Magnet, Moon, ScanLine, Sun } from 'lucide-react'
+import LandingPage from './components/LandingPage'
 import type { Modality } from './types'
 
 const XrayModule = lazy(() => import('./components/XrayModule'))
@@ -18,7 +19,7 @@ const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon
   { id: 'image-data', label: 'Image Data', shortLabel: 'Data', icon: Database },
 ]
 
-function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: Modality) => void }) {
+function ModalityTabs({ active, onChange }: { active: Modality | null; onChange: (id: Modality) => void }) {
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -47,13 +48,13 @@ function ModalityTabs({ active, onChange }: { active: Modality; onChange: (id: M
               ref={(element) => { tabRefs.current[index] = element }}
               key={modality.id}
               id={`tab-${modality.id}`}
-              className={`modality-tab${selected ? ' is-selected' : ''}`}
+              className={`modality-tab modality-tab-${modality.id}${selected ? ' is-selected' : ''}`}
               type="button"
               role="tab"
               aria-label={modality.label}
               aria-selected={selected}
               aria-controls={`panel-${modality.id}`}
-              tabIndex={selected ? 0 : -1}
+              tabIndex={selected || (!active && index === 0) ? 0 : -1}
               onClick={() => onChange(modality.id)}
               onKeyDown={(event) => onKeyDown(event, index)}
             >
@@ -74,7 +75,8 @@ function LoadingModule() {
 }
 
 export default function App() {
-  const [active, setActive] = useState<Modality>('xray')
+  const [page, setPage] = useState<'home' | Modality>('home')
+  const [landingActive, setLandingActive] = useState<Modality | null>(null)
   const [textSize, setTextSize] = useState(16)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light'
@@ -86,21 +88,52 @@ export default function App() {
     document.documentElement.style.fontSize = `${textSize}px`
     return () => { document.documentElement.style.removeProperty('font-size') }
   }, [textSize])
+
+  const returnHome = useCallback(() => {
+    setPage('home')
+    setLandingActive(null)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [])
+
+  const openModule = useCallback((modality: Modality) => {
+    setPage(modality)
+    setLandingActive(null)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [])
+
+  const activeModality = page === 'home' ? landingActive : page
+
+  const activeModule = page === 'xray'
+    ? <XrayModule />
+    : page === 'ct'
+      ? <CtModule />
+      : page === 'mri'
+        ? <MriModule />
+        : page === 'image-data'
+          ? <ImageDataModule />
+          : page === 'windowing'
+            ? <WindowingModule />
+            : null
+
   return (
-    <div className="app-frame">
+    <div className={`app-frame${page === 'home' ? ' is-home' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to imaging lab</a>
       <div className="ambient ambient-one" aria-hidden="true" />
       <div className="ambient ambient-two" aria-hidden="true" />
 
       <header className="app-header glass-panel">
         <div className="brand-block">
-          <div className="brand-mark" aria-hidden="true"><Aperture /></div>
-          <div className="brand-copy">
-            <h1>Radiology Imaging Lab</h1>
-            <p className="subtitle">Interactive 3D acquisition and image formation</p>
-          </div>
+          <button className="brand-home-button" type="button" aria-label="Open Interactive Radiology home" aria-current={page === 'home' ? 'page' : undefined} onClick={returnHome}>
+            <span className="brand-mark" aria-hidden="true"><Aperture /></span>
+            <span className="brand-copy">
+              <span className="brand-title">Interactive Radiology</span>
+              <span className="subtitle">Interactive 3D acquisition and image formation</span>
+            </span>
+          </button>
         </div>
-        <ModalityTabs active={active} onChange={setActive} />
+        <ModalityTabs active={activeModality} onChange={openModule} />
         <div className="header-actions">
           <div className="text-size-control" role="group" aria-label="Text size">
             <button className="text-size-button is-decrease" type="button" title={`Decrease text size · ${textSize}px`} aria-label="Decrease text size" disabled={textSize <= 14} onClick={() => setTextSize((current) => Math.max(14, current - 2))}>A−</button>
@@ -113,22 +146,15 @@ export default function App() {
         </div>
       </header>
 
-      <main id="main-content" className="app-content">
-        {modalities.map((modality) => (
-          <section key={modality.id} id={`panel-${modality.id}`} role="tabpanel" aria-labelledby={`tab-${modality.id}`} hidden={active !== modality.id}>
-            {modality.id === 'xray'
-              ? <Suspense fallback={<LoadingModule />}><XrayModule /></Suspense>
-              : modality.id === 'ct'
-                ? <Suspense fallback={<LoadingModule />}><CtModule /></Suspense>
-              : modality.id === 'mri'
-                ? <Suspense fallback={<LoadingModule />}><MriModule /></Suspense>
-              : modality.id === 'image-data'
-                ? <Suspense fallback={<LoadingModule />}><ImageDataModule /></Suspense>
-                : modality.id === 'windowing'
-                  ? <Suspense fallback={<LoadingModule />}><WindowingModule /></Suspense>
-                : null}
-          </section>
-        ))}
+      <main id="main-content" className={`app-content${page === 'home' ? ' is-landing' : ''}`}>
+        {page === 'home'
+          ? <LandingPage onActiveChange={setLandingActive} onOpenModule={openModule} />
+          : (
+            <section id={`panel-${page}`} role="tabpanel" aria-labelledby={`tab-${page}`}>
+              <h1 className="sr-only">Interactive Radiology — {modalities.find((modality) => modality.id === page)?.label}</h1>
+              <Suspense fallback={<LoadingModule />}>{activeModule}</Suspense>
+            </section>
+          )}
       </main>
 
       <footer className="app-footer">

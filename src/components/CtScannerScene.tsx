@@ -14,12 +14,15 @@ interface CtScannerSceneProps {
 }
 
 const PATIENT_CAMERA = { position: [1.75, 1.92, 3.25] as [number, number, number], target: [0, 1.05, 0.22] as [number, number, number] }
+const LANDING_CAMERA = { position: [1.05, 1.55, 1.55] as [number, number, number], target: [0, 1.02, -0.55] as [number, number, number] }
 const ROOM_GRID = [-3, -1, 1, 3] as const
 const GANTRY_ISOCENTER_Y = 1.1
 const COUCH_CENTER_Y = GANTRY_ISOCENTER_Y - 0.2
 const ACQUISITION_PLANE_Z = -1.03
 const PATIENT_START_Z = -0.15
 const PATIENT_END_Z = -0.93
+const LANDING_PATIENT_START_Z = -0.93
+const LANDING_PATIENT_END_Z = -0.3
 
 const ROOM_MODELS = {
   scanner: 'models/ct-scanner-room.glb',
@@ -52,7 +55,7 @@ function MedicalAsset({ path, ...props }: ModelProps) {
   return <group {...props}><primitive object={model} /></group>
 }
 
-function CtPatient({ scanProgress }: { scanProgress: number }) {
+function CtPatient({ scanProgress, startZ = PATIENT_START_Z, endZ = PATIENT_END_Z }: { scanProgress: number; startZ?: number; endZ?: number }) {
   const bodySource = useGLTF(modelUrl('models/anatomy-body.glb')).scene
   const skeletonSource = useGLTF(modelUrl('models/anatomy-skeleton.glb')).scene
   const organsSource = useGLTF(modelUrl('models/anatomy-organs.glb')).scene
@@ -125,7 +128,7 @@ function CtPatient({ scanProgress }: { scanProgress: number }) {
   useEffect(() => () => skeletonMaterial.dispose(), [skeletonMaterial])
   useEffect(() => () => organMaterial.dispose(), [organMaterial])
 
-  const patientZ = THREE.MathUtils.lerp(PATIENT_START_Z, PATIENT_END_Z, scanProgress)
+  const patientZ = THREE.MathUtils.lerp(startZ, endZ, scanProgress)
 
   return (
     <group position={[0, GANTRY_ISOCENTER_Y, patientZ]} rotation={[-Math.PI / 2, 0, 0]} scale={0.405}>
@@ -138,8 +141,8 @@ function CtPatient({ scanProgress }: { scanProgress: number }) {
   )
 }
 
-function MovingCouchSurface({ scanProgress }: { scanProgress: number }) {
-  const patientZ = THREE.MathUtils.lerp(PATIENT_START_Z, PATIENT_END_Z, scanProgress)
+function MovingCouchSurface({ scanProgress, startZ = PATIENT_START_Z, endZ = PATIENT_END_Z }: { scanProgress: number; startZ?: number; endZ?: number }) {
+  const patientZ = THREE.MathUtils.lerp(startZ, endZ, scanProgress)
 
   return (
     <RoundedBox
@@ -266,6 +269,59 @@ function Scene({ scanProgress, gantryAngle }: { scanProgress: number; gantryAngl
       <Suspense fallback={null}><CtSuite scanProgress={scanProgress} gantryAngle={gantryAngle} /></Suspense>
       <OrbitControls makeDefault target={PATIENT_CAMERA.target} enablePan={false} minDistance={2.2} maxDistance={3.65} minPolarAngle={1.05} maxPolarAngle={1.55} />
     </>
+  )
+}
+
+function LandingCtSuite({ scanProgress, gantryAngle }: { scanProgress: number; gantryAngle: number }) {
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, -0.3]} receiveShadow>
+        <planeGeometry args={[5.5, 5.5]} />
+        <meshStandardMaterial color="#294047" roughness={0.92} />
+      </mesh>
+      <MedicalAsset path={ROOM_MODELS.scanner} position={[0, 0.04, -0.08]} />
+      <GantryBoreExtension />
+      <MovingCouchSurface scanProgress={scanProgress} startZ={LANDING_PATIENT_START_Z} endZ={LANDING_PATIENT_END_Z} />
+      <CtPatient scanProgress={scanProgress} startZ={LANDING_PATIENT_START_Z} endZ={LANDING_PATIENT_END_Z} />
+      <AcquisitionOverlay angle={gantryAngle} />
+    </group>
+  )
+}
+
+function LandingCtScene({ scanProgress, gantryAngle }: { scanProgress: number; gantryAngle: number }) {
+  return (
+    <>
+      <color attach="background" args={['#20363d']} />
+      <fog attach="fog" args={['#20363d', 6.5, 12]} />
+      <ambientLight intensity={1.35} color="#d7edf0" />
+      <hemisphereLight args={['#f3fbff', '#273e44', 1.75]} />
+      <directionalLight position={[3.5, 6.4, 4.8]} intensity={3.2} color="#f8fcff" castShadow shadow-mapSize={[768, 768]} />
+      <pointLight position={[-2.2, 2.35, 1.4]} intensity={5.2} distance={7} decay={2} color="#b8eeff" />
+      <pointLight position={[2.35, 2.15, -1.8]} intensity={3.1} distance={6} decay={2} color="#fff0d4" />
+      <Suspense fallback={null}><LandingCtSuite scanProgress={scanProgress} gantryAngle={gantryAngle} /></Suspense>
+    </>
+  )
+}
+
+export function LandingCtScannerCanvas({ scanProgress = 0, gantryAngle = 0 }: CtScannerSceneProps) {
+  return (
+    <Canvas
+      dpr={[1, 1.35]}
+      camera={{ position: LANDING_CAMERA.position, fov: 36, near: 0.05, far: 30 }}
+      shadows
+      frameloop="demand"
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      onCreated={({ camera, gl }) => {
+        camera.lookAt(...LANDING_CAMERA.target)
+        gl.toneMapping = THREE.ACESFilmicToneMapping
+        gl.toneMappingExposure = 1.08
+        gl.outputColorSpace = THREE.SRGBColorSpace
+        gl.shadowMap.type = THREE.PCFSoftShadowMap
+      }}
+      aria-hidden="true"
+    >
+      <LandingCtScene scanProgress={scanProgress} gantryAngle={gantryAngle} />
+    </Canvas>
   )
 }
 

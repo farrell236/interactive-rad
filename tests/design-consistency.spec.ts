@@ -8,7 +8,22 @@ async function expectNoDocumentOverflow(page: Page) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Radiology Imaging Lab' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Interactive Radiology' })).toBeVisible()
+})
+
+test('landing scenes drive the active module highlight and tabs open lessons directly', async ({ page }) => {
+  await expect(page.getByRole('button', { name: 'Open Interactive Radiology home' })).toHaveAttribute('aria-current', 'page')
+  const xrayScene = page.locator('#landing-xray')
+  await xrayScene.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+  await expect(page.getByRole('tab', { name: 'X-ray', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await expectNoDocumentOverflow(page)
+
+  await page.getByRole('tab', { name: 'CT', exact: true }).click()
+  await expect(page.locator('#panel-ct')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'From projections to a volume.' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Open Interactive Radiology home' }).click()
+  await expect(page.getByRole('heading', { name: 'Interactive Radiology' })).toBeVisible()
 })
 
 test('all modality shells stay within the viewport', async ({ page }) => {

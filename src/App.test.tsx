@@ -54,16 +54,26 @@ vi.mock('@react-three/gpu-pathtracer', () => ({
   usePathtracer: () => ({ pathtracer: { dispose: vi.fn(), reset: vi.fn(), updateCamera: vi.fn(), updateMaterials: vi.fn() }, update: vi.fn() }),
 }))
 
-describe('Radiology Imaging Lab', () => {
-  it('renders the X-ray module and all modality tabs', async () => {
+describe('Interactive Radiology', () => {
+  it('opens on a dedicated landing page and navigates directly into modules', async () => {
+    const user = userEvent.setup()
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Radiology Imaging Lab' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Interactive Radiology' })).toBeInTheDocument()
     expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual(['X-ray', 'CT', 'CT Windowing', 'MRI', 'Image Data'])
+    expect(screen.getByRole('button', { name: 'Open Interactive Radiology home' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('heading', { name: 'X-ray records a two-dimensional projection.' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Normal posteroanterior chest radiograph' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Explore X-ray' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'X-ray' }))
     expect(await screen.findByRole('heading', { name: 'Chest X-ray acquisition' }, { timeout: 30_000 })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Take X-ray' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Beam' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('OID')).toBeInTheDocument()
     expect(screen.getByRole('slider', { name: /Beam collimation/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open Interactive Radiology home' }))
+    expect(screen.getByRole('heading', { name: 'Interactive Radiology' })).toBeInTheDocument()
   }, 40_000)
 
   it('repeatedly increases and decreases interface text within limits', async () => {
@@ -887,6 +897,7 @@ describe('Radiology Imaging Lab', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('tab', { name: 'X-ray' }))
     const helpButton = await screen.findByRole('button', { name: 'Explain Tube voltage' })
     expect(screen.getByText('Controls photon energy and beam penetration.')).toBeInTheDocument()
 
@@ -912,6 +923,7 @@ describe('Radiology Imaging Lab', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('tab', { name: 'X-ray' }))
     expect(await screen.findByRole('region', { name: 'PA projection at a glance' })).toHaveTextContent('reducing geometric magnification')
     await user.click(screen.getByRole('button', { name: 'Left lateral' }))
 
