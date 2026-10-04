@@ -9,6 +9,8 @@ import type { Modality } from '../types'
 const LandingXrayPatient3d = lazy(() => import('./LandingXrayPatient3d'))
 const LandingCtScanner3d = lazy(() => import('./LandingCtScanner3d'))
 const LandingImageData3d = lazy(() => import('./LandingImageData3d'))
+const landingXrayUrl = `${import.meta.env.BASE_URL}assets/landing/normal-pa-chest-xray.jpg`
+const landingMriUrl = `${import.meta.env.BASE_URL}assets/mri/cie-template-t2.png`
 
 type LandingPageProps = {
   onActiveChange: (modality: Modality | null) => void
@@ -157,7 +159,7 @@ function XrayLandingVisual() {
         <circle cx="76" cy="260" r="14" fill="#bff6ff" />
         <g className="landing-xray-detector">
           <rect x="522" y="104" width="215" height="252" rx="14" fill="#071014" stroke="#8cecff" strokeWidth="3" />
-          <image href="/assets/landing/normal-pa-chest-xray.jpg" x="530" y="112" width="199" height="236" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Normal posteroanterior chest radiograph" />
+          <image href={landingXrayUrl} x="530" y="112" width="199" height="236" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Normal posteroanterior chest radiograph" />
           <rect x="530" y="112" width="199" height="236" rx="8" fill="none" stroke="#e8fbff" strokeOpacity=".32" />
         </g>
       </svg>
@@ -333,7 +335,7 @@ function MriLandingVisual() {
         </g>
         <g className="landing-mri-output">
           <rect x="493" y="110" width="202" height="298" rx="18" fill="#090d14" stroke="#a987ff" strokeOpacity=".46" />
-          <image href="/assets/mri/cie-template-t2.png" x="504" y="122" width="180" height="180" role="img" aria-label="Axial T2-weighted population-average brain MRI" />
+          <image href={landingMriUrl} x="504" y="122" width="180" height="180" role="img" aria-label="Axial T2-weighted population-average brain MRI" />
           <path d="M505 354h166" stroke="#fff" strokeOpacity=".16" />
           <path className="landing-mri-signal-trace" d="M505 354q9-36 18 0t18 0q9-27 18 0t18 0q9-18 18 0t18 0q9-10 18 0t18 0" fill="none" stroke="#c5a9ff" strokeWidth="3" />
           <text x="504" y="330" fill="#cbbdea" fontSize="11" fontWeight="700">RECEIVED SIGNAL → IMAGE</text>
