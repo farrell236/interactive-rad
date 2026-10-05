@@ -34,6 +34,15 @@ test('all modality shells stay within the viewport', async ({ page }) => {
   }
 })
 
+test('license and attribution notices remain readable without horizontal overflow', async ({ page }) => {
+  await page.getByRole('button', { name: 'Licenses & attributions' }).click()
+  await expect(page.getByRole('heading', { name: 'Licenses & attributions' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'AGPL-3.0-or-later' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'CC BY-NC-SA 4.0' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Corresponding source' })).toHaveAttribute('href', 'https://github.com/farrell236/interactive-rad')
+  await expectNoDocumentOverflow(page)
+})
+
 test('responsive chapter pickers replace dense navigation on narrow screens', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith('mobile'), 'Narrow-screen behavior')
 

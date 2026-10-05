@@ -1,4 +1,4 @@
-# Radiology Imaging Lab
+# Interactive Radiology
 
 A cinematic browser-based teaching application for exploring how radiological images are acquired, represented, and displayed. The working modules are an interactive chest X-ray laboratory, a seven-part medical image data learning backbone, and an interactive CT windowing laboratory; CT acquisition and MRI remain structured future modules.
 
@@ -50,6 +50,16 @@ pnpm build
 - `src/simulation/xray.ts` — presentation-independent qualitative physics model
 
 Modality physics is kept separate from presentation components so a future CT/CBCT volume ray-caster can replace the procedural anatomy without restructuring the application shell.
+
+## Licensing
+
+Copyright © 2026 Benjamin Hou.
+
+- Application source code: [GNU AGPL 3.0 or later](LICENSES/AGPL-3.0-or-later.txt)
+- Original educational prose and visual material: [CC BY-NC-SA 4.0](LICENSES/CC-BY-NC-SA-4.0.txt)
+- Third-party images, datasets, models, and libraries: their original licenses, documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+
+See [LICENSE.md](LICENSE.md) for the exact scope. The freely available canonical site may be visited and linked without permission. Commercial redistribution or adaptation of Benjamin Hou’s original educational content requires separate permission.
 
 ## Scientific scope and limitations
 

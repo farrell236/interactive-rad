@@ -76,6 +76,19 @@ describe('Interactive Radiology', () => {
     expect(screen.getByRole('heading', { name: 'Interactive Radiology' })).toBeInTheDocument()
   }, 40_000)
 
+  it('opens the license notices and generates the current copyright year', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByText(`Copyright © ${new Date().getFullYear()} Benjamin Hou`)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Licenses & attributions' }))
+
+    expect(screen.getByRole('heading', { name: 'Licenses & attributions' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'AGPL-3.0-or-later' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'CC BY-NC-SA 4.0' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Corresponding source' })).toHaveAttribute('href', 'https://github.com/farrell236/interactive-rad')
+  })
+
   it('repeatedly increases and decreases interface text within limits', async () => {
     const user = userEvent.setup()
     render(<App />)

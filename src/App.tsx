@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComponentType, KeyboardEvent, SVGProps } from 'react'
 import { Aperture, Contrast, Database, Magnet, Moon, ScanLine, Sun } from 'lucide-react'
 import LandingPage from './components/LandingPage'
+import LegalNotice from './components/LegalNotice'
 import type { Modality } from './types'
 
 const XrayModule = lazy(() => import('./components/XrayModule'))
@@ -10,6 +11,7 @@ const MriModule = lazy(() => import('./components/MriModule'))
 const WindowingModule = lazy(() => import('./components/WindowingModule'))
 const ImageDataModule = lazy(() => import('./components/ImageDataModule'))
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
+type AppPage = 'home' | 'licenses' | Modality
 
 const modalities: Array<{ id: Modality; label: string; shortLabel?: string; icon: IconComponent }> = [
   { id: 'xray', label: 'X-ray', icon: Aperture },
@@ -75,7 +77,7 @@ function LoadingModule() {
 }
 
 export default function App() {
-  const [page, setPage] = useState<'home' | Modality>('home')
+  const [page, setPage] = useState<AppPage>('home')
   const [landingActive, setLandingActive] = useState<Modality | null>(null)
   const [textSize, setTextSize] = useState(16)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -103,7 +105,15 @@ export default function App() {
     document.body.scrollTop = 0
   }, [])
 
-  const activeModality = page === 'home' ? landingActive : page
+  const openLicenses = useCallback(() => {
+    setPage('licenses')
+    setLandingActive(null)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [])
+
+  const activeModality = page === 'home' ? landingActive : page === 'licenses' ? null : page
+  const currentYear = new Date().getFullYear()
 
   const activeModule = page === 'xray'
     ? <XrayModule />
@@ -149,6 +159,8 @@ export default function App() {
       <main id="main-content" className={`app-content${page === 'home' ? ' is-landing' : ''}`}>
         {page === 'home'
           ? <LandingPage onActiveChange={setLandingActive} onOpenModule={openModule} />
+          : page === 'licenses'
+            ? <LegalNotice currentYear={currentYear} />
           : (
             <section id={`panel-${page}`} role="tabpanel" aria-labelledby={`tab-${page}`}>
               <h1 className="sr-only">Interactive Radiology — {modalities.find((modality) => modality.id === page)?.label}</h1>
@@ -158,7 +170,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        <span>Educational simulation</span><span aria-hidden="true">•</span><span>Not for clinical acquisition planning or dosimetry</span>
+        <span>Copyright © {currentYear} Benjamin Hou</span><span aria-hidden="true">•</span><button type="button" onClick={openLicenses}>Licenses &amp; attributions</button><span aria-hidden="true">•</span><a href="https://github.com/farrell236/interactive-rad" target="_blank" rel="noreferrer">Source code</a><span aria-hidden="true">•</span><span>Educational simulation · not for clinical acquisition planning or dosimetry</span>
       </footer>
     </div>
   )
