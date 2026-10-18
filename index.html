@@ -2,6 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Google Analytics runs only on the published Interactive Radiology site. -->
+    <script>
+      if (window.location.hostname === 'farrell236.github.io'
+        && /^\/interactive-rad(?:\/|$)/.test(window.location.pathname)) {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { window.dataLayer.push(arguments); };
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-47MYVDX4RH');
+
+        const googleTag = document.createElement('script');
+        googleTag.async = true;
+        googleTag.src = 'https://www.googletagmanager.com/gtag/js?id=G-47MYVDX4RH';
+        document.head.appendChild(googleTag);
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#07111f" />
     <title>Interactive Radiology</title>
